@@ -66,6 +66,12 @@
             <version>5.2.1</version>
         </dependency>
 
+        <dependency>
+            <groupId>commons-net</groupId>
+            <artifactId>commons-net</artifactId>
+            <version>3.9.0</version>
+        </dependency>
+
         <!-- remote ejb over http -->
         <dependency>
             <groupId>fish.payara.extras</groupId>

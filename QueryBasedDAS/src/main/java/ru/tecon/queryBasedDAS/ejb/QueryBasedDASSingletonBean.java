@@ -1,13 +1,13 @@
 package ru.tecon.queryBasedDAS.ejb;
 
 import org.slf4j.Logger;
-import ru.tecon.queryBasedDAS.DasException;
-import ru.tecon.queryBasedDAS.UploadServiceEJBFactory;
 import ru.tecon.queryBasedDAS.counter.Counter;
+import ru.tecon.queryBasedDAS.counter.Periodicity;
 
 import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-import javax.ejb.*;
+import javax.ejb.LocalBean;
+import javax.ejb.Singleton;
+import javax.ejb.Startup;
 import javax.inject.Inject;
 import java.util.*;
 
@@ -23,20 +23,19 @@ public class QueryBasedDASSingletonBean {
     @Inject
     private Logger logger;
 
-    @EJB
-    private ListenerServicesStatelessBean listenerBean;
-
     private static final List<String> COUNTERS = List.of(
-            "ru.tecon.queryBasedDAS.counter.asDTS.ASDTSCounter"
+            "ru.tecon.queryBasedDAS.counter.asDTS.ASDTSCounter",
+            "ru.tecon.queryBasedDAS.counter.ftp.vist.VISTCounter",
+            "ru.tecon.queryBasedDAS.counter.ftp.teros.TEROSCounter",
+            "ru.tecon.queryBasedDAS.counter.ftp.sa94.SA94Counter",
+            "ru.tecon.queryBasedDAS.counter.ftp.slave.SLAVECounter",
+            "ru.tecon.queryBasedDAS.counter.ftp.plain.PlainCounter"
     );
 
     private static final Map<String, String> COUNTERS_MAP = new HashMap<>();
 
     @PostConstruct
     private void init() {
-        // Проверка правильности файла с параметрами
-        UploadServiceEJBFactory.checkProps();
-
         // Загружаем данные по счетчикам
         for (String counter: COUNTERS) {
             try {
@@ -45,21 +44,6 @@ public class QueryBasedDASSingletonBean {
             } catch (ReflectiveOperationException e) {
                 logger.warn("error load counter {}", counter, e);
             }
-        }
-
-        try {
-            listenerBean.registerConfigRequestListener();
-        } catch (DasException e) {
-            logger.warn("Error register listener ", e);
-        }
-    }
-
-    @PreDestroy
-    private void destroy() {
-        try {
-            listenerBean.unregisterConfigRequestListener();
-        } catch (DasException e) {
-            logger.warn("Error unregister listener ", e);
         }
     }
 
@@ -90,5 +74,26 @@ public class QueryBasedDASSingletonBean {
      */
     public Set<String> counterNameSet() {
         return new HashSet<>(COUNTERS_MAP.keySet());
+    }
+
+    /**
+     * Получение коллекции имен доступных счетчиков системы
+     *
+     * @param periodicity частота опроса исторических данных счетчика
+     * @return имена доступных счетчиков системы
+     */
+    public Set<String> counterNameSet(Periodicity periodicity) {
+        Set<String> result = new HashSet<>();
+        for (Map.Entry<String, String> counter: COUNTERS_MAP.entrySet()) {
+            try {
+                Counter instance = (Counter) Class.forName(counter.getValue()).getDeclaredConstructor().newInstance();
+                if (instance.getCounterInfo().getPeriodicity() == periodicity) {
+                    result.add(counter.getKey());
+                }
+            } catch (ReflectiveOperationException e) {
+                logger.warn("error load counter {}", counter, e);
+            }
+        }
+        return result;
     }
 }

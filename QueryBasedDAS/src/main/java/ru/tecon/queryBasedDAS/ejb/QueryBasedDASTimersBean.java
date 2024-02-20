@@ -2,6 +2,7 @@ package ru.tecon.queryBasedDAS.ejb;
 
 import org.slf4j.Logger;
 import ru.tecon.queryBasedDAS.DasException;
+import ru.tecon.queryBasedDAS.counter.Periodicity;
 import ru.tecon.queryBasedDAS.ejb.observers.TimerEvent;
 
 import javax.ejb.*;
@@ -50,12 +51,25 @@ public class QueryBasedDASTimersBean {
      *
      * @param timer информация о таймере
      */
-    // TODO remove comment on product
-//    @Schedule(minute = "10/15", hour = "*", info = "10, 25, 40, 55 minute every hour", persistent = false)
-    private void readHistoricalData(Timer timer) {
+    @Schedule(minute = "10/20", hour = "*", info = "at 10, 30, 50 minute every hour", persistent = false)
+    private void readHistoricalDataFourTimes(Timer timer) {
+        // TODO remove comment on product
         event.fire(new TimerEvent(timer.getInfo().toString()));
         logger.info("Start read historical data");
-        bean.loadHistoricalData();
+        bean.loadHistoricalData(Periodicity.THREE_TIME_PER_HOUR);
+    }
+
+    /**
+     * Таймер загрузки архивных данных по счетчикам
+     *
+     * @param timer информация о таймере
+     */
+    @Schedule(minute = "20", hour = "*", info = "at 20 minute every hour", persistent = false)
+    private void readHistoricalDataTwoTimes(Timer timer) {
+        // TODO remove comment on product
+        event.fire(new TimerEvent(timer.getInfo().toString()));
+        logger.info("Start read historical data");
+        bean.loadHistoricalData(Periodicity.ONE_TIME_PER_HOUR);
     }
 
     /**
@@ -65,6 +79,7 @@ public class QueryBasedDASTimersBean {
      */
     @Schedule(info = "at 00:00 every day", persistent = false)
     private void loadObjects(Timer timer) {
+        // TODO выполняется около 20 минут, похоже надо делать асинхронно
         event.fire(new TimerEvent(timer.getInfo().toString()));
         List<String> successServersSend = bean.uploadCounterObjects();
         logger.info("Success upload counter objects to {}", successServersSend);

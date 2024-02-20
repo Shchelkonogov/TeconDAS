@@ -1,6 +1,7 @@
 package ru.tecon.queryBasedDAS.counter.asDTS;
 
 import ru.tecon.queryBasedDAS.counter.CounterInfo;
+import ru.tecon.queryBasedDAS.counter.Periodicity;
 import ru.tecon.queryBasedDAS.counter.asDTS.ejb.ASDTSMsSqlBean;
 
 import javax.naming.InitialContext;
@@ -30,6 +31,11 @@ public class ASDTSInfo implements CounterInfo {
     @Override
     public List<String> getObjects() {
         return bean.getObjects();
+    }
+
+    @Override
+    public Periodicity getPeriodicity() {
+        return Periodicity.ONE_TIME_PER_HOUR;
     }
 
     public ASDTSMsSqlBean getBean() {

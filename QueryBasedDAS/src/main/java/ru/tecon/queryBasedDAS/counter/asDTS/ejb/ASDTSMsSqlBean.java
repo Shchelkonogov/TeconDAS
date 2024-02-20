@@ -9,6 +9,7 @@ import javax.inject.Inject;
 import javax.sql.DataSource;
 import java.sql.*;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -74,6 +75,8 @@ public class ASDTSMsSqlBean {
              PreparedStatement stm = connect.prepareStatement(SQL_DATA)) {
             stm.setFetchSize(1000);
 
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
+
             for (DataModel item: params) {
                 if (item.getStartDateTime() == null) {
                     item.setStartDateTime(LocalDateTime.now().minusDays(40).truncatedTo(ChronoUnit.HOURS));
@@ -81,7 +84,8 @@ public class ASDTSMsSqlBean {
 
                 stm.setString(1, objectName.replace(PRE_OBJECT_NAME, ""));
                 stm.setString(2, item.getParamName());
-                stm.setTimestamp(3, Timestamp.valueOf(item.getStartDateTime().plusHours(3)));
+                // Сравнение со строкой в mssql идет быстрее (не знаю почему, тесты так показали), поэтому заменил на строку
+                stm.setString(3, item.getStartDateTime().plusHours(3).format(formatter));
 
                 ResultSet res = stm.executeQuery();
                 while (res.next()) {

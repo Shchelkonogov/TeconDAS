@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import ru.tecon.queryBasedDAS.PropertiesLoader;
 import ru.tecon.queryBasedDAS.UploadServiceEJBFactory;
 import ru.tecon.queryBasedDAS.counter.Counter;
+import ru.tecon.queryBasedDAS.counter.Periodicity;
 import ru.tecon.uploaderService.ejb.UploaderServiceRemote;
 import ru.tecon.uploaderService.model.SubscribedObject;
 import ru.tecon.uploaderService.model.DataModel;
@@ -12,6 +13,7 @@ import javax.ejb.*;
 import javax.inject.Inject;
 import javax.naming.NamingException;
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -122,8 +124,10 @@ public class QueryBasedDASStatelessBean {
 
     /**
      * Загрузка исторических данных
+     *
+     * @param periodicity тип опроса счетчиков, если передать null, то будет загрузка по всем типам.
      */
-    public void loadHistoricalData() {
+    public void loadHistoricalData(Periodicity periodicity) {
         try {
             Properties properties = PropertiesLoader.loadProperties("app.properties");
             String[] uploadServerNames = properties.getProperty("uploadServerNames").split(" ");
@@ -133,7 +137,14 @@ public class QueryBasedDASStatelessBean {
                 try {
                     UploaderServiceRemote uploadServiceRemote = UploadServiceEJBFactory.getUploadServiceRemote(uploadServerName);
 
-                    List<SubscribedObject> objects = uploadServiceRemote.getSubscribedObjects(bean.counterNameSet());
+                    Set<String> counterNameSet;
+                    if (periodicity == null) {
+                        counterNameSet = bean.counterNameSet();
+                    } else {
+                        counterNameSet = bean.counterNameSet(periodicity);
+                    }
+
+                    List<SubscribedObject> objects = uploadServiceRemote.getSubscribedObjects(counterNameSet);
 
                     if ((objects != null) && !objects.isEmpty()) {
                         int chunk = objects.size() / partCount;
@@ -150,7 +161,7 @@ public class QueryBasedDASStatelessBean {
                     } else {
                         logger.warn("no subscribed objects for {}", uploadServerName);
                     }
-                } catch (NamingException e) {
+                } catch (NamingException | IOException e) {
                     logger.warn("remote service {} unavailable", uploadServerName);
                 }
             }
@@ -168,6 +179,8 @@ public class QueryBasedDASStatelessBean {
     @Asynchronous
     public void initReadHistoricalFiles(List<SubscribedObject> objects, String uploadServerName) {
         logger.info("start load historical data for {}", objects.stream().map(SubscribedObject::getObjectName).collect(Collectors.toList()));
+        long startTime = System.currentTimeMillis();
+        LocalDateTime startDateTime = LocalDateTime.now();
         try {
             UploaderServiceRemote uploadServiceRemote = UploadServiceEJBFactory.getUploadServiceRemote(uploadServerName);
 
@@ -209,6 +222,9 @@ public class QueryBasedDASStatelessBean {
         } catch (IOException | NamingException e) {
             logger.warn("remote service {} unavailable", uploadServerName);
         }
-        logger.info("finished load historical data for {}", objects.stream().map(SubscribedObject::getObjectName).collect(Collectors.toList()));
+        logger.info("finished load historical data started at {} in {} ms for {}",
+                startDateTime,
+                (System.currentTimeMillis() - startTime),
+                objects.stream().map(SubscribedObject::getObjectName).collect(Collectors.toList()));
     }
 }

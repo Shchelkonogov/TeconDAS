@@ -44,12 +44,12 @@ public class QueryBasedDASService {
     @EJB
     private ListenerServicesStatelessBean listenerServicesBean;
 
-    // TODO remove method on product
-    @GET
-    @Path("/test")
-    public String test() {
-        return null;
-    }
+//    // TODO remove method on product
+//    @GET
+//    @Path("/test")
+//    public String test() {
+//        return null;
+//    }
 
     /**
      * Echo запрос.

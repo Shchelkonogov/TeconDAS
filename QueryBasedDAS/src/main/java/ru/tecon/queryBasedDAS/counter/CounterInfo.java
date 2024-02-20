@@ -21,4 +21,11 @@ public interface CounterInfo {
      * @return список объектов
      */
     List<String> getObjects();
+
+    /**
+     * Получение частоты опроса исторических данных счетчика
+     *
+     * @return частота опроса
+     */
+    Periodicity getPeriodicity();
 }
