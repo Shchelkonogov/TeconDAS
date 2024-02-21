@@ -3,6 +3,7 @@ package ru.tecon.queryBasedDAS.ejb;
 import org.slf4j.Logger;
 import ru.tecon.queryBasedDAS.counter.Counter;
 import ru.tecon.queryBasedDAS.counter.Periodicity;
+import ru.tecon.queryBasedDAS.counter.ftp.FtpCounterExtension;
 
 import javax.annotation.PostConstruct;
 import javax.ejb.LocalBean;
@@ -91,6 +92,26 @@ public class QueryBasedDASSingletonBean {
                     result.add(counter.getKey());
                 }
             } catch (ReflectiveOperationException e) {
+                logger.warn("error load counter {}", counter, e);
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Получение коллекции имен доступных счетчиков системы с поддержкой очистки истории
+     *
+     * @return имена доступных счетчиков системы
+     */
+    public Set<String> counterSupportRemoveHistoryNameSet() {
+        Set<String> result = new HashSet<>();
+
+        for (Map.Entry<String, String> counter: COUNTERS_MAP.entrySet()) {
+            try {
+                if (FtpCounterExtension.class.isAssignableFrom(Class.forName(counter.getValue()))) {
+                    result.add(counter.getKey());
+                }
+            } catch (ClassNotFoundException e) {
                 logger.warn("error load counter {}", counter, e);
             }
         }

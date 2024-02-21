@@ -24,9 +24,15 @@ public abstract class FtpCounterInfo implements CounterInfo {
     private static final Logger logger = LoggerFactory.getLogger(FtpCounterInfo.class);
 
     private final List<String> patterns;
+    private List<String> dayFilePatterns = new ArrayList<>();
 
     public FtpCounterInfo(List<String> patterns) {
         this.patterns = patterns;
+    }
+
+    public FtpCounterInfo(List<String> patterns, List<String> dayFilePatterns) {
+        this.patterns = patterns;
+        this.dayFilePatterns = dayFilePatterns;
     }
 
     @Override
@@ -109,6 +115,10 @@ public abstract class FtpCounterInfo implements CounterInfo {
 
     public List<String> getPatterns() {
         return patterns;
+    }
+
+    public List<String> getDayFilePatterns() {
+        return dayFilePatterns;
     }
 
     private interface FilesFilter<T> {

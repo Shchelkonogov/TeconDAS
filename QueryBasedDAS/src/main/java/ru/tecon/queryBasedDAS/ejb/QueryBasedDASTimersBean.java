@@ -8,7 +8,6 @@ import ru.tecon.queryBasedDAS.ejb.observers.TimerEvent;
 import javax.ejb.*;
 import javax.enterprise.event.Event;
 import javax.inject.Inject;
-import java.util.List;
 
 /**
  * @author Maksim Shchelkonogov
@@ -79,9 +78,20 @@ public class QueryBasedDASTimersBean {
      */
     @Schedule(info = "at 00:00 every day", persistent = false)
     private void loadObjects(Timer timer) {
-        // TODO выполняется около 20 минут, похоже надо делать асинхронно
         event.fire(new TimerEvent(timer.getInfo().toString()));
-        List<String> successServersSend = bean.uploadCounterObjects();
-        logger.info("Success upload counter objects to {}", successServersSend);
+        bean.uploadCounterObjects();
+        logger.info("start long time upload counter objects");
+    }
+
+    /**
+     * Таймер очистки исторических данных
+     *
+     * @param timer информация о таймере
+     */
+    @Schedule(hour = "1", info = "at 01:00 every day", persistent = false)
+    private void clearObjects(Timer timer) {
+        event.fire(new TimerEvent(timer.getInfo().toString()));
+        bean.clearObjects();
+        logger.info("start long time clear counter objects");
     }
 }

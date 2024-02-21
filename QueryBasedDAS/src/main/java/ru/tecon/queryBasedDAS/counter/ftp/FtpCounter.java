@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
  * @author Maksim Shchelkonogov
  * 07.02.2024
  */
-public abstract class FtpCounter implements Counter, FtpCounterTest {
+public abstract class FtpCounter implements Counter, FtpCounterExtension {
 
     private static final Logger logger = LoggerFactory.getLogger(FtpCounter.class);
 
@@ -166,6 +166,51 @@ public abstract class FtpCounter implements Counter, FtpCounterTest {
 //        System.out.println(filesForLoad);
 
         ftpClient.close();
+    }
+
+    @Override
+    public void clearHistoricalFiles() {
+        logger.info("start clear historical file for {}", info.getCounterName());
+
+        for (String counterObject: info.getObjects()) {
+            String counterNumber = counterObject.substring(counterObject.length() - 4);
+            String directoryPath = "/" + counterNumber.substring(0, 2) + "/" + counterNumber;
+
+            List<String> patterns = new ArrayList<>(info.getPatterns());
+            patterns.addAll(info.getPatterns().stream().map(s -> s + "-er").collect(Collectors.toSet()));
+            patterns.addAll(info.getDayFilePatterns());
+
+            try {
+                FtpClient ftpClient = new FtpClient();
+                ftpClient.open();
+
+                FTPFile[] ftpFiles = ftpClient.getConnection().listFiles(directoryPath);
+
+                Set<String> filesForRemove = Arrays.stream(ftpFiles)
+                        .filter(ftpFile -> {
+                            for (String pattern: patterns) {
+                                if (ftpFile.getName().matches(pattern)) {
+                                    return LocalDateTime.ofInstant(ftpFile.getTimestampInstant(), ftpFile.getTimestamp().getTimeZone().toZoneId())
+                                            .isBefore(LocalDateTime.now().minusDays(45));
+                                }
+                            }
+                            return false;
+                        })
+                        .map(ftpFile -> directoryPath + "/" + ftpFile.getName())
+                        .collect(Collectors.toSet());
+
+                for (String path: filesForRemove) {
+                    logger.info("remove file {}", path);
+                    ftpClient.getConnection().deleteFile(path);
+                }
+
+                ftpClient.close();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        logger.info("finish clear historical file for {}", info.getCounterName());
     }
 
     private InputStream checkFileExistAtFtp(FTPClient ftpClient, String path) throws IOException, DasException {

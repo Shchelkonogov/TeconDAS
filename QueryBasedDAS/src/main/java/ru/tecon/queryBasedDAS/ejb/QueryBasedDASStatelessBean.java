@@ -5,9 +5,10 @@ import ru.tecon.queryBasedDAS.PropertiesLoader;
 import ru.tecon.queryBasedDAS.UploadServiceEJBFactory;
 import ru.tecon.queryBasedDAS.counter.Counter;
 import ru.tecon.queryBasedDAS.counter.Periodicity;
+import ru.tecon.queryBasedDAS.counter.ftp.FtpCounterExtension;
 import ru.tecon.uploaderService.ejb.UploaderServiceRemote;
-import ru.tecon.uploaderService.model.SubscribedObject;
 import ru.tecon.uploaderService.model.DataModel;
+import ru.tecon.uploaderService.model.SubscribedObject;
 
 import javax.ejb.*;
 import javax.inject.Inject;
@@ -114,12 +115,28 @@ public class QueryBasedDASStatelessBean {
 
     /**
      * Выгрузка объектов счетчиков на все сервера загрузки данных
-     *
-     * @return список серверов, куда успешно загрузились данные
      */
-    public List<String> uploadCounterObjects() {
-        Map<String, List<String>> counterObjects = getCounterObjects();
-        return uploadCounterObjects(counterObjects);
+    @Asynchronous
+    public void uploadCounterObjects() {
+        uploadCounterObjects(getCounterObjects());
+        logger.info("finish upload counter objects");
+    }
+
+    /**
+     * Очистка исторических файлов
+     */
+    @Asynchronous
+    public void clearObjects() {
+        Set<String> counterNameSet = bean.counterSupportRemoveHistoryNameSet();
+        for (String counterName: counterNameSet) {
+            try {
+                FtpCounterExtension ftpCounter = (FtpCounterExtension) Class.forName(bean.getCounter(counterName)).getDeclaredConstructor().newInstance();
+                ftpCounter.clearHistoricalFiles();
+            } catch (ReflectiveOperationException e) {
+                logger.warn("error load counter = {}", counterName, e);
+            }
+        }
+        logger.info("finish clear counter objects");
     }
 
     /**
