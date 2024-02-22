@@ -10,7 +10,16 @@ import java.io.IOException;
  */
 public interface FtpCounterExtension {
 
+    /**
+     * Просмотр данных файла
+     *
+     * @param path путь к файлу
+     * @throws IOException в случае ошибки чтения
+     */
     void showData(String path) throws IOException;
 
+    /**
+     * Очистка исторических файлов
+     */
     void clearHistoricalFiles();
 }

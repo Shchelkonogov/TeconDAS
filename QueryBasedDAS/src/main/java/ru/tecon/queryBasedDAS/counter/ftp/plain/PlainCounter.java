@@ -1,16 +1,23 @@
 package ru.tecon.queryBasedDAS.counter.ftp.plain;
 
+import org.apache.commons.net.ftp.FTPFile;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import ru.tecon.queryBasedDAS.DasException;
 import ru.tecon.queryBasedDAS.counter.CounterInfo;
+import ru.tecon.queryBasedDAS.counter.ftp.FtpClient;
 import ru.tecon.queryBasedDAS.counter.ftp.FtpCounter;
+import ru.tecon.queryBasedDAS.counter.ftp.FtpCounterAlarm;
 import ru.tecon.queryBasedDAS.counter.ftp.model.CounterData;
+import ru.tecon.queryBasedDAS.counter.ftp.model.FileData;
 import ru.tecon.uploaderService.model.DataModel;
 
-import java.io.BufferedInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -22,7 +29,9 @@ import java.util.stream.Stream;
  * @author Maksim Shchelkonogov
  * 15.02.2024
  */
-public class PlainCounter extends FtpCounter {
+public class PlainCounter extends FtpCounter implements FtpCounterAlarm {
+
+    private static final Logger logger = LoggerFactory.getLogger(PlainCounter.class);
 
     private static final PlainInfo info = new PlainInfo();
 
@@ -250,6 +259,121 @@ public class PlainCounter extends FtpCounter {
                         }
                     }
                 }
+            }
+        }
+    }
+
+    @Override
+    public void loadAlarms(List<DataModel> params, String objectName) {
+        logger.info("start load alarm data from ftpCounter for {}", objectName);
+
+        params.removeIf(dataModel -> !Stream.of(PlainConfig.values())
+                .filter(PlainConfig::isAlarm)
+                .map(PlainConfig::getProperty)
+                .collect(Collectors.toSet())
+                .contains(dataModel.getParamName()));
+
+        if (params.isEmpty()) {
+            logger.info("finish load alarm data from ftpCounter for {} because model is empty", objectName);
+            return;
+        }
+
+        Collections.sort(params);
+
+        String counterNumber = objectName.substring(objectName.length() - 4);
+
+        LocalDateTime date = params.get(0).getStartDateTime() == null ? null : params.get(0).getStartDateTime().minusHours(1);
+
+        FtpClient ftpClient = new FtpClient();
+        try {
+            ftpClient.open();
+
+            List<FileData> fileData = getFilesForLoad(ftpClient.getConnection(), "/alarms", date, Collections.singletonList(counterNumber + "a(20\\d{2})(0[1-9]|1[0-2])(0[1-9]|[12][0-9]|3[01])-\\d{6}"), "yyyyMMdd-HHmmss");
+
+            for (FileData fData: fileData) {
+                try {
+                    try {
+                        InputStream inputStream;
+
+                        try {
+                            inputStream = checkFileExistAtFtp(ftpClient.getConnection(), fData.getPath());
+                        } catch (DasException e) {
+                            logger.warn("read file {} error {}", fData.getPath(), e.getMessage());
+                            ftpClient.close();
+                            return;
+                        }
+
+                        readAlarm(inputStream);
+                    } finally {
+                        if (ftpClient.getConnection().isConnected()) {
+                            ftpClient.getConnection().completePendingCommand();
+                        }
+                    }
+
+                    parseResults(params, fData.getDateTime());
+                } catch (DasException e) {
+                    logger.warn("error load alarm data from ftpCounter for {} file path {} error message {}", objectName, fData.getPath(), e.getMessage());
+                } catch (IOException ex) {
+                    logger.warn("error load alarm data from ftpCounter for {}", objectName, ex);
+                    ftpClient.close();
+                    return;
+                }
+            }
+
+            ftpClient.close();
+        } catch (IOException e) {
+            logger.warn("error load files list from ftp {}", objectName, e);
+            return;
+        }
+
+        params.removeIf(dataModel -> dataModel.getData().isEmpty());
+
+        logger.info("finish load alarm data from ftpCounter for {}", objectName);
+    }
+
+    @Override
+    public void clearAlarms() {
+        logger.info("start clear alarms file for {}", info.getCounterName());
+
+        try {
+            FtpClient ftpClient = new FtpClient();
+            ftpClient.open();
+
+            FTPFile[] ftpFiles = ftpClient.getConnection().listFiles("/alarms");
+
+            Set<String> filesForRemove = Arrays.stream(ftpFiles)
+                    .filter(ftpFile -> {
+                        if (ftpFile.getName().matches("\\d{4}a(20\\d{2})(0[1-9]|1[0-2])(0[1-9]|[12][0-9]|3[01])-\\d{6}")) {
+                            return LocalDateTime.ofInstant(ftpFile.getTimestampInstant(), ftpFile.getTimestamp().getTimeZone().toZoneId())
+                                    .isBefore(LocalDateTime.now().minusDays(45));
+                        }
+                        return false;
+                    })
+                    .map(ftpFile -> "/alarms/" + ftpFile.getName())
+                    .collect(Collectors.toSet());
+
+            for (String path: filesForRemove) {
+                logger.info("remove file {}", path);
+                ftpClient.getConnection().deleteFile(path);
+            }
+
+            ftpClient.close();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        logger.info("finish clear alarms file for {}", info.getCounterName());
+    }
+
+    private void readAlarm(InputStream in) throws IOException, DasException {
+        counterData.clear();
+
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(in))) {
+            String line = reader.readLine();
+
+            if (!line.isEmpty() && line.matches("^\\d+=\\d, .*$")) {
+                String electric = line.substring(line.indexOf("=") + 1, line.indexOf("=") + 2);
+                counterData.put(PlainConfig.ELECTRIC.getProperty(), new CounterData(electric));
             }
         }
     }

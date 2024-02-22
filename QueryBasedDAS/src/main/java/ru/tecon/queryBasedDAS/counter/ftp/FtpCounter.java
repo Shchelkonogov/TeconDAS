@@ -75,6 +75,11 @@ public abstract class FtpCounter implements Counter, FtpCounterExtension {
     public void loadData(List<DataModel> params, String objectName) {
         logger.info("start load data from ftpCounter for {}", objectName);
 
+        if (params.isEmpty()) {
+            logger.info("finish load data from ftpCounter for {} because model is empty", objectName);
+            return;
+        }
+
         Collections.sort(params);
 
         String counterNumber = objectName.substring(objectName.length() - 4);
@@ -108,14 +113,7 @@ public abstract class FtpCounter implements Counter, FtpCounterExtension {
                         }
                     }
 
-                    for (DataModel model: params) {
-                        if (model.getStartDateTime() == null || fData.getDateTime().isAfter(model.getStartDateTime().minusHours(1))) {
-                            CounterData counterDataItem = counterData.get(model.getParamName());
-                            if ((counterDataItem != null) && (counterDataItem.getValue() != null)) {
-                                model.addData(counterDataItem.getValue(), fData.getDateTime(), counterDataItem.getQuality());
-                            }
-                        }
-                    }
+                    parseResults(params, fData.getDateTime());
                 } catch (DasException e) {
                     logger.warn("error load data from ftpCounter for {} file path {} error message {}", objectName, fData.getPath(), e.getMessage());
                     try {
@@ -135,6 +133,8 @@ public abstract class FtpCounter implements Counter, FtpCounterExtension {
             logger.warn("error load files list from ftp {}", objectName, e);
             return;
         }
+
+        params.removeIf(dataModel -> dataModel.getData().isEmpty());
 
         logger.info("finish load data from ftpCounter for {}", objectName);
     }
@@ -213,7 +213,18 @@ public abstract class FtpCounter implements Counter, FtpCounterExtension {
         logger.info("finish clear historical file for {}", info.getCounterName());
     }
 
-    private InputStream checkFileExistAtFtp(FTPClient ftpClient, String path) throws IOException, DasException {
+    protected void parseResults(List<DataModel> params, LocalDateTime startTime) {
+        for (DataModel model: params) {
+            if (model.getStartDateTime() == null || startTime.isAfter(model.getStartDateTime().minusHours(1))) {
+                CounterData counterDataItem = counterData.get(model.getParamName());
+                if ((counterDataItem != null) && (counterDataItem.getValue() != null)) {
+                    model.addData(counterDataItem.getValue(), startTime, counterDataItem.getQuality());
+                }
+            }
+        }
+    }
+
+    protected InputStream checkFileExistAtFtp(FTPClient ftpClient, String path) throws IOException, DasException {
         InputStream inputStream = ftpClient.retrieveFileStream(path);
 
         int replyCode = ftpClient.getReplyCode();
@@ -268,7 +279,7 @@ public abstract class FtpCounter implements Counter, FtpCounterExtension {
      * @param dateFormat формат для разбора даты в имени файла
      * @return список файлов
      */
-    private List<FileData> getFilesForLoad(FTPClient ftpClient, String directoryPath, LocalDateTime date, List<String> pattern,
+    protected List<FileData> getFilesForLoad(FTPClient ftpClient, String directoryPath, LocalDateTime date, List<String> pattern,
                                                  String dateFormat) throws IOException {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern(dateFormat);
 

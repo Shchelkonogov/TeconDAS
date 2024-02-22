@@ -5,6 +5,7 @@ import ru.tecon.queryBasedDAS.PropertiesLoader;
 import ru.tecon.queryBasedDAS.UploadServiceEJBFactory;
 import ru.tecon.queryBasedDAS.counter.Counter;
 import ru.tecon.queryBasedDAS.counter.Periodicity;
+import ru.tecon.queryBasedDAS.counter.ftp.FtpCounterAlarm;
 import ru.tecon.queryBasedDAS.counter.ftp.FtpCounterExtension;
 import ru.tecon.uploaderService.ejb.UploaderServiceRemote;
 import ru.tecon.uploaderService.model.DataModel;
@@ -136,7 +137,117 @@ public class QueryBasedDASStatelessBean {
                 logger.warn("error load counter = {}", counterName, e);
             }
         }
+
+        counterNameSet = bean.counterSupportAlarmNameSet();
+        for (String counterName: counterNameSet) {
+            try {
+                FtpCounterAlarm ftpCounter = (FtpCounterAlarm) Class.forName(bean.getCounter(counterName)).getDeclaredConstructor().newInstance();
+                ftpCounter.clearAlarms();
+            } catch (ReflectiveOperationException e) {
+                logger.warn("error load counter = {}", counterName, e);
+            }
+        }
+
         logger.info("finish clear counter objects");
+    }
+
+    /**
+     * Загрузка alarm
+     */
+    public void loadAlarms() {
+        Set<String> counterNameSet = bean.counterSupportAlarmNameSet();
+
+        if (!counterNameSet.isEmpty()) {
+            try {
+                Properties properties = PropertiesLoader.loadProperties("app.properties");
+                String[] uploadServerNames = properties.getProperty("uploadServerNames").split(" ");
+                int partCount = Integer.parseInt(properties.getProperty("partCount"));
+
+                for (String uploadServerName: uploadServerNames) {
+                    try {
+                        UploaderServiceRemote uploadServiceRemote = UploadServiceEJBFactory.getUploadServiceRemote(uploadServerName);
+
+                        List<SubscribedObject> objects = uploadServiceRemote.getSubscribedObjects(counterNameSet);
+
+                        if ((objects != null) && !objects.isEmpty()) {
+                            int chunk = objects.size() / partCount;
+                            int mod = objects.size() % partCount;
+                            for (int i = 0; i < objects.size(); i += chunk) {
+                                int increment = 0;
+                                if (mod > 0) {
+                                    increment = 1;
+                                    mod--;
+                                }
+                                dasStatelessBean.initReadAlarmFiles(objects.subList(i, i + chunk + increment), uploadServerName);
+                                i += increment;
+                            }
+                        } else {
+                            logger.warn("no subscribed objects for {}", uploadServerName);
+                        }
+                    } catch (NamingException | IOException e) {
+                        logger.warn("remote service {} unavailable", uploadServerName);
+                    }
+                }
+            } catch (IOException e) {
+                logger.warn("error load properties");
+            }
+        }
+    }
+
+    /**
+     * Асинхронная загрузка alarm
+     *
+     * @param objects список объектов для загрузки данных
+     * @param uploadServerName имя удаленного сервера для загрузки данных
+     */
+    @Asynchronous
+    public void initReadAlarmFiles(List<SubscribedObject> objects, String uploadServerName) {
+        logger.info("start load alarm data for {}", objects.stream().map(SubscribedObject::getObjectName).collect(Collectors.toList()));
+        long startTime = System.currentTimeMillis();
+        LocalDateTime startDateTime = LocalDateTime.now();
+        try {
+            UploaderServiceRemote uploadServiceRemote = UploadServiceEJBFactory.getUploadServiceRemote(uploadServerName);
+
+            Map<String, FtpCounterAlarm> loadedCounters = new HashMap<>();
+
+            for (SubscribedObject object: objects) {
+                List<DataModel> objectModel = uploadServiceRemote.loadObjectModelWithStartTimes(object.getId());
+
+                logger.info("object model for {} {}", object.getObjectName(), objectModel);
+
+                if ((objectModel != null) && !objectModel.isEmpty()) {
+                    try {
+                        FtpCounterAlarm cl;
+                        if (loadedCounters.containsKey(object.getServerName())) {
+                            cl = loadedCounters.get(object.getServerName());
+                        } else {
+                            cl = (FtpCounterAlarm) Class.forName(bean.getCounter(object.getServerName())).getDeclaredConstructor().newInstance();
+                            loadedCounters.put(object.getServerName(), cl);
+                        }
+                        cl.loadAlarms(objectModel, object.getObjectName());
+                    } catch (ReflectiveOperationException e) {
+                        logger.warn("error load counter = {}", object.getServerName(), e);
+                    }
+
+                    if (!objectModel.isEmpty()) {
+                        logger.info("object model with data for {} model {} data size {}",
+                                object.getObjectName(),
+                                objectModel.stream().map(DataModel::getParamName).collect(Collectors.toList()),
+                                objectModel.stream().map(dataModel -> dataModel.getData().size()).collect(Collectors.toList()));
+
+                        uploadServiceRemote.uploadDataAsync(objectModel);
+                    }
+                } else {
+                    logger.warn("empty model for {}", object);
+                }
+            }
+        } catch (IOException | NamingException e) {
+            logger.warn("remote service {} unavailable", uploadServerName);
+        }
+        logger.info("finished load alarm data started at {} in {} ms for {}",
+                startDateTime,
+                (System.currentTimeMillis() - startTime),
+                objects.stream().map(SubscribedObject::getObjectName).collect(Collectors.toList()));
     }
 
     /**
@@ -150,16 +261,16 @@ public class QueryBasedDASStatelessBean {
             String[] uploadServerNames = properties.getProperty("uploadServerNames").split(" ");
             int partCount = Integer.parseInt(properties.getProperty("partCount"));
 
+            Set<String> counterNameSet;
+            if (periodicity == null) {
+                counterNameSet = bean.counterNameSet();
+            } else {
+                counterNameSet = bean.counterNameSet(periodicity);
+            }
+
             for (String uploadServerName: uploadServerNames) {
                 try {
                     UploaderServiceRemote uploadServiceRemote = UploadServiceEJBFactory.getUploadServiceRemote(uploadServerName);
-
-                    Set<String> counterNameSet;
-                    if (periodicity == null) {
-                        counterNameSet = bean.counterNameSet();
-                    } else {
-                        counterNameSet = bean.counterNameSet(periodicity);
-                    }
 
                     List<SubscribedObject> objects = uploadServiceRemote.getSubscribedObjects(counterNameSet);
 
@@ -222,14 +333,12 @@ public class QueryBasedDASStatelessBean {
                         logger.warn("error load counter = {}", object.getServerName(), e);
                     }
 
-                    objectModel.removeIf(dataModel -> dataModel.getData().isEmpty());
-
-                    logger.info("object model with data for {} model {} data size {}",
-                            object.getObjectName(),
-                            objectModel.stream().map(DataModel::getParamName).collect(Collectors.toList()),
-                            objectModel.stream().map(dataModel -> dataModel.getData().size()).collect(Collectors.toList()));
-
                     if (!objectModel.isEmpty()) {
+                        logger.info("object model with data for {} model {} data size {}",
+                                object.getObjectName(),
+                                objectModel.stream().map(DataModel::getParamName).collect(Collectors.toList()),
+                                objectModel.stream().map(dataModel -> dataModel.getData().size()).collect(Collectors.toList()));
+
                         uploadServiceRemote.uploadDataAsync(objectModel);
                     }
                 } else {

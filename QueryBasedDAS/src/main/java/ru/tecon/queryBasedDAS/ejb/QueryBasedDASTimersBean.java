@@ -52,7 +52,6 @@ public class QueryBasedDASTimersBean {
      */
     @Schedule(minute = "10/20", hour = "*", info = "at 10, 30, 50 minute every hour", persistent = false)
     private void readHistoricalDataFourTimes(Timer timer) {
-        // TODO remove comment on product
         event.fire(new TimerEvent(timer.getInfo().toString()));
         logger.info("Start read historical data");
         bean.loadHistoricalData(Periodicity.THREE_TIME_PER_HOUR);
@@ -65,7 +64,6 @@ public class QueryBasedDASTimersBean {
      */
     @Schedule(minute = "20", hour = "*", info = "at 20 minute every hour", persistent = false)
     private void readHistoricalDataTwoTimes(Timer timer) {
-        // TODO remove comment on product
         event.fire(new TimerEvent(timer.getInfo().toString()));
         logger.info("Start read historical data");
         bean.loadHistoricalData(Periodicity.ONE_TIME_PER_HOUR);
@@ -79,8 +77,8 @@ public class QueryBasedDASTimersBean {
     @Schedule(info = "at 00:00 every day", persistent = false)
     private void loadObjects(Timer timer) {
         event.fire(new TimerEvent(timer.getInfo().toString()));
-        bean.uploadCounterObjects();
         logger.info("start long time upload counter objects");
+        bean.uploadCounterObjects();
     }
 
     /**
@@ -91,7 +89,19 @@ public class QueryBasedDASTimersBean {
     @Schedule(hour = "1", info = "at 01:00 every day", persistent = false)
     private void clearObjects(Timer timer) {
         event.fire(new TimerEvent(timer.getInfo().toString()));
-        bean.clearObjects();
         logger.info("start long time clear counter objects");
+        bean.clearObjects();
+    }
+
+    /**
+     * Таймер загрузки сообщений alarm
+     *
+     * @param timer информация о таймере
+     */
+    @Schedule(minute = "*/5", hour = "*", info = "every 5 minutes", persistent = false)
+    private void readAlarms(Timer timer) {
+        event.fire(new TimerEvent(timer.getInfo().toString()));
+        logger.info("start read alarms");
+        bean.loadAlarms();
     }
 }
