@@ -85,7 +85,7 @@ public abstract class FtpCounter implements Counter, FtpCounterExtension {
         String counterNumber = objectName.substring(objectName.length() - 4);
         String filePath = "/" + counterNumber.substring(0, 2) + "/" + counterNumber;
 
-        LocalDateTime date = params.get(0).getStartDateTime() == null ? null : params.get(0).getStartDateTime().minusHours(1);
+        LocalDateTime date = params.get(0).getStartDateTime() == null ? null : params.get(0).getStartDateTime();
 
         FtpClient ftpClient = new FtpClient();
         try {
@@ -215,7 +215,7 @@ public abstract class FtpCounter implements Counter, FtpCounterExtension {
 
     protected void parseResults(List<DataModel> params, LocalDateTime startTime) {
         for (DataModel model: params) {
-            if (model.getStartDateTime() == null || startTime.isAfter(model.getStartDateTime().minusHours(1))) {
+            if (model.getStartDateTime() == null || startTime.isAfter(model.getStartDateTime())) {
                 CounterData counterDataItem = counterData.get(model.getParamName());
                 if ((counterDataItem != null) && (counterDataItem.getValue() != null)) {
                     model.addData(counterDataItem.getValue(), startTime, counterDataItem.getQuality());
