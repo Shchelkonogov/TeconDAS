@@ -95,6 +95,9 @@ public class ASDTSMsSqlBean {
         } catch (SQLException e) {
             logger.warn("error load data from ASDTS for {}", objectName, e);
         }
+
+        params.removeIf(dataModel -> dataModel.getData().isEmpty());
+
         logger.info("data from ASDTS loaded for {}", objectName);
     }
 }
