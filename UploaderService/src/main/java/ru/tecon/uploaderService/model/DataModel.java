@@ -1,11 +1,11 @@
 package ru.tecon.uploaderService.model;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.StringJoiner;
+import java.util.*;
 
 /**
  * Информация о собранных данных по объектам, для загрузки в базу данных
@@ -23,7 +23,7 @@ public final class DataModel implements Comparable<DataModel>, Serializable {
     private String incrementValue;
     private LocalDateTime startDateTime;
 
-    private final List<ValueModel> data = new ArrayList<>();
+    private final Set<ValueModel> data = new TreeSet<>();
 
     public DataModel(String paramName, int objectId, int paramId, int aggregateId) {
         this.paramName = paramName;
@@ -80,7 +80,7 @@ public final class DataModel implements Comparable<DataModel>, Serializable {
         this.startDateTime = startDateTime;
     }
 
-    public List<ValueModel> getData() {
+    public Set<ValueModel> getData() {
         return data;
     }
 
@@ -108,7 +108,7 @@ public final class DataModel implements Comparable<DataModel>, Serializable {
         return startDateTime.compareTo(o.startDateTime);
     }
 
-    public final static class ValueModel implements Serializable {
+    public final static class ValueModel implements Comparable<ValueModel>, Serializable {
 
         private final String value;
         private final LocalDateTime dateTime;
@@ -135,6 +135,25 @@ public final class DataModel implements Comparable<DataModel>, Serializable {
 
         public int getQuality() {
             return quality;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            ValueModel that = (ValueModel) o;
+            return dateTime.equals(that.dateTime);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(dateTime);
+        }
+
+
+        @Override
+        public int compareTo(@NotNull ValueModel o) {
+            return this.dateTime.compareTo(o.getDateTime());
         }
 
         @Override
