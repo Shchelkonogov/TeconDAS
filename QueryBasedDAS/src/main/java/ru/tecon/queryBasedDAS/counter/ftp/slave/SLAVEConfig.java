@@ -283,4 +283,8 @@ public enum SLAVEConfig {
     public String getRegister() {
         return register;
     }
+
+    public boolean isInstant() {
+        return getRegister() != null;
+    }
 }

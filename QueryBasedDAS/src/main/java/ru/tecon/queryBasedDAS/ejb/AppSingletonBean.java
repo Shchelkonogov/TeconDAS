@@ -2,7 +2,6 @@ package ru.tecon.queryBasedDAS.ejb;
 
 import org.slf4j.Logger;
 import ru.tecon.queryBasedDAS.DasException;
-import ru.tecon.queryBasedDAS.UploadServiceEJBFactory;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -29,11 +28,14 @@ public class AppSingletonBean {
 
     @PostConstruct
     private void init() {
-        // Проверка правильности файла с параметрами
-        UploadServiceEJBFactory.checkProps();
-
         try {
             listenerBean.registerConfigRequestListener();
+        } catch (DasException e) {
+            logger.warn("Error register listener ", e);
+        }
+
+        try {
+            listenerBean.registerAsyncRequestListener();
         } catch (DasException e) {
             logger.warn("Error register listener ", e);
         }
@@ -43,6 +45,12 @@ public class AppSingletonBean {
     private void destroy() {
         try {
             listenerBean.unregisterConfigRequestListener();
+        } catch (DasException e) {
+            logger.warn("Error unregister listener ", e);
+        }
+
+        try {
+            listenerBean.unregisterAsyncRequestListener();
         } catch (DasException e) {
             logger.warn("Error unregister listener ", e);
         }

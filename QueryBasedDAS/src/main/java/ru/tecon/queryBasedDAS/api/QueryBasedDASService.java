@@ -3,10 +3,10 @@ package ru.tecon.queryBasedDAS.api;
 import com.google.gson.Gson;
 import org.slf4j.Logger;
 import ru.tecon.queryBasedDAS.DasException;
-import ru.tecon.queryBasedDAS.PropertiesLoader;
 import ru.tecon.queryBasedDAS.ejb.ListenerServicesStatelessBean;
 import ru.tecon.queryBasedDAS.ejb.QueryBasedDASSingletonBean;
 import ru.tecon.queryBasedDAS.ejb.QueryBasedDASStatelessBean;
+import ru.tecon.uploaderService.ejb.das.ListenerType;
 
 import javax.ejb.EJB;
 import javax.inject.Inject;
@@ -16,11 +16,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 
 /**
  * @author Maksim Shchelkonogov
@@ -44,7 +40,7 @@ public class QueryBasedDASService {
     @EJB
     private ListenerServicesStatelessBean listenerServicesBean;
 
-//    // TODO remove method on product
+    // TODO remove method on product
 //    @GET
 //    @Path("/test")
 //    public String test() {
@@ -69,28 +65,41 @@ public class QueryBasedDASService {
      * @param serverName имя сервера загрузки данных или null,
      *                   тогда будет регистрироваться на всех серверах,
      *                   прописанных в конфигурационном файле.
-     * @return возвращает список серверов, на которых получилось зарегистрироваться или ошибку 503 (service unavailable)
+     * @return возвращает список серверов, на которых получилось зарегистрироваться
      */
     @GET
     @Path("/registerListeners")
     @Produces({MediaType.APPLICATION_JSON, MediaType.TEXT_PLAIN + "; charset=UTF-8"})
     public Response registerListeners(@QueryParam("server") String serverName) {
+        Map<String, List<String>> result = new HashMap<>();
         if (serverName == null) {
             try {
-                List<String> registeredServerNames = listenerServicesBean.registerConfigRequestListener();
-
-                return Response.ok(json.toJson(registeredServerNames)).build();
+                result.put(ListenerType.CONFIGURATION.toString(), listenerServicesBean.registerConfigRequestListener());
             } catch (DasException e) {
-                return Response.status(Response.Status.SERVICE_UNAVAILABLE).entity("Remote service unavailable").build();
+                logger.warn("Error register config listener", e);
+            }
+
+            try {
+                result.put(ListenerType.INSTANT_DATA.toString(), listenerServicesBean.registerAsyncRequestListener());
+            } catch (DasException e) {
+                logger.warn("Error register instant data listener", e);
             }
         } else {
             try {
                 listenerServicesBean.registerConfigRequestListener(serverName);
-                return Response.ok(serverName).build();
+                result.put(ListenerType.CONFIGURATION.toString(), Collections.singletonList(serverName));
             } catch (DasException e) {
-                return Response.status(Response.Status.SERVICE_UNAVAILABLE).entity("Remote service unavailable").build();
+                logger.warn("Error register config listener", e);
+            }
+
+            try {
+                listenerServicesBean.registerAsyncRequestListener(serverName);
+                result.put(ListenerType.INSTANT_DATA.toString(), Collections.singletonList(serverName));
+            } catch (DasException e) {
+                logger.warn("Error register config listener", e);
             }
         }
+        return Response.ok(json.toJson(result)).build();
     }
 
     /**
@@ -99,28 +108,41 @@ public class QueryBasedDASService {
      * @param serverName имя сервера загрузки данных или null,
      *                   тогда будет аннулирована регистрация на всех серверах,
      *                   прописанных в конфигурационном файле.
-     * @return возвращает список серверов, на которых получилось аннулировать регистрацию или ошибку 503 (service unavailable)
+     * @return возвращает список серверов, на которых получилось аннулировать регистрацию
      */
     @GET
     @Path("/unregisterListeners")
     @Produces({MediaType.APPLICATION_JSON, MediaType.TEXT_PLAIN + "; charset=UTF-8"})
     public Response unregisterListeners(@QueryParam("server") String serverName) {
+        Map<String, List<String>> result = new HashMap<>();
         if (serverName == null) {
             try {
-                List<String> unregisteredServerNames = listenerServicesBean.unregisterConfigRequestListener();
-
-                return Response.ok(json.toJson(unregisteredServerNames)).build();
+                result.put(ListenerType.CONFIGURATION.toString(), listenerServicesBean.unregisterConfigRequestListener());
             } catch (DasException e) {
-                return Response.status(Response.Status.SERVICE_UNAVAILABLE).entity("Remote service unavailable").build();
+                logger.warn("Error register config listener", e);
+            }
+
+            try {
+                result.put(ListenerType.INSTANT_DATA.toString(), listenerServicesBean.unregisterAsyncRequestListener());
+            } catch (DasException e) {
+                logger.warn("Error register instant data listener", e);
             }
         } else {
             try {
                 listenerServicesBean.unregisterConfigRequestListener(serverName);
-                return Response.ok(serverName).build();
+                result.put(ListenerType.CONFIGURATION.toString(), Collections.singletonList(serverName));
             } catch (DasException e) {
-                return Response.status(Response.Status.SERVICE_UNAVAILABLE).entity("Remote service unavailable").build();
+                logger.warn("Error register config listener", e);
+            }
+
+            try {
+                listenerServicesBean.unregisterAsyncRequestListener(serverName);
+                result.put(ListenerType.INSTANT_DATA.toString(), Collections.singletonList(serverName));
+            } catch (DasException e) {
+                logger.warn("Error register config listener", e);
             }
         }
+        return Response.ok(json.toJson(result)).build();
     }
 
     /**
@@ -132,13 +154,8 @@ public class QueryBasedDASService {
     @Path("/getRemoteServers")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getServerNames() {
-        try {
-            Properties properties = PropertiesLoader.loadProperties("app.properties");
-            List<String> serverNames = Arrays.asList(properties.getProperty("uploadServerNames").split(" "));
-            return Response.ok(json.toJson(serverNames)).build();
-        } catch (IOException e) {
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
-        }
+        List<String> serverNames = Arrays.asList(dasSingletonBean.getProperty("uploadServerNames").split(" "));
+        return Response.ok(json.toJson(serverNames)).build();
     }
 
     /**
@@ -166,9 +183,13 @@ public class QueryBasedDASService {
     @Path("/findObjects")
     @Produces({MediaType.APPLICATION_JSON, MediaType.TEXT_PLAIN + "; charset=UTF-8"})
     public Response findObjects(@QueryParam("server") String serverName, @QueryParam("counter") String counterName) {
-        Response response = checkServerName(serverName);
-        if (response != null) {
-            return response;
+        if (serverName == null) {
+            return Response.status(Response.Status.BAD_REQUEST).entity("parameter \"server\" is required").build();
+        }
+
+        List<String> serverNames = Arrays.asList(dasSingletonBean.getProperty("uploadServerNames").split(" "));
+        if (!serverNames.contains(serverName)) {
+            return Response.status(Response.Status.BAD_REQUEST).entity("unknown server").build();
         }
 
         Map<String, List<String>> counterObjects;
@@ -197,29 +218,5 @@ public class QueryBasedDASService {
                 return Response.ok("Remote service is unavailable").build();
             }
         }
-    }
-
-    /**
-     * Проверка, существует ли заданный сервер загрузки данных в системе
-     *
-     * @param serverName имя сервера загрузки данных
-     * @return ошибка 400 если имя не задано или не известный сервер
-     */
-    private Response checkServerName(String serverName) {
-        if (serverName == null) {
-            return Response.status(Response.Status.BAD_REQUEST).entity("parameter \"server\" is required").build();
-        }
-
-        try {
-            Properties properties = PropertiesLoader.loadProperties("app.properties");
-            List<String> serverNames = Arrays.asList(properties.getProperty("uploadServerNames").split(" "));
-            if (!serverNames.contains(serverName)) {
-                return Response.status(Response.Status.BAD_REQUEST).entity("unknown server").build();
-            }
-        } catch (IOException e) {
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
-        }
-
-        return null;
     }
 }

@@ -27,14 +27,16 @@ public interface ListenerServiceRemote {
      * с заданным именем системы сбора данных.
      *
      * @param dasName имя системы сбора данных.
+     * @param type тип слушателя
      * @return true если данный слушатель с заданным именем зарегистрирован.
      */
-    boolean containsListener(String dasName);
+    boolean containsListener(String dasName, ListenerType type);
 
     /**
      * Удаление слушателя с заданным именем системы сбора данных
      *
      * @param dasName имя системы сбора данных
+     * @param type тип слушателя
      */
-    void removeListener(String dasName);
+    void removeListener(String dasName, ListenerType type);
 }

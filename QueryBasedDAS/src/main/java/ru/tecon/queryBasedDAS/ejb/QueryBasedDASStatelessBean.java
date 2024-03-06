@@ -1,8 +1,6 @@
 package ru.tecon.queryBasedDAS.ejb;
 
 import org.slf4j.Logger;
-import ru.tecon.queryBasedDAS.PropertiesLoader;
-import ru.tecon.queryBasedDAS.UploadServiceEJBFactory;
 import ru.tecon.queryBasedDAS.counter.Counter;
 import ru.tecon.queryBasedDAS.counter.Periodicity;
 import ru.tecon.queryBasedDAS.counter.ftp.FtpCounterAlarm;
@@ -14,7 +12,6 @@ import ru.tecon.uploaderService.model.SubscribedObject;
 import javax.ejb.*;
 import javax.inject.Inject;
 import javax.naming.NamingException;
-import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -36,6 +33,9 @@ public class QueryBasedDASStatelessBean {
 
     @EJB
     private QueryBasedDASStatelessBean dasStatelessBean;
+
+    @EJB
+    private RemoteEJBFactory remoteEJBFactory;
 
     /**
      * Получение всех объектов счетчика
@@ -80,9 +80,9 @@ public class QueryBasedDASStatelessBean {
      */
     public boolean uploadCounterObjects(String serverName, Map<String, List<String>> counterObjects) {
         try {
-            UploadServiceEJBFactory.getUploadServiceRemote(serverName).uploadObjects(counterObjects);
+            remoteEJBFactory.getUploadServiceRemote(serverName).uploadObjects(counterObjects);
             return true;
-        } catch (Exception e) {
+        } catch (NamingException e) {
             logger.warn("Remote service {} is unavailable", serverName);
             return false;
         }
@@ -97,18 +97,13 @@ public class QueryBasedDASStatelessBean {
     public List<String> uploadCounterObjects(Map<String, List<String>> counterObjects) {
         List<String> result = new ArrayList<>();
 
-        try {
-            Properties appProperties = PropertiesLoader.loadProperties("app.properties");
-            String[] serverNames = appProperties.getProperty("uploadServerNames").split(" ");
+        String[] serverNames = bean.getProperty("uploadServerNames").split(" ");
 
-            for (String serverName: serverNames) {
-                boolean isUpload = uploadCounterObjects(serverName, counterObjects);
-                if (isUpload) {
-                    result.add(serverName);
-                }
+        for (String serverName: serverNames) {
+            boolean isUpload = uploadCounterObjects(serverName, counterObjects);
+            if (isUpload) {
+                result.add(serverName);
             }
-        } catch (IOException e) {
-            throw new RuntimeException("Error application parameters");
         }
 
         return result;
@@ -158,38 +153,33 @@ public class QueryBasedDASStatelessBean {
         Set<String> counterNameSet = bean.counterSupportAlarmNameSet();
 
         if (!counterNameSet.isEmpty()) {
-            try {
-                Properties properties = PropertiesLoader.loadProperties("app.properties");
-                String[] uploadServerNames = properties.getProperty("uploadServerNames").split(" ");
-                int partCount = Integer.parseInt(properties.getProperty("partCount"));
+            String[] uploadServerNames = bean.getProperty("uploadServerNames").split(" ");
+            int partCount = Integer.parseInt(bean.getProperty("partCount"));
 
-                for (String uploadServerName: uploadServerNames) {
-                    try {
-                        UploaderServiceRemote uploadServiceRemote = UploadServiceEJBFactory.getUploadServiceRemote(uploadServerName);
+            for (String uploadServerName: uploadServerNames) {
+                try {
+                    UploaderServiceRemote uploadServiceRemote = remoteEJBFactory.getUploadServiceRemote(uploadServerName);
 
-                        List<SubscribedObject> objects = uploadServiceRemote.getSubscribedObjects(counterNameSet);
+                    List<SubscribedObject> objects = uploadServiceRemote.getSubscribedObjects(counterNameSet);
 
-                        if ((objects != null) && !objects.isEmpty()) {
-                            int chunk = objects.size() / partCount;
-                            int mod = objects.size() % partCount;
-                            for (int i = 0; i < objects.size(); i += chunk) {
-                                int increment = 0;
-                                if (mod > 0) {
-                                    increment = 1;
-                                    mod--;
-                                }
-                                dasStatelessBean.initReadAlarmFiles(objects.subList(i, i + chunk + increment), uploadServerName);
-                                i += increment;
+                    if ((objects != null) && !objects.isEmpty()) {
+                        int chunk = objects.size() / partCount;
+                        int mod = objects.size() % partCount;
+                        for (int i = 0; i < objects.size(); i += chunk) {
+                            int increment = 0;
+                            if (mod > 0) {
+                                increment = 1;
+                                mod--;
                             }
-                        } else {
-                            logger.warn("no subscribed objects for {}", uploadServerName);
+                            dasStatelessBean.initReadAlarmFiles(objects.subList(i, i + chunk + increment), uploadServerName);
+                            i += increment;
                         }
-                    } catch (NamingException | IOException e) {
-                        logger.warn("remote service {} unavailable", uploadServerName);
+                    } else {
+                        logger.warn("no subscribed objects for {}", uploadServerName);
                     }
+                } catch (NamingException e) {
+                    logger.warn("remote service {} unavailable", uploadServerName);
                 }
-            } catch (IOException e) {
-                logger.warn("error load properties");
             }
         }
     }
@@ -206,7 +196,7 @@ public class QueryBasedDASStatelessBean {
         long startTime = System.currentTimeMillis();
         LocalDateTime startDateTime = LocalDateTime.now();
         try {
-            UploaderServiceRemote uploadServiceRemote = UploadServiceEJBFactory.getUploadServiceRemote(uploadServerName);
+            UploaderServiceRemote uploadServiceRemote = remoteEJBFactory.getUploadServiceRemote(uploadServerName);
 
             Map<String, FtpCounterAlarm> loadedCounters = new HashMap<>();
 
@@ -241,7 +231,7 @@ public class QueryBasedDASStatelessBean {
                     logger.warn("empty model for {}", object);
                 }
             }
-        } catch (IOException | NamingException e) {
+        } catch (NamingException e) {
             logger.warn("remote service {} unavailable", uploadServerName);
         }
         logger.info("finished load alarm data started at {} in {} ms for {}",
@@ -256,45 +246,40 @@ public class QueryBasedDASStatelessBean {
      * @param periodicity тип опроса счетчиков, если передать null, то будет загрузка по всем типам.
      */
     public void loadHistoricalData(Periodicity periodicity) {
-        try {
-            Properties properties = PropertiesLoader.loadProperties("app.properties");
-            String[] uploadServerNames = properties.getProperty("uploadServerNames").split(" ");
-            int partCount = Integer.parseInt(properties.getProperty("partCount"));
+        String[] uploadServerNames = bean.getProperty("uploadServerNames").split(" ");
+        int partCount = Integer.parseInt(bean.getProperty("partCount"));
 
-            Set<String> counterNameSet;
-            if (periodicity == null) {
-                counterNameSet = bean.counterNameSet();
-            } else {
-                counterNameSet = bean.counterNameSet(periodicity);
-            }
+        Set<String> counterNameSet;
+        if (periodicity == null) {
+            counterNameSet = bean.counterNameSet();
+        } else {
+            counterNameSet = bean.counterNameSet(periodicity);
+        }
 
-            for (String uploadServerName: uploadServerNames) {
-                try {
-                    UploaderServiceRemote uploadServiceRemote = UploadServiceEJBFactory.getUploadServiceRemote(uploadServerName);
+        for (String uploadServerName: uploadServerNames) {
+            try {
+                UploaderServiceRemote uploadServiceRemote = remoteEJBFactory.getUploadServiceRemote(uploadServerName);
 
-                    List<SubscribedObject> objects = uploadServiceRemote.getSubscribedObjects(counterNameSet);
+                List<SubscribedObject> objects = uploadServiceRemote.getSubscribedObjects(counterNameSet);
 
-                    if ((objects != null) && !objects.isEmpty()) {
-                        int chunk = objects.size() / partCount;
-                        int mod = objects.size() % partCount;
-                        for (int i = 0; i < objects.size(); i += chunk) {
-                            int increment = 0;
-                            if (mod > 0) {
-                                increment = 1;
-                                mod--;
-                            }
-                            dasStatelessBean.initReadHistoricalFiles(objects.subList(i, i + chunk + increment), uploadServerName);
-                            i += increment;
+                if ((objects != null) && !objects.isEmpty()) {
+                    int chunk = objects.size() / partCount;
+                    int mod = objects.size() % partCount;
+                    for (int i = 0; i < objects.size(); i += chunk) {
+                        int increment = 0;
+                        if (mod > 0) {
+                            increment = 1;
+                            mod--;
                         }
-                    } else {
-                        logger.warn("no subscribed objects for {}", uploadServerName);
+                        dasStatelessBean.initReadHistoricalFiles(objects.subList(i, i + chunk + increment), uploadServerName);
+                        i += increment;
                     }
-                } catch (NamingException | IOException e) {
-                    logger.warn("remote service {} unavailable", uploadServerName);
+                } else {
+                    logger.warn("no subscribed objects for {}", uploadServerName);
                 }
+            } catch (NamingException e) {
+                logger.warn("remote service {} unavailable", uploadServerName);
             }
-        } catch (IOException e) {
-            logger.warn("error load properties");
         }
     }
 
@@ -310,7 +295,7 @@ public class QueryBasedDASStatelessBean {
         long startTime = System.currentTimeMillis();
         LocalDateTime startDateTime = LocalDateTime.now();
         try {
-            UploaderServiceRemote uploadServiceRemote = UploadServiceEJBFactory.getUploadServiceRemote(uploadServerName);
+            UploaderServiceRemote uploadServiceRemote = remoteEJBFactory.getUploadServiceRemote(uploadServerName);
 
             Map<String, Counter> loadedCounters = new HashMap<>();
 
@@ -345,7 +330,7 @@ public class QueryBasedDASStatelessBean {
                     logger.warn("empty model for {}", object);
                 }
             }
-        } catch (IOException | NamingException e) {
+        } catch (NamingException e) {
             logger.warn("remote service {} unavailable", uploadServerName);
         }
         logger.info("finished load historical data started at {} in {} ms for {}",

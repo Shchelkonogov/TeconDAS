@@ -59,6 +59,8 @@ public interface UploaderServiceRemote {
      */
     List<DataModel> loadObjectModelWithStartTimes(String id);
 
+    List<DataModel> loadInstantObjectModel(String id);
+
     /**
      * Загрузка измерений в базу
      *
@@ -72,4 +74,12 @@ public interface UploaderServiceRemote {
      * @param dataModels модель с измерениями
      */
     void uploadDataAsync(List<DataModel> dataModels);
+
+    /**
+     * Загрузка мгновенных измерений в базу
+     *
+     * @param requestId id запроса
+     * @param paramList модель с измерениями
+     */
+    int uploadInstantData(String requestId, List<DataModel> paramList);
 }

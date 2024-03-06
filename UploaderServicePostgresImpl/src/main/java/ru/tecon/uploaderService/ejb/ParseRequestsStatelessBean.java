@@ -1,8 +1,9 @@
 package ru.tecon.uploaderService.ejb;
 
-import org.intellij.lang.annotations.Language;
 import org.slf4j.Logger;
 import ru.tecon.uploaderService.ejb.das.ConfigRequestRemote;
+import ru.tecon.uploaderService.ejb.das.InstantDataRequestRemote;
+import ru.tecon.uploaderService.ejb.das.ListenerType;
 import ru.tecon.uploaderService.model.Listener;
 import ru.tecon.uploaderService.model.RequestData;
 
@@ -16,6 +17,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Set;
 
 /**
  * @author Maksim Shchelkonogov
@@ -26,7 +28,6 @@ import java.sql.SQLException;
 @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
 public class ParseRequestsStatelessBean {
 
-    @Language("SQL")
     private static final String SEL_REQUEST = "select kind, server_name, obj_name from admin.arm_tecon_commands " +
             "where id = ? and opc_id = ?";
 
@@ -56,17 +57,20 @@ public class ParseRequestsStatelessBean {
             ResultSet res = stm.executeQuery();
             if (res.next()) {
                 logger.info("request {} for {}", res.getString("kind"), res.getString("server_name"));
+
+                RequestData requestData = new RequestData(
+                        bean.getProperties().getProperty("name"), id,
+                        objectId, res.getString("server_name"), res.getString("obj_name")
+                );
+
                 switch (res.getString("kind")) {
                     case "AsyncRefresh":
-                        acceptAsyncRefresh();
+                        acceptAsyncRefresh(bean.getRemoteListeners(ListenerType.INSTANT_DATA, res.getString("server_name")),
+                                requestData);
                         break;
                     case "ForceBrowse":
-                        acceptForceBrowse(res.getString("server_name"),
-                                new RequestData(bean.getProperties().getProperty("name"),
-                                        id,
-                                        objectId,
-                                        res.getString("server_name"),
-                                        res.getString("obj_name")));
+                        acceptForceBrowse(bean.getRemoteListeners(ListenerType.CONFIGURATION, res.getString("server_name")),
+                                requestData);
                         break;
                     default:
                         logger.warn("Unknown request from db for id = {}", id);
@@ -80,27 +84,36 @@ public class ParseRequestsStatelessBean {
     /**
      * Обработка запроса на конфигурацию
      *
-     * @param serverName имя сервера (счетчика)
+     * @param listeners список слушателей
      * @param requestData данные запроса
      */
-    private void acceptForceBrowse(String serverName, RequestData requestData) {
-        for (Listener listener: bean.getRemoteListeners()) {
-            if (listener.getCounterNameSet().contains(serverName)) {
-                try {
-                    InitialContext context = new InitialContext(listener.getJndiProperties());
-                    ConfigRequestRemote lookup = (ConfigRequestRemote) context.lookup(listener.getLookupName());
+    private void acceptForceBrowse(Set<Listener> listeners, RequestData requestData) {
+        for (Listener listener: listeners) {
+            try {
+                InitialContext context = new InitialContext(listener.getJndiProperties());
+                ConfigRequestRemote lookup = (ConfigRequestRemote) context.lookup(listener.getLookupName());
 
-                    lookup.acceptAsync(requestData);
+                lookup.acceptAsync(requestData);
 
-                    logger.info("async notify send");
-                } catch (NamingException e) {
-                    logger.warn("error send request", e);
-                }
+                logger.info("async notify send");
+            } catch (NamingException e) {
+                logger.warn("error send request", e);
             }
         }
     }
 
-    private void acceptAsyncRefresh() {
+    private void acceptAsyncRefresh(Set<Listener> listeners, RequestData requestData) {
+        for (Listener listener: listeners) {
+            try {
+                InitialContext context = new InitialContext(listener.getJndiProperties());
+                InstantDataRequestRemote lookup = (InstantDataRequestRemote) context.lookup(listener.getLookupName());
 
+                lookup.acceptAsync(requestData);
+
+                logger.info("async notify send");
+            } catch (NamingException e) {
+                logger.warn("error send request", e);
+            }
+        }
     }
 }

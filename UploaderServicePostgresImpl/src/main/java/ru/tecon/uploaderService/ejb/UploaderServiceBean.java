@@ -33,11 +33,11 @@ public class UploaderServiceBean implements UploaderServiceRemote {
             "values ((select admin.get_guid_base64()), ?, ?, ?, 1, null)";
 
     private static final String UPDATE_ARM_TECON_COMMAND = "update admin.arm_tecon_commands " +
-            "set is_success_execution = ?, result_description = ?, end_time = (select now()) where id = ? and opc_id = ?";
+            "set is_success_execution = ?, result_description = ?, end_time = current_timestamp where id = ? and opc_id = ?";
 
     private static final String UPDATE_ARM_COMMAND = "update admin.arm_commands " +
             "set is_success_execution = ?, result_description = ?, display_result_description = ?, " +
-            "end_time = (select now()) where id = ? and (is_success_execution = -1 or is_success_execution is null)";
+            "end_time = current_timestamp where id = ? and (is_success_execution = -1 or is_success_execution is null)";
 
     private static final String SELECT_LINKED_PARAMETERS =
             "select c.display_name || sys.nvl2(" +
@@ -52,10 +52,26 @@ public class UploaderServiceBean implements UploaderServiceRemote {
                                 "where a.par_id = b.aspid_param_id and a.obj_id = b.aspid_object_id) " +
                 "and b.aspid_agr_id is not null";
 
+    private static final String SELECT_LINKED_INSTANT_PARAMETERS =
+            "select c.display_name || sys.nvl2(" +
+                                        "cast((xpath('/root/SysInfo/text()', xmlelement(name root, opc_path::xml)))[1] as text), " +
+                                        "'::' || cast((xpath('/root/SysInfo/text()', xmlelement(name root, opc_path::xml)))[1] as text), " +
+                                        "'')  as display_name, " +
+                "b.aspid_object_id, b.aspid_param_id, 4 as aspid_agr_id " +
+            "from admin.tsa_linked_element b, admin.tsa_opc_element c " +
+            "where b.opc_element_id in (select id from admin.tsa_opc_element where opc_object_id = ?) " +
+                    "and b.opc_element_id = c.id " +
+                    "and exists(select a.obj_id, a.par_id from admin.dz_par_dev_link a " +
+                                "where a.par_id = b.aspid_param_id and a.obj_id = b.aspid_object_id) " +
+                    "and b.aspid_agr_id is null";
+
     private static final String SELECT_START_DATE = "select time_stamp from admin.dz_input_start " +
             "where obj_id = ? and par_id = ? and stat_aggr = ?";
 
     private static final String FUNCTION_UPLOAD_DATA = "call dz_util.input_data(?)";
+
+    private static final String INSERT_ASYNC_REFRESH_DATA = "insert into admin.arm_async_refresh_data " +
+            "values (?, ?, current_timestamp at time zone 'utc', ?, ?, ?, current_timestamp, null, null)";
 
     @Inject
     private Logger logger;
@@ -222,6 +238,29 @@ public class UploaderServiceBean implements UploaderServiceRemote {
     }
 
     @Override
+    public List<DataModel> loadInstantObjectModel(String id) {
+        logger.info("request instant object model for {}", id);
+        List<DataModel> result = new ArrayList<>();
+        try (Connection connect = dsRead.getConnection();
+             PreparedStatement stmGetLinkedParameters = connect.prepareStatement(SELECT_LINKED_INSTANT_PARAMETERS)) {
+
+            stmGetLinkedParameters.setString(1, id);
+
+            ResultSet resLinked = stmGetLinkedParameters.executeQuery();
+            while (resLinked.next()) {
+                result.add(
+                        new DataModel(resLinked.getString("display_name"), resLinked.getInt("aspid_object_id"),
+                                resLinked.getInt("aspid_param_id"), resLinked.getInt("aspid_agr_id"))
+                );
+            }
+        } catch (SQLException ex) {
+            logger.warn("error load instant object model for {}", id, ex);
+        }
+        logger.info("instant object model for {} {}", id, result);
+        return result;
+    }
+
+    @Override
     @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
     public void uploadData(List<DataModel> dataModels) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss");
@@ -270,5 +309,32 @@ public class UploaderServiceBean implements UploaderServiceRemote {
     @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
     public void uploadDataAsync(List<DataModel> dataModels) {
         uploadData(dataModels);
+    }
+
+    @Override
+    @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
+    public int uploadInstantData(String requestId, List<DataModel> paramList) {
+        try (Connection connection = ds.getConnection();
+             PreparedStatement stmInsert = connection.prepareStatement(INSERT_ASYNC_REFRESH_DATA)) {
+            for (DataModel model: paramList) {
+                for (DataModel.ValueModel valueModel: model.getData()) {
+                    stmInsert.setInt(1, model.getObjectId());
+                    stmInsert.setString(2, valueModel.getValue());
+                    stmInsert.setInt(3, valueModel.getQuality());
+                    stmInsert.setInt(4, model.getParamId());
+                    stmInsert.setString(5, requestId);
+
+                    stmInsert.addBatch();
+                }
+            }
+
+            int[] size = stmInsert.executeBatch();
+
+            logger.info("Execute upload instant data. Values count: {}", size.length);
+            return size.length;
+        } catch (SQLException ex) {
+            logger.warn("Error upload instant data", ex);
+            return -1;
+        }
     }
 }

@@ -1,7 +1,6 @@
 package ru.tecon.queryBasedDAS.ejb;
 
 import org.slf4j.Logger;
-import ru.tecon.queryBasedDAS.UploadServiceEJBFactory;
 import ru.tecon.queryBasedDAS.counter.Counter;
 import ru.tecon.uploaderService.ejb.das.ConfigRequestRemote;
 import ru.tecon.uploaderService.ejb.UploaderServiceRemote;
@@ -10,7 +9,6 @@ import ru.tecon.uploaderService.model.RequestData;
 import javax.ejb.*;
 import javax.inject.Inject;
 import javax.naming.NamingException;
-import java.io.IOException;
 import java.util.Set;
 
 /**
@@ -27,6 +25,9 @@ public class ConfigRequestStatelessBean implements ConfigRequestRemote {
 
     @EJB
     private QueryBasedDASSingletonBean bean;
+
+    @EJB
+    private RemoteEJBFactory remoteEJBFactory;
 
     @Override
     public void accept(RequestData requestData) {
@@ -53,7 +54,7 @@ public class ConfigRequestStatelessBean implements ConfigRequestRemote {
 
             logger.info("config for {} {} {}", requestData.getCounter(), requestData.getObjectName(), config);
 
-            UploaderServiceRemote remote = UploadServiceEJBFactory.getUploadServiceRemote(requestData.getServerName());
+            UploaderServiceRemote remote = remoteEJBFactory.getUploadServiceRemote(requestData.getServerName());
 
             if (!config.isEmpty()) {
                 int uploadCount = remote.uploadConfig(config, requestData.getObjectId(), requestData.getObjectName());
@@ -72,7 +73,7 @@ public class ConfigRequestStatelessBean implements ConfigRequestRemote {
             }
         } catch (ReflectiveOperationException e) {
             logger.warn("error load counter = {}", requestData.getCounter(), e);
-        } catch (NamingException | IOException e) {
+        } catch (NamingException e) {
             logger.warn("remote service {} unavailable", requestData.getServerName(), e);
         }
     }

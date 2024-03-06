@@ -6,8 +6,8 @@ import org.slf4j.LoggerFactory;
 import ru.tecon.queryBasedDAS.DasException;
 import ru.tecon.queryBasedDAS.counter.CounterInfo;
 import ru.tecon.queryBasedDAS.counter.ftp.FtpClient;
-import ru.tecon.queryBasedDAS.counter.ftp.FtpCounter;
 import ru.tecon.queryBasedDAS.counter.ftp.FtpCounterAlarm;
+import ru.tecon.queryBasedDAS.counter.ftp.FtpCounterWithAsyncRequest;
 import ru.tecon.queryBasedDAS.counter.ftp.model.CounterData;
 import ru.tecon.queryBasedDAS.counter.ftp.model.FileData;
 import ru.tecon.uploaderService.model.DataModel;
@@ -29,7 +29,7 @@ import java.util.stream.Stream;
  * @author Maksim Shchelkonogov
  * 15.02.2024
  */
-public class PlainCounter extends FtpCounter implements FtpCounterAlarm {
+public class PlainCounter extends FtpCounterWithAsyncRequest implements FtpCounterAlarm {
 
     private static final Logger logger = LoggerFactory.getLogger(PlainCounter.class);
 
@@ -376,6 +376,27 @@ public class PlainCounter extends FtpCounter implements FtpCounterAlarm {
                 counterData.put(PlainConfig.ELECTRIC.getProperty(), new CounterData(electric));
             }
         }
+    }
+
+    @Override
+    public void loadInstantData(List<DataModel> params, String objectName) throws DasException {
+        // Убираем не мгновенные параметры
+        params.removeIf(dataModel -> !Stream.of(PlainConfig.values())
+                .filter(PlainConfig::isInstant)
+                .map(plainConfig -> plainConfig.getProperty() + ":Текущие данные")
+                .collect(Collectors.toSet())
+                .contains(dataModel.getParamName()));
+
+        super.loadInstantData(params, objectName);
+    }
+
+    @Override
+    protected String getPropRegister(String propName) throws DasException {
+        return Stream.of(PlainConfig.values())
+                .filter(plainConfig -> plainConfig.getProperty().equals(propName))
+                .findFirst()
+                .orElseThrow(() -> new DasException("Неожиданный параметр " + propName))
+                .getRegister();
     }
 
     private static final String[] STOP_TIME_G_ERROR_1 = {PlainConfig.STOP_TIME_G_ERROR_1_CHANEL_0.getProperty(),

@@ -1,9 +1,11 @@
 package ru.tecon.queryBasedDAS.ejb;
 
 import org.slf4j.Logger;
+import ru.tecon.queryBasedDAS.PropertiesLoader;
 import ru.tecon.queryBasedDAS.counter.Counter;
 import ru.tecon.queryBasedDAS.counter.Periodicity;
 import ru.tecon.queryBasedDAS.counter.ftp.FtpCounterAlarm;
+import ru.tecon.queryBasedDAS.counter.ftp.FtpCounterAsyncRequest;
 import ru.tecon.queryBasedDAS.counter.ftp.FtpCounterExtension;
 
 import javax.annotation.PostConstruct;
@@ -11,6 +13,7 @@ import javax.ejb.LocalBean;
 import javax.ejb.Singleton;
 import javax.ejb.Startup;
 import javax.inject.Inject;
+import java.io.IOException;
 import java.util.*;
 
 /**
@@ -25,6 +28,8 @@ public class QueryBasedDASSingletonBean {
     @Inject
     private Logger logger;
 
+    private Properties appProperties;
+
     private static final List<String> COUNTERS = List.of(
             "ru.tecon.queryBasedDAS.counter.asDTS.ASDTSCounter",
             "ru.tecon.queryBasedDAS.counter.ftp.vist.VISTCounter",
@@ -38,6 +43,9 @@ public class QueryBasedDASSingletonBean {
 
     @PostConstruct
     private void init() {
+        // Проверка правильности файла с параметрами
+        appProperties = checkProps();
+
         // Загружаем данные по счетчикам
         for (String counter: COUNTERS) {
             try {
@@ -105,11 +113,39 @@ public class QueryBasedDASSingletonBean {
      * @return имена доступных счетчиков системы
      */
     public Set<String> counterSupportRemoveHistoryNameSet() {
+        return counterIsSupportClass(FtpCounterExtension.class);
+    }
+
+    /**
+     * Получение коллекции имен доступных счетчиков системы с поддержкой alarm
+     *
+     * @return имена доступных счетчиков системы
+     */
+    public Set<String> counterSupportAlarmNameSet() {
+        return counterIsSupportClass(FtpCounterAlarm.class);
+    }
+
+    /**
+     * Получение коллекции имен доступных счетчиков системы с поддержкой функции получения мгновенных данных
+     *
+     * @return имена доступных счетчиков системы
+     */
+    public Set<String> counterSupportAsyncRequestNameSet() {
+        return counterIsSupportClass(FtpCounterAsyncRequest.class);
+    }
+
+    /**
+     * Получение коллекции имен доступных счетчиков системы с поддержкой определенной функции
+     *
+     * @param clazz интерфейс описывающий функцию
+     * @return имена доступных счетчиков системы
+     */
+    private Set<String> counterIsSupportClass(Class<?> clazz) {
         Set<String> result = new HashSet<>();
 
         for (Map.Entry<String, String> counter: COUNTERS_MAP.entrySet()) {
             try {
-                if (FtpCounterExtension.class.isAssignableFrom(Class.forName(counter.getValue()))) {
+                if (clazz.isAssignableFrom(Class.forName(counter.getValue()))) {
                     result.add(counter.getKey());
                 }
             } catch (ClassNotFoundException e) {
@@ -120,22 +156,37 @@ public class QueryBasedDASSingletonBean {
     }
 
     /**
-     * Получение коллекции имен доступных счетчиков системы с поддержкой alarm
-     *
-     * @return имена доступных счетчиков системы
+     * Проверка корректности ввода свойств
      */
-    public Set<String> counterSupportAlarmNameSet() {
-        Set<String> result = new HashSet<>();
+    private Properties checkProps() {
+        try {
+            Properties appProperties = PropertiesLoader.loadProperties("app.properties");
 
-        for (Map.Entry<String, String> counter: COUNTERS_MAP.entrySet()) {
-            try {
-                if (FtpCounterAlarm.class.isAssignableFrom(Class.forName(counter.getValue()))) {
-                    result.add(counter.getKey());
-                }
-            } catch (ClassNotFoundException e) {
-                logger.warn("error load counter {}", counter, e);
+            String[] uploadServerNames = appProperties.getProperty("uploadServerNames").split(" ");
+            String[] uploadServerURIs = appProperties.getProperty("uploadServerURIs").split(" ");
+            String[] uploadServerPorts = appProperties.getProperty("uploadServerPorts").split(" ");
+            String[] uploaderServiceName = appProperties.getProperty("uploaderServiceName").split(" ");
+            String[] uploaderEJBName = appProperties.getProperty("uploaderEJBName").split(" ");
+            String[] listenerServiceEJBName = appProperties.getProperty("listenerServiceEJBName").split(" ");
+
+            int remoteCount = uploadServerNames.length;
+
+            // проверка записи параметров
+            if ((remoteCount != uploadServerURIs.length) ||
+                    (remoteCount != uploadServerPorts.length) ||
+                    (remoteCount != uploaderServiceName.length) ||
+                    (remoteCount != uploaderEJBName.length) ||
+                    (remoteCount != listenerServiceEJBName.length)) {
+                throw new RuntimeException("Error application parameters");
             }
+
+            return appProperties;
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
-        return result;
+    }
+
+    public String getProperty(String key) {
+        return appProperties.getProperty(key);
     }
 }

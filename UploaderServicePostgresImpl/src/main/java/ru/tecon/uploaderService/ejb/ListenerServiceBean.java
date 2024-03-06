@@ -3,6 +3,7 @@ package ru.tecon.uploaderService.ejb;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
 import ru.tecon.uploaderService.ejb.das.ListenerServiceRemote;
+import ru.tecon.uploaderService.ejb.das.ListenerType;
 import ru.tecon.uploaderService.model.Listener;
 
 import javax.annotation.Resource;
@@ -52,17 +53,17 @@ public class ListenerServiceBean implements ListenerServiceRemote {
     }
 
     @Override
-    public boolean containsListener(String dasName) {
-        return uploaderSingletonBean.containsListener(dasName);
+    public boolean containsListener(String dasName, ListenerType type) {
+        return uploaderSingletonBean.containsListener(dasName, type);
     }
 
     @Override
-    public void removeListener(String dasName) {
+    public void removeListener(String dasName, ListenerType type) {
         logger.info("Remove listener {}", dasName);
 
-        Listener listener = uploaderSingletonBean.removeListener(dasName);
+        Listener listener = uploaderSingletonBean.removeListener(dasName, type);
 
-        if (listener != null) {
+        if ((listener != null) && !uploaderSingletonBean.containsListener(dasName)) {
             unregisterListenerInDb(listener);
         }
     }

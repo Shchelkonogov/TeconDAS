@@ -312,7 +312,7 @@ public abstract class FtpCounter implements Counter, FtpCounterExtension {
                 }).sorted().collect(Collectors.toList());
     }
 
-    public abstract void readFile(InputStream in, String path) throws IOException, DasException;
+    protected abstract void readFile(InputStream in, String path) throws IOException, DasException;
 
     @Override
     public String toString() {

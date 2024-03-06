@@ -2,7 +2,7 @@ package ru.tecon.queryBasedDAS.counter.ftp.slave;
 
 import ru.tecon.queryBasedDAS.DasException;
 import ru.tecon.queryBasedDAS.counter.CounterInfo;
-import ru.tecon.queryBasedDAS.counter.ftp.FtpCounter;
+import ru.tecon.queryBasedDAS.counter.ftp.FtpCounterWithAsyncRequest;
 import ru.tecon.queryBasedDAS.counter.ftp.model.CounterData;
 import ru.tecon.uploaderService.model.DataModel;
 
@@ -26,7 +26,7 @@ import java.util.stream.Stream;
  * @author Maksim Shchelkonogov
  * 14.02.2024
  */
-public class SLAVECounter extends FtpCounter {
+public class SLAVECounter extends FtpCounterWithAsyncRequest {
 
     private static final SLAVEInfo info = new SLAVEInfo();
 
@@ -280,6 +280,27 @@ public class SLAVECounter extends FtpCounter {
      */
     public String computeCrc16Hex(byte[] data) {
         return Integer.toHexString(computeCrc16(data));
+    }
+
+    @Override
+    public void loadInstantData(List<DataModel> params, String objectName) throws DasException {
+        // Убираем не мгновенные параметры
+        params.removeIf(dataModel -> !Stream.of(SLAVEConfig.values())
+                .filter(SLAVEConfig::isInstant)
+                .map(slaveConfig -> slaveConfig.getProperty() + ":Текущие данные")
+                .collect(Collectors.toSet())
+                .contains(dataModel.getParamName()));
+
+        super.loadInstantData(params, objectName);
+    }
+
+    @Override
+    protected String getPropRegister(String propName) throws DasException {
+        return Stream.of(SLAVEConfig.values())
+                .filter(slaveConfig -> slaveConfig.getProperty().equals(propName))
+                .findFirst()
+                .orElseThrow(() -> new DasException("Неожиданный параметр " + propName))
+                .getRegister();
     }
 
     private static final String[] STOP_TIME_G_ERROR_1 = {SLAVEConfig.STOP_TIME_G_ERROR_1_CHANEL_0.getProperty(),

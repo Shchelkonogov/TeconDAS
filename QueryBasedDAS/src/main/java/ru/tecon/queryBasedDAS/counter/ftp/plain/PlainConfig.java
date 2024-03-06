@@ -292,4 +292,8 @@ public enum PlainConfig {
     public boolean isAlarm() {
         return alarm;
     }
+
+    public boolean isInstant() {
+        return getRegister() != null;
+    }
 }

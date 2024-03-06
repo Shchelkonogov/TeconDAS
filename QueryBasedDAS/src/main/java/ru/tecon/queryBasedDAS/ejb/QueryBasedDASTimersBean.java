@@ -43,6 +43,12 @@ public class QueryBasedDASTimersBean {
         } catch (DasException e) {
             logger.warn("Error register listener ", e);
         }
+
+        try {
+            listenerBean.registerAsyncRequestListener();
+        } catch (DasException e) {
+            logger.warn("Error register listener ", e);
+        }
     }
 
     /**
