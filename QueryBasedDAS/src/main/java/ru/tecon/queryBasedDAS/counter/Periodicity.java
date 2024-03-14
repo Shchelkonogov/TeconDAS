@@ -9,5 +9,6 @@ package ru.tecon.queryBasedDAS.counter;
 public enum Periodicity {
 
     ONE_TIME_PER_HOUR,
-    THREE_TIME_PER_HOUR
+    THREE_TIME_PER_HOUR,
+    EVERY_TEN_MINUTES
 }

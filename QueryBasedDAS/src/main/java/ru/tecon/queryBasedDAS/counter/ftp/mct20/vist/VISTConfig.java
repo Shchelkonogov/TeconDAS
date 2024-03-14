@@ -1,4 +1,4 @@
-package ru.tecon.queryBasedDAS.counter.ftp.vist;
+package ru.tecon.queryBasedDAS.counter.ftp.mct20.vist;
 
 /**
  * Конфигурация счетчика МСТ20-VIST

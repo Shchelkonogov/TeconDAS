@@ -1,8 +1,8 @@
-package ru.tecon.queryBasedDAS.counter.ftp.sa94;
+package ru.tecon.queryBasedDAS.counter.ftp.mct20.sa94;
 
 import ru.tecon.queryBasedDAS.DasException;
 import ru.tecon.queryBasedDAS.counter.CounterInfo;
-import ru.tecon.queryBasedDAS.counter.ftp.FtpCounter;
+import ru.tecon.queryBasedDAS.counter.ftp.mct20.MctFtpCounter;
 import ru.tecon.queryBasedDAS.counter.ftp.model.CounterData;
 import ru.tecon.uploaderService.model.DataModel;
 
@@ -25,7 +25,7 @@ import java.util.stream.Stream;
  * @author Maksim Shchelkonogov
  * 13.02.2024
  */
-public class SA94Counter extends FtpCounter {
+public class SA94Counter extends MctFtpCounter {
 
     private static final SA94Info info = new SA94Info();
 

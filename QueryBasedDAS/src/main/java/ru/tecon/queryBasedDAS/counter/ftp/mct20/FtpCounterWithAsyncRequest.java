@@ -1,4 +1,4 @@
-package ru.tecon.queryBasedDAS.counter.ftp;
+package ru.tecon.queryBasedDAS.counter.ftp.mct20;
 
 import com.intelligt.modbus.jlibmodbus.exception.ModbusIOException;
 import com.intelligt.modbus.jlibmodbus.exception.ModbusNumberException;
@@ -10,6 +10,8 @@ import com.intelligt.modbus.jlibmodbus.tcp.TcpParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.tecon.queryBasedDAS.DasException;
+import ru.tecon.queryBasedDAS.counter.ftp.FtpClient;
+import ru.tecon.queryBasedDAS.counter.ftp.FtpCounterAsyncRequest;
 import ru.tecon.uploaderService.model.DataModel;
 
 import java.io.BufferedReader;
@@ -31,7 +33,7 @@ import java.util.regex.Pattern;
  * @author Maksim Shchelkonogov
  * 06.03.2024
  */
-public abstract class FtpCounterWithAsyncRequest extends FtpCounter implements FtpCounterAsyncRequest {
+public abstract class FtpCounterWithAsyncRequest extends MctFtpCounter implements FtpCounterAsyncRequest {
 
     private static final Logger logger = LoggerFactory.getLogger(FtpCounterWithAsyncRequest.class);
 
@@ -74,7 +76,7 @@ public abstract class FtpCounterWithAsyncRequest extends FtpCounter implements F
         String ip;
         int slaveID = 1;
         try {
-            FtpClient ftpClient = new FtpClient();
+            FtpClient ftpClient = new MctFtpClient();
             ftpClient.open();
 
             try {

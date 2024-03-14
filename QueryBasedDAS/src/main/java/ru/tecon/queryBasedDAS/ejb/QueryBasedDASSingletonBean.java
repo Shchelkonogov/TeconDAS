@@ -32,11 +32,12 @@ public class QueryBasedDASSingletonBean {
 
     private static final List<String> COUNTERS = List.of(
             "ru.tecon.queryBasedDAS.counter.asDTS.ASDTSCounter",
-            "ru.tecon.queryBasedDAS.counter.ftp.vist.VISTCounter",
-            "ru.tecon.queryBasedDAS.counter.ftp.teros.TEROSCounter",
-            "ru.tecon.queryBasedDAS.counter.ftp.sa94.SA94Counter",
-            "ru.tecon.queryBasedDAS.counter.ftp.slave.SLAVECounter",
-            "ru.tecon.queryBasedDAS.counter.ftp.plain.PlainCounter"
+            "ru.tecon.queryBasedDAS.counter.ftp.mct20.vist.VISTCounter",
+            "ru.tecon.queryBasedDAS.counter.ftp.mct20.teros.TEROSCounter",
+            "ru.tecon.queryBasedDAS.counter.ftp.mct20.sa94.SA94Counter",
+            "ru.tecon.queryBasedDAS.counter.ftp.mct20.slave.SLAVECounter",
+            "ru.tecon.queryBasedDAS.counter.ftp.mct20.plain.PlainCounter",
+            "ru.tecon.queryBasedDAS.counter.ftp.eco.EcoCounter"
     );
 
     private static final Map<String, String> COUNTERS_MAP = new HashMap<>();

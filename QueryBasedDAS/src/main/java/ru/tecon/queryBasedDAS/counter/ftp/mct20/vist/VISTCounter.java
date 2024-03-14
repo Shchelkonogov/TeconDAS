@@ -1,8 +1,8 @@
-package ru.tecon.queryBasedDAS.counter.ftp.vist;
+package ru.tecon.queryBasedDAS.counter.ftp.mct20.vist;
 
 import ru.tecon.queryBasedDAS.DasException;
 import ru.tecon.queryBasedDAS.counter.CounterInfo;
-import ru.tecon.queryBasedDAS.counter.ftp.FtpCounter;
+import ru.tecon.queryBasedDAS.counter.ftp.mct20.MctFtpCounter;
 import ru.tecon.queryBasedDAS.counter.ftp.model.CounterData;
 import ru.tecon.uploaderService.model.DataModel;
 
@@ -27,7 +27,7 @@ import java.util.stream.Stream;
  * @author Maksim Shchelkonogov
  * 06.02.2024
  */
-public class VISTCounter extends FtpCounter {
+public class VISTCounter extends MctFtpCounter {
 
     private static final VISTInfo info = new VISTInfo();
 

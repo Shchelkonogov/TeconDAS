@@ -1,6 +1,6 @@
-package ru.tecon.queryBasedDAS.counter.ftp.plain;
+package ru.tecon.queryBasedDAS.counter.ftp.mct20.plain;
 
-import ru.tecon.queryBasedDAS.counter.ftp.FtpCounterInfo;
+import ru.tecon.queryBasedDAS.counter.ftp.mct20.FtpCounterInfo;
 
 import java.util.Collections;
 import java.util.List;

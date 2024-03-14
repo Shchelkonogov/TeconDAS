@@ -9,19 +9,25 @@ import java.io.IOException;
 import java.io.PrintWriter;
 
 /**
- * Класс для подключения к ftp МСТ20
+ * Класс для подключения к ftp
  *
  * @author Maksim Shchelkonogov
  * 08.02.2024
  */
 public class FtpClient {
 
-    // TODO adjust on production mode (moek 10.98.254.10, moek vpn 172.16.4.47)
-    private static final String server = "10.98.254.10";
-    private static final int port = 21;
-    private static final String user = "ftp_device";
-    private static final char[] password = {'J', 'g', '4', 'H', 'Q', 'O', '7', 'O'};
+    private final String server;
+    private final int port;
+    private final String user;
+    private final char[] password;
     private FTPClient ftp;
+
+    public FtpClient(String server, int port, String user, char[] password) {
+        this.server = server;
+        this.port = port;
+        this.user = user;
+        this.password = password;
+    }
 
     /**
      * Открытие соединения с ftp

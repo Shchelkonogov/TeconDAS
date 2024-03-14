@@ -1,4 +1,4 @@
-package ru.tecon.queryBasedDAS.counter.ftp;
+package ru.tecon.queryBasedDAS.counter.ftp.mct20;
 
 import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.ftp.FTPFile;
@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.tecon.queryBasedDAS.counter.CounterInfo;
 import ru.tecon.queryBasedDAS.counter.Periodicity;
+import ru.tecon.queryBasedDAS.counter.ftp.FtpClient;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -58,7 +59,7 @@ public abstract class FtpCounterInfo implements CounterInfo {
         };
 
         try {
-            FtpClient ftpClient = new FtpClient();
+            FtpClient ftpClient = new MctFtpClient();
 
             ftpClient.open();
 

@@ -1,8 +1,8 @@
-package ru.tecon.queryBasedDAS.counter.ftp.teros;
+package ru.tecon.queryBasedDAS.counter.ftp.mct20.teros;
 
 import ru.tecon.queryBasedDAS.DasException;
 import ru.tecon.queryBasedDAS.counter.CounterInfo;
-import ru.tecon.queryBasedDAS.counter.ftp.FtpCounter;
+import ru.tecon.queryBasedDAS.counter.ftp.mct20.MctFtpCounter;
 import ru.tecon.queryBasedDAS.counter.ftp.model.CounterData;
 import ru.tecon.uploaderService.model.DataModel;
 
@@ -26,7 +26,7 @@ import java.util.stream.Stream;
  * @author Maksim Shchelkonogov
  * 12.02.2024
  */
-public class TEROSCounter extends FtpCounter {
+public class TEROSCounter extends MctFtpCounter {
 
     private static final TEROSInfo info = new TEROSInfo();
 

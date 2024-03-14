@@ -1,4 +1,4 @@
-package ru.tecon.queryBasedDAS.counter.ftp.plain;
+package ru.tecon.queryBasedDAS.counter.ftp.mct20.plain;
 
 import org.apache.commons.net.ftp.FTPFile;
 import org.slf4j.Logger;
@@ -7,7 +7,8 @@ import ru.tecon.queryBasedDAS.DasException;
 import ru.tecon.queryBasedDAS.counter.CounterInfo;
 import ru.tecon.queryBasedDAS.counter.ftp.FtpClient;
 import ru.tecon.queryBasedDAS.counter.ftp.FtpCounterAlarm;
-import ru.tecon.queryBasedDAS.counter.ftp.FtpCounterWithAsyncRequest;
+import ru.tecon.queryBasedDAS.counter.ftp.mct20.FtpCounterWithAsyncRequest;
+import ru.tecon.queryBasedDAS.counter.ftp.mct20.MctFtpClient;
 import ru.tecon.queryBasedDAS.counter.ftp.model.CounterData;
 import ru.tecon.queryBasedDAS.counter.ftp.model.FileData;
 import ru.tecon.uploaderService.model.DataModel;
@@ -284,7 +285,7 @@ public class PlainCounter extends FtpCounterWithAsyncRequest implements FtpCount
 
         LocalDateTime date = params.get(0).getStartDateTime() == null ? null : params.get(0).getStartDateTime().minusHours(1);
 
-        FtpClient ftpClient = new FtpClient();
+        FtpClient ftpClient = new MctFtpClient();
         try {
             ftpClient.open();
 
@@ -336,7 +337,7 @@ public class PlainCounter extends FtpCounterWithAsyncRequest implements FtpCount
         logger.info("start clear alarms file for {}", info.getCounterName());
 
         try {
-            FtpClient ftpClient = new FtpClient();
+            FtpClient ftpClient = new MctFtpClient();
             ftpClient.open();
 
             FTPFile[] ftpFiles = ftpClient.getConnection().listFiles("/alarms");

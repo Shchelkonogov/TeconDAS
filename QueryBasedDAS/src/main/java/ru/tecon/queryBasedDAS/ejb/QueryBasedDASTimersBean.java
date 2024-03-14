@@ -76,6 +76,18 @@ public class QueryBasedDASTimersBean {
     }
 
     /**
+     * Таймер загрузки архивных данных по счетчикам
+     *
+     * @param timer информация о таймере
+     */
+    @Schedule(minute = "5/10", hour = "*", info = "at 5, 15, 25, 35, 45, 55 minute every hour", persistent = false)
+    private void readHistoricalDataEveryTenMinutes(Timer timer) {
+        event.fire(new TimerEvent(timer.getInfo().toString()));
+        logger.info("Start read historical data");
+        bean.loadHistoricalData(Periodicity.EVERY_TEN_MINUTES);
+    }
+
+    /**
      * Таймер загрузки новых объектов счетчиков
      *
      * @param timer информация о таймере

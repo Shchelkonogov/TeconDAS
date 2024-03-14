@@ -1,4 +1,4 @@
-package ru.tecon.queryBasedDAS.counter.ftp.teros;
+package ru.tecon.queryBasedDAS.counter.ftp.mct20.teros;
 
 /**
  * Конфигурация счетчика МСТ20-TEROS

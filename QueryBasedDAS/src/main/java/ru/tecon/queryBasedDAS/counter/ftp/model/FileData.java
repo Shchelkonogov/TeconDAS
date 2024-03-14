@@ -1,7 +1,6 @@
 package ru.tecon.queryBasedDAS.counter.ftp.model;
 
 import java.io.Serializable;
-import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.StringJoiner;
 

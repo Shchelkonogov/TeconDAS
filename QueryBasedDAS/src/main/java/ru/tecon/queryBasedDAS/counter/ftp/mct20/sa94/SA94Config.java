@@ -1,4 +1,4 @@
-package ru.tecon.queryBasedDAS.counter.ftp.sa94;
+package ru.tecon.queryBasedDAS.counter.ftp.mct20.sa94;
 
 /**
  * Конфигурация счетчика МСТ20-SA94

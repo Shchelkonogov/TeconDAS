@@ -1,4 +1,4 @@
-package ru.tecon.queryBasedDAS.counter.ftp.plain;
+package ru.tecon.queryBasedDAS.counter.ftp.mct20.plain;
 
 /**
  * Конфигурация для счетчиков МСТ20

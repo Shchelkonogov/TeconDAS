@@ -1,8 +1,8 @@
-package ru.tecon.queryBasedDAS.counter.ftp.slave;
+package ru.tecon.queryBasedDAS.counter.ftp.mct20.slave;
 
 import ru.tecon.queryBasedDAS.DasException;
 import ru.tecon.queryBasedDAS.counter.CounterInfo;
-import ru.tecon.queryBasedDAS.counter.ftp.FtpCounterWithAsyncRequest;
+import ru.tecon.queryBasedDAS.counter.ftp.mct20.FtpCounterWithAsyncRequest;
 import ru.tecon.queryBasedDAS.counter.ftp.model.CounterData;
 import ru.tecon.uploaderService.model.DataModel;
 

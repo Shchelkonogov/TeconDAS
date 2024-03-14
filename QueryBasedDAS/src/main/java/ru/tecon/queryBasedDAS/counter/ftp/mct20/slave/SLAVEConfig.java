@@ -1,4 +1,4 @@
-package ru.tecon.queryBasedDAS.counter.ftp.slave;
+package ru.tecon.queryBasedDAS.counter.ftp.mct20.slave;
 
 /**
  * Конфигурация счетчика МСТ20-SLAVE
