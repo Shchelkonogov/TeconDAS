@@ -156,15 +156,29 @@ public class SA94Counter extends FtpCounter {
     }
 
     private void readPath(byte[] buffer, int quality) {
+
+        //
+        // ВНИМАНИЕ
+        //
+        // Расчет t1 и t2 ведутся по-разному в зависимости от версии sa94.
+        // Температуры t1 и t2 могут храниться или в виде float 4 байта или в short 2 байта и надо умножить на 0.01
+        // На float 4 байта есть информация в документации
+        // На short 2 байта умноженное на 0.01 информация от Арсения из компании Тепловизор
+        // Изначально использовался вариант на 2 байта, т.к. значения совпадают
+        // 14.03.2024 заметили объекты с 4 байтами. Реализовать пока не получается, т.к. нет информации про тип sa94.
+        //
+
         float g1i = readFloat(Arrays.copyOfRange(buffer, 8, 12));
         counterData.put(SA94Config.G1I.getProperty(), new CounterData(g1i, quality));
         float g2i = readFloat(Arrays.copyOfRange(buffer, 12, 16));
         counterData.put(SA94Config.G2I.getProperty(), new CounterData(g2i, quality));
         float t1 = new BigDecimal(String.valueOf(((buffer[16] & 0xff) << 8) | (buffer[17] & 0xff)))
                 .multiply(new BigDecimal("0.01")).floatValue();
+//        float t1 = readFloat(Arrays.copyOfRange(buffer, 16, 20));
         counterData.put(SA94Config.T1.getProperty(), new CounterData(t1, quality));
         float t2 = new BigDecimal(String.valueOf(((buffer[18] & 0xff) << 8) | (buffer[19] & 0xff)))
                 .multiply(new BigDecimal("0.01")).floatValue();
+//        float t2 = readFloat(Arrays.copyOfRange(buffer, 20, 24));
         counterData.put(SA94Config.T2.getProperty(), new CounterData(t2, quality));
         float pti = readFloat(Arrays.copyOfRange(buffer, 28, 32));
         counterData.put(SA94Config.PTI.getProperty(), new CounterData(pti, quality));
