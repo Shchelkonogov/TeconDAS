@@ -36,6 +36,7 @@ public class EcoCounter extends FtpCounter {
     private static final EcoInfo info = new EcoInfo();
 
     private final Map<String, List<String>> averageData = new HashMap<>();
+    private final Map<String, List<String>> summaryData = new HashMap<>();
 
     @Override
     public CounterInfo getCounterInfo() {
@@ -150,7 +151,7 @@ public class EcoCounter extends FtpCounter {
         Collections.sort(params);
 
         String stationNumber = objectName.replace("Станция ", "");
-        LocalDateTime date = params.get(0).getStartDateTime();
+        LocalDateTime date = params.get(0).getStartDateTime() == null ? null : params.get(0).getStartDateTime().plusHours(3);
 
         FtpClient ftpClient = new EcoFtpClient();
         try {
@@ -163,10 +164,13 @@ public class EcoCounter extends FtpCounter {
                     Collections.singletonList("\\[measure_529]_\\[" + stationNumber + "]_\\[(?<date>(20\\d{2})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])_([01][0-9]|2[0-3])-([0-5]0))].xml"),
                     "yyyy-MM-dd_HH-mm");
 
+            logger.info("station {} read {} files", objectName, fileData.size());
+
             // Разбор файлов
             for (FileData fData: fileData) {
                 counterData.clear();
                 averageData.clear();
+                summaryData.clear();
 
                 try {
                     readFile(checkFileExistAtFtp(ftpClient.getConnection(), fData.getPath()));
@@ -184,8 +188,10 @@ public class EcoCounter extends FtpCounter {
 
                 // Подсчитываем средние значения
                 calcAverageData();
+                // Подсчитываем суммарные значения
+                calcSummaryData();
 
-                parseResults(params, fData.getDateTime());
+                parseResults(params, fData.getDateTime().minusHours(3));
             }
 
             ftpClient.close();
@@ -198,11 +204,11 @@ public class EcoCounter extends FtpCounter {
         logger.info("finish load data from ftpCounter for {}", objectName);
     }
 
-    private void addAverageData(String key, String value) {
-        if (averageData.containsKey(key)) {
-            averageData.get(key).add(value);
+    private <K, V> void addAggregateData(Map<K, List<V>> data, K key, V value) {
+        if (data.containsKey(key)) {
+            data.get(key).add(value);
         } else {
-            averageData.put(key, new ArrayList<>(Collections.singletonList(value)));
+            data.put(key, new ArrayList<>(Collections.singletonList(value)));
         }
     }
 
@@ -220,6 +226,23 @@ public class EcoCounter extends FtpCounter {
                     .collect(Collectors.summarizingDouble(Double::parseDouble))
                     .getAverage();
             counterData.put(s, new CounterData(String.format(Locale.US, "%.4f", average)));
+        });
+    }
+
+    private void calcSummaryData() {
+        summaryData.forEach((s, list) -> {
+            double sum = list.stream()
+                    .filter(value -> {
+                        try {
+                            Double.parseDouble(value);
+                            return true;
+                        } catch (NumberFormatException ignore) {
+                            return false;
+                        }
+                    })
+                    .collect(Collectors.summarizingDouble(Double::parseDouble))
+                    .getSum();
+            counterData.put(s, new CounterData(String.format(Locale.US, "%.4f", sum)));
         });
     }
 
@@ -292,8 +315,15 @@ public class EcoCounter extends FtpCounter {
                     EndElement endElement = xmlEvent.asEndElement();
                     switch (endElement.getName().getLocalPart()) {
                         case "VAL_AVG":
-                            addAverageData("Суммарные:" + pipe + param + paramType, value);
-                            addAverageData("Суммарные" + param + paramType, value);
+                            if (param.matches("^:Параметр (0301|0304|0337|10006|10008)$")) {
+                                addAggregateData(summaryData, "Суммарные:" + pipe + param + paramType, value);
+                                addAggregateData(summaryData, "Суммарные" + param + paramType, value);
+                            } else {
+                                if (param.matches("^:Параметр (10005|10007|33701)$")) {
+                                    addAggregateData(averageData, "Суммарные:" + pipe + param + paramType, value);
+                                    addAggregateData(averageData, "Суммарные" + param + paramType, value);
+                                }
+                            }
                         case "VAL_MIN":
                         case "VAL_MAX":
                         case "DT_MIN":
@@ -327,6 +357,7 @@ public class EcoCounter extends FtpCounter {
         }
 
         calcAverageData();
+        calcSummaryData();
 
         System.out.println(path);
         System.out.println(this);
