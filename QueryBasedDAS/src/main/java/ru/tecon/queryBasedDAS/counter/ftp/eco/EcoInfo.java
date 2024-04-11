@@ -5,6 +5,7 @@ import org.apache.commons.net.ftp.FTPFile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.tecon.queryBasedDAS.counter.CounterInfo;
+import ru.tecon.queryBasedDAS.counter.WebConsole;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -16,7 +17,7 @@ import java.util.stream.Collectors;
  * @author Maksim Shchelkonogov
  * 01.03.2024
  */
-public class EcoInfo implements CounterInfo {
+public class EcoInfo implements CounterInfo, WebConsole {
 
     private static volatile EcoInfo instance;
 
@@ -68,5 +69,10 @@ public class EcoInfo implements CounterInfo {
         }
 
         return result;
+    }
+
+    @Override
+    public String getConsoleUrl() {
+        return "/eco";
     }
 }

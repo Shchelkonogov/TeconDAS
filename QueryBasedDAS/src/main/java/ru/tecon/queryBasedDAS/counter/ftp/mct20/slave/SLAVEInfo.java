@@ -1,5 +1,6 @@
 package ru.tecon.queryBasedDAS.counter.ftp.mct20.slave;
 
+import ru.tecon.queryBasedDAS.counter.WebConsole;
 import ru.tecon.queryBasedDAS.counter.ftp.mct20.FtpCounterInfo;
 
 import java.util.Collections;
@@ -11,7 +12,7 @@ import java.util.List;
  * @author Maksim Shchelkonogov
  * 14.02.2024
  */
-public class SLAVEInfo extends FtpCounterInfo {
+public class SLAVEInfo extends FtpCounterInfo implements WebConsole {
 
     private static volatile SLAVEInfo instance;
 
@@ -37,5 +38,10 @@ public class SLAVEInfo extends FtpCounterInfo {
     @Override
     public String getCounterName() {
         return COUNTER_NAME;
+    }
+
+    @Override
+    public String getConsoleUrl() {
+        return "/mct/slave";
     }
 }

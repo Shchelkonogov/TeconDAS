@@ -1,6 +1,7 @@
 package ru.tecon.queryBasedDAS.counter.asDTS;
 
 import ru.tecon.queryBasedDAS.counter.CounterInfo;
+import ru.tecon.queryBasedDAS.counter.WebConsole;
 import ru.tecon.queryBasedDAS.counter.asDTS.ejb.ASDTSMsSqlBean;
 
 import javax.naming.InitialContext;
@@ -11,7 +12,7 @@ import java.util.List;
  * @author Maksim Shchelkonogov
  * 15.11.2023
  */
-public class ASDTSInfo implements CounterInfo {
+public class ASDTSInfo implements CounterInfo, WebConsole {
 
     private static volatile ASDTSInfo instance;
 
@@ -51,5 +52,10 @@ public class ASDTSInfo implements CounterInfo {
 
     public ASDTSMsSqlBean getBean() {
         return bean;
+    }
+
+    @Override
+    public String getConsoleUrl() {
+        return "/asdts";
     }
 }

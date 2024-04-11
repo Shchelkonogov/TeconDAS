@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="http://xmlns.jcp.org/jsf/html"
+      xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+      xmlns:f="http://xmlns.jcp.org/jsf/core"
+      xmlns:p="http://primefaces.org/ui"
+      xmlns:c="http://java.sun.com/jsp/jstl/core">
+<h:head>
+    <h:outputStylesheet name="webjars/primeflex/3.3.1/primeflex.min.css"/>
+</h:head>
+<h:body>
+    <h:form>
+        <div class="flex flex-wrap justify-content-center column-gap-4 row-gap-4">
+            <c:forEach var="item" varStatus="loop" items="#{console.allConsoleMap}">
+                <div class="border-round w-12rem h-6rem bg-primary font-bold flex align-items-center justify-content-center cursor-pointer"
+                     onclick="window.location.href = '#{request.contextPath}#{item.value}'">
+                    #{item.key}
+                </div>
+            </c:forEach>
+        </div>
+    </h:form>
+</h:body>
+</html>

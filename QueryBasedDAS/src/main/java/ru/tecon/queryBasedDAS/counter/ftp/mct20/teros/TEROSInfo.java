@@ -1,5 +1,6 @@
 package ru.tecon.queryBasedDAS.counter.ftp.mct20.teros;
 
+import ru.tecon.queryBasedDAS.counter.WebConsole;
 import ru.tecon.queryBasedDAS.counter.ftp.mct20.FtpCounterInfo;
 
 import java.util.Collections;
@@ -11,7 +12,7 @@ import java.util.List;
  * @author Maksim Shchelkonogov
  * 12.02.2024
  */
-public class TEROSInfo extends FtpCounterInfo {
+public class TEROSInfo extends FtpCounterInfo implements WebConsole {
 
     private static volatile TEROSInfo instance;
 
@@ -37,5 +38,10 @@ public class TEROSInfo extends FtpCounterInfo {
     @Override
     public String getCounterName() {
         return COUNTER_NAME;
+    }
+
+    @Override
+    public String getConsoleUrl() {
+        return "/mct/teros";
     }
 }

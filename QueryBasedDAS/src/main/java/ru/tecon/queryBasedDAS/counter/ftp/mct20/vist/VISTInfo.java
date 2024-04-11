@@ -1,5 +1,6 @@
 package ru.tecon.queryBasedDAS.counter.ftp.mct20.vist;
 
+import ru.tecon.queryBasedDAS.counter.WebConsole;
 import ru.tecon.queryBasedDAS.counter.ftp.mct20.FtpCounterInfo;
 
 import java.util.Arrays;
@@ -11,7 +12,7 @@ import java.util.List;
  * @author Maksim Shchelkonogov
  * 06.02.2024
  */
-public class VISTInfo extends FtpCounterInfo {
+public class VISTInfo extends FtpCounterInfo implements WebConsole {
 
     private static volatile VISTInfo instance;
 
@@ -37,5 +38,10 @@ public class VISTInfo extends FtpCounterInfo {
     @Override
     public String getCounterName() {
         return COUNTER_NAME;
+    }
+
+    @Override
+    public String getConsoleUrl() {
+        return "/mct/vist";
     }
 }

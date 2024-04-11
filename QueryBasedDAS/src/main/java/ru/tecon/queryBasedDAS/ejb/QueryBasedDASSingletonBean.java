@@ -3,7 +3,9 @@ package ru.tecon.queryBasedDAS.ejb;
 import org.slf4j.Logger;
 import ru.tecon.queryBasedDAS.PropertiesLoader;
 import ru.tecon.queryBasedDAS.counter.Counter;
+import ru.tecon.queryBasedDAS.counter.CounterInfo;
 import ru.tecon.queryBasedDAS.counter.Periodicity;
+import ru.tecon.queryBasedDAS.counter.WebConsole;
 import ru.tecon.queryBasedDAS.counter.ftp.FtpCounterAlarm;
 import ru.tecon.queryBasedDAS.counter.ftp.FtpCounterAsyncRequest;
 import ru.tecon.queryBasedDAS.counter.ftp.FtpCounterExtension;
@@ -156,6 +158,22 @@ public class QueryBasedDASSingletonBean {
                     result.add(counter.getKey());
                 }
             } catch (ClassNotFoundException e) {
+                logger.warn("error load counter {}", counter, e);
+            }
+        }
+        return result;
+    }
+
+    public Map<String, String> getAllConsole() {
+        Map<String, String> result = new HashMap<>();
+        for (Map.Entry<String, String> counter: COUNTERS_MAP.entrySet()) {
+            try {
+                Counter instance = (Counter) Class.forName(counter.getValue()).getDeclaredConstructor().newInstance();
+                CounterInfo counterInfo = instance.getCounterInfo();
+                if (counterInfo instanceof WebConsole) {
+                    result.put(counterInfo.getCounterName(), ((WebConsole) counterInfo).getConsoleUrl());
+                }
+            } catch (ReflectiveOperationException e) {
                 logger.warn("error load counter {}", counter, e);
             }
         }

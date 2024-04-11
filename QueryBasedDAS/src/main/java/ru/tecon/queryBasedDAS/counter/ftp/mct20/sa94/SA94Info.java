@@ -1,5 +1,6 @@
 package ru.tecon.queryBasedDAS.counter.ftp.mct20.sa94;
 
+import ru.tecon.queryBasedDAS.counter.WebConsole;
 import ru.tecon.queryBasedDAS.counter.ftp.mct20.FtpCounterInfo;
 
 import java.util.Arrays;
@@ -11,7 +12,7 @@ import java.util.List;
  * @author Maksim Shchelkonogov
  * 13.02.2024
  */
-public class SA94Info extends FtpCounterInfo {
+public class SA94Info extends FtpCounterInfo implements WebConsole {
 
     private static volatile SA94Info instance;
 
@@ -37,5 +38,10 @@ public class SA94Info extends FtpCounterInfo {
     @Override
     public String getCounterName() {
         return COUNTER_NAME;
+    }
+
+    @Override
+    public String getConsoleUrl() {
+        return "/mct/sa";
     }
 }
