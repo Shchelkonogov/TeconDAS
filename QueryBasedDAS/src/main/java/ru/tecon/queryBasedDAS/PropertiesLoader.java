@@ -16,7 +16,9 @@ public class PropertiesLoader {
     public static Properties loadProperties(String resourceFileName) throws IOException {
         Properties configuration = new Properties();
         try (InputStream inputStream = PropertiesLoader.class.getClassLoader().getResourceAsStream(resourceFileName)) {
-            configuration.load(inputStream);
+            if (inputStream != null) {
+                configuration.load(inputStream);
+            }
         }
         return configuration;
     }

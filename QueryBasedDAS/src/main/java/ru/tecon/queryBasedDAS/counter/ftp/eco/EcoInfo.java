@@ -5,7 +5,6 @@ import org.apache.commons.net.ftp.FTPFile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.tecon.queryBasedDAS.counter.CounterInfo;
-import ru.tecon.queryBasedDAS.counter.Periodicity;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -69,10 +68,5 @@ public class EcoInfo implements CounterInfo {
         }
 
         return result;
-    }
-
-    @Override
-    public Periodicity getPeriodicity() {
-        return Periodicity.EVERY_TEN_MINUTES;
     }
 }

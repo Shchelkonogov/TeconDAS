@@ -41,6 +41,7 @@ public class QueryBasedDASSingletonBean {
     );
 
     private static final Map<String, String> COUNTERS_MAP = new HashMap<>();
+    private static final Map<String, Properties> COUNTERS_PROP_MAP = new HashMap<>();
 
     @PostConstruct
     private void init() {
@@ -52,6 +53,14 @@ public class QueryBasedDASSingletonBean {
             try {
                 Counter instance = (Counter) Class.forName(counter).getDeclaredConstructor().newInstance();
                 COUNTERS_MAP.put(instance.getCounterInfo().getCounterName(), counter);
+
+                try {
+                    Properties prop = PropertiesLoader.loadProperties(instance.getCounterInfo().getCounterName() + ".properties");
+                    if (!prop.isEmpty()) {
+                        COUNTERS_PROP_MAP.put(instance.getCounterInfo().getCounterName(), prop);
+                    }
+                } catch (IOException ignore) {
+                }
             } catch (ReflectiveOperationException e) {
                 logger.warn("error load counter {}", counter, e);
             }
@@ -95,14 +104,11 @@ public class QueryBasedDASSingletonBean {
      */
     public Set<String> counterNameSet(Periodicity periodicity) {
         Set<String> result = new HashSet<>();
-        for (Map.Entry<String, String> counter: COUNTERS_MAP.entrySet()) {
-            try {
-                Counter instance = (Counter) Class.forName(counter.getValue()).getDeclaredConstructor().newInstance();
-                if (instance.getCounterInfo().getPeriodicity() == periodicity) {
-                    result.add(counter.getKey());
-                }
-            } catch (ReflectiveOperationException e) {
-                logger.warn("error load counter {}", counter, e);
+        for (String counterName: COUNTERS_MAP.keySet()) {
+            String period = getCounterProperty(counterName, "periodicity");
+            period = period == null ? getProperty("periodicity") : period;
+            if (Periodicity.valueOf(period) == periodicity) {
+                result.add(counterName);
             }
         }
         return result;
@@ -189,5 +195,13 @@ public class QueryBasedDASSingletonBean {
 
     public String getProperty(String key) {
         return appProperties.getProperty(key);
+    }
+
+    public String getCounterProperty(String counterName, String key) {
+        if (COUNTERS_PROP_MAP.containsKey(counterName)) {
+            return COUNTERS_PROP_MAP.get(counterName).getProperty(key);
+        } else {
+            return null;
+        }
     }
 }

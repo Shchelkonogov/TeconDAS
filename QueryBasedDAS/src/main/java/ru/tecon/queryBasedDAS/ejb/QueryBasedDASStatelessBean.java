@@ -9,7 +9,9 @@ import ru.tecon.uploaderService.ejb.UploaderServiceRemote;
 import ru.tecon.uploaderService.model.DataModel;
 import ru.tecon.uploaderService.model.SubscribedObject;
 
+import javax.annotation.Resource;
 import javax.ejb.*;
+import javax.enterprise.concurrent.ManagedExecutorService;
 import javax.inject.Inject;
 import javax.naming.NamingException;
 import java.time.LocalDateTime;
@@ -32,10 +34,10 @@ public class QueryBasedDASStatelessBean {
     private QueryBasedDASSingletonBean bean;
 
     @EJB
-    private QueryBasedDASStatelessBean dasStatelessBean;
-
-    @EJB
     private RemoteEJBFactory remoteEJBFactory;
+
+    @Resource(mappedName = "concurrent/das")
+    private ManagedExecutorService executorService;
 
     /**
      * Получение всех объектов счетчика
@@ -154,7 +156,7 @@ public class QueryBasedDASStatelessBean {
 
         if (!counterNameSet.isEmpty()) {
             String[] uploadServerNames = bean.getProperty("uploadServerNames").split(" ");
-            int partCount = Integer.parseInt(bean.getProperty("partCount"));
+            int partCount = Integer.parseInt(bean.getProperty("concurrencyAlarmDepth"));
 
             for (String uploadServerName: uploadServerNames) {
                 try {
@@ -163,16 +165,33 @@ public class QueryBasedDASStatelessBean {
                     List<SubscribedObject> objects = uploadServiceRemote.getSubscribedObjects(counterNameSet);
 
                     if ((objects != null) && !objects.isEmpty()) {
-                        int chunk = objects.size() / partCount;
-                        int mod = objects.size() % partCount;
-                        for (int i = 0; i < objects.size(); i += chunk) {
-                            int increment = 0;
-                            if (mod > 0) {
-                                increment = 1;
-                                mod--;
+                        Map<String, Pair<String, Integer>> concurrencyAlarmDepthMap = objects.stream()
+                                .map(SubscribedObject::getServerName)
+                                .distinct()
+                                .collect(Collectors.toMap(
+                                        k -> k,
+                                        v -> {
+                                            String concurrencyAlarmDepth = bean.getCounterProperty(v, "concurrencyAlarmDepth");
+                                            return concurrencyAlarmDepth == null ? Pair.of("Default", partCount) : Pair.of(v, Integer.parseInt(concurrencyAlarmDepth));
+                                        }));
+
+                        Map<Pair<String, Integer>, List<SubscribedObject>> collect = objects.stream().collect(Collectors.groupingBy(subscribedObject -> concurrencyAlarmDepthMap.get(subscribedObject.getServerName())));
+
+                        for (Map.Entry<Pair<String, Integer>, List<SubscribedObject>> entry: collect.entrySet()) {
+                            int currentPartCount = entry.getKey().second;
+                            int chunk = entry.getValue().size() / currentPartCount;
+                            int mod = entry.getValue().size() % currentPartCount;
+                            for (int i = 0; i < entry.getValue().size(); i += chunk) {
+                                int increment = 0;
+                                if (mod > 0) {
+                                    increment = 1;
+                                    mod--;
+                                }
+                                List<SubscribedObject> subList = entry.getValue().subList(i, i + chunk + increment);
+
+                                executorService.submit(() -> initReadAlarmFiles(subList, uploadServerName));
+                                i += increment;
                             }
-                            dasStatelessBean.initReadAlarmFiles(objects.subList(i, i + chunk + increment), uploadServerName);
-                            i += increment;
                         }
                     } else {
                         logger.warn("no subscribed objects for {}", uploadServerName);
@@ -185,13 +204,12 @@ public class QueryBasedDASStatelessBean {
     }
 
     /**
-     * Асинхронная загрузка alarm
+     * Загрузка alarm
      *
      * @param objects список объектов для загрузки данных
      * @param uploadServerName имя удаленного сервера для загрузки данных
      */
-    @Asynchronous
-    public void initReadAlarmFiles(List<SubscribedObject> objects, String uploadServerName) {
+    private void initReadAlarmFiles(List<SubscribedObject> objects, String uploadServerName) {
         logger.info("start load alarm data for {}", objects.stream().map(SubscribedObject::getObjectName).collect(Collectors.toList()));
         long startTime = System.currentTimeMillis();
         LocalDateTime startDateTime = LocalDateTime.now();
@@ -247,7 +265,7 @@ public class QueryBasedDASStatelessBean {
      */
     public void loadHistoricalData(Periodicity periodicity) {
         String[] uploadServerNames = bean.getProperty("uploadServerNames").split(" ");
-        int partCount = Integer.parseInt(bean.getProperty("partCount"));
+        int partCount = Integer.parseInt(bean.getProperty("concurrencyDepth"));
 
         Set<String> counterNameSet;
         if (periodicity == null) {
@@ -263,16 +281,33 @@ public class QueryBasedDASStatelessBean {
                 List<SubscribedObject> objects = uploadServiceRemote.getSubscribedObjects(counterNameSet);
 
                 if ((objects != null) && !objects.isEmpty()) {
-                    int chunk = objects.size() / partCount;
-                    int mod = objects.size() % partCount;
-                    for (int i = 0; i < objects.size(); i += chunk) {
-                        int increment = 0;
-                        if (mod > 0) {
-                            increment = 1;
-                            mod--;
+                    Map<String, Pair<String, Integer>> concurrencyDepthMap = objects.stream()
+                            .map(SubscribedObject::getServerName)
+                            .distinct()
+                            .collect(Collectors.toMap(
+                                    k -> k,
+                                    v -> {
+                                        String concurrencyDepth = bean.getCounterProperty(v, "concurrencyDepth");
+                                        return concurrencyDepth == null ? Pair.of("Default", partCount) : Pair.of(v, Integer.parseInt(concurrencyDepth));
+                                    }));
+
+                    Map<Pair<String, Integer>, List<SubscribedObject>> collect = objects.stream().collect(Collectors.groupingBy(subscribedObject -> concurrencyDepthMap.get(subscribedObject.getServerName())));
+
+                    for (Map.Entry<Pair<String, Integer>, List<SubscribedObject>> entry: collect.entrySet()) {
+                        int currentPartCount = entry.getKey().second;
+                        int chunk = entry.getValue().size() / currentPartCount;
+                        int mod = entry.getValue().size() % currentPartCount;
+                        for (int i = 0; i < entry.getValue().size(); i += chunk) {
+                            int increment = 0;
+                            if (mod > 0) {
+                                increment = 1;
+                                mod--;
+                            }
+                            List<SubscribedObject> subList = entry.getValue().subList(i, i + chunk + increment);
+
+                            executorService.submit(() -> initReadHistoricalFiles(subList, uploadServerName));
+                            i += increment;
                         }
-                        dasStatelessBean.initReadHistoricalFiles(objects.subList(i, i + chunk + increment), uploadServerName);
-                        i += increment;
                     }
                 } else {
                     logger.warn("no subscribed objects for {}", uploadServerName);
@@ -289,8 +324,7 @@ public class QueryBasedDASStatelessBean {
      * @param objects список объектов для загрузки данных
      * @param uploadServerName имя удаленного сервера для загрузки данных
      */
-    @Asynchronous
-    public void initReadHistoricalFiles(List<SubscribedObject> objects, String uploadServerName) {
+    private void initReadHistoricalFiles(List<SubscribedObject> objects, String uploadServerName) {
         logger.info("start load historical data for {}", objects.stream().map(SubscribedObject::getObjectName).collect(Collectors.toList()));
         long startTime = System.currentTimeMillis();
         LocalDateTime startDateTime = LocalDateTime.now();
@@ -337,5 +371,33 @@ public class QueryBasedDASStatelessBean {
                 startDateTime,
                 (System.currentTimeMillis() - startTime),
                 objects.stream().map(SubscribedObject::getObjectName).collect(Collectors.toList()));
+    }
+
+    private static class Pair<K, V> {
+
+        private final K first;
+        private final V second;
+
+        private Pair(K first, V second) {
+            this.first = first;
+            this.second = second;
+        }
+
+        public static <K, V> Pair<K, V> of(K k, V v) {
+            return new Pair<>(k, v);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            Pair<?, ?> pair = (Pair<?, ?>) o;
+            return Objects.equals(first, pair.first) && Objects.equals(second, pair.second);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(first, second);
+        }
     }
 }

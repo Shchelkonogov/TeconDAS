@@ -5,7 +5,6 @@ import org.apache.commons.net.ftp.FTPFile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.tecon.queryBasedDAS.counter.CounterInfo;
-import ru.tecon.queryBasedDAS.counter.Periodicity;
 import ru.tecon.queryBasedDAS.counter.ftp.FtpClient;
 
 import java.io.IOException;
@@ -71,11 +70,6 @@ public abstract class FtpCounterInfo implements CounterInfo {
         }
 
         return objects.stream().map(s -> getCounterName() + "-" + s.substring(s.lastIndexOf('/') + 1)).collect(Collectors.toList());
-    }
-
-    @Override
-    public Periodicity getPeriodicity() {
-        return Periodicity.THREE_TIME_PER_HOUR;
     }
 
     /**
