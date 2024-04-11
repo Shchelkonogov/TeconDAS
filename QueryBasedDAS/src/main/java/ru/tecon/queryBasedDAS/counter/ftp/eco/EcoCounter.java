@@ -311,7 +311,7 @@ public class EcoCounter extends FtpCounter {
                             break;
                     }
                 }
-                if ((value != null) && xmlEvent.isEndElement()) {
+                if ((value != null) && !value.equals("NaN") && xmlEvent.isEndElement()) {
                     EndElement endElement = xmlEvent.asEndElement();
                     switch (endElement.getName().getLocalPart()) {
                         case "VAL_AVG":
