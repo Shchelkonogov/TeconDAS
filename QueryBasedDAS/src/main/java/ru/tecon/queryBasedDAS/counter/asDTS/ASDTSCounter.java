@@ -14,11 +14,7 @@ import java.util.Set;
  */
 public class ASDTSCounter implements Counter {
 
-    private final ASDTSInfo info;
-
-    public ASDTSCounter() throws NamingException {
-        this.info = new ASDTSInfo();
-    }
+    private final ASDTSInfo info = ASDTSInfo.getInstance();
 
     @Override
     public CounterInfo getCounterInfo() {

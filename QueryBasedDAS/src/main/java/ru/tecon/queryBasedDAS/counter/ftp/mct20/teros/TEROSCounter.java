@@ -28,7 +28,7 @@ import java.util.stream.Stream;
  */
 public class TEROSCounter extends MctFtpCounter {
 
-    private static final TEROSInfo info = new TEROSInfo();
+    private static final TEROSInfo info = TEROSInfo.getInstance();
 
     public TEROSCounter() {
         super(info);

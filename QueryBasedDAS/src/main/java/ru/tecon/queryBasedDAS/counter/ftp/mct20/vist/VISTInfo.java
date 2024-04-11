@@ -13,12 +13,25 @@ import java.util.List;
  */
 public class VISTInfo extends FtpCounterInfo {
 
+    private static volatile VISTInfo instance;
+
     private static final String COUNTER_NAME = "МСТ-20-VIST";
 
     private static final List<String> PATTERNS = Arrays.asList("(\\d{4})v(20\\d{2})(0[1-9]|1[0-2])(0[1-9]|[12][0-9]|3[01])-([01][0-9]|2[0-3])", "(\\d{4})h(20\\d{2})(0[1-9]|1[0-2])(0[1-9]|[12][0-9]|3[01])-([01][0-9]|2[0-3])");
 
-    public VISTInfo() {
+    private VISTInfo() {
         super(PATTERNS);
+    }
+
+    public static VISTInfo getInstance() {
+        if (instance == null) {
+            synchronized (VISTInfo.class) {
+                if (instance == null) {
+                    instance = new VISTInfo();
+                }
+            }
+        }
+        return instance;
     }
 
     @Override

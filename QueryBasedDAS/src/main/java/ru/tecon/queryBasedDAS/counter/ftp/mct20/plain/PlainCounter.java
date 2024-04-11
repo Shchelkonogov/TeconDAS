@@ -34,7 +34,7 @@ public class PlainCounter extends FtpCounterWithAsyncRequest implements FtpCount
 
     private static final Logger logger = LoggerFactory.getLogger(PlainCounter.class);
 
-    private static final PlainInfo info = new PlainInfo();
+    private static final PlainInfo info = PlainInfo.getInstance();
 
     public PlainCounter() {
         super(info);

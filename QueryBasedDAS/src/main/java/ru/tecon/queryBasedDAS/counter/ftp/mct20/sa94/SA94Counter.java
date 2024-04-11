@@ -27,7 +27,7 @@ import java.util.stream.Stream;
  */
 public class SA94Counter extends MctFtpCounter {
 
-    private static final SA94Info info = new SA94Info();
+    private static final SA94Info info = SA94Info.getInstance();
 
     public SA94Counter() {
         super(info);

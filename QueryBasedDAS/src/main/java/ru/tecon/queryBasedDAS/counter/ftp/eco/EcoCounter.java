@@ -33,7 +33,7 @@ public class EcoCounter extends FtpCounter {
 
     private static final Logger logger = LoggerFactory.getLogger(EcoCounter.class);
 
-    private static final EcoInfo info = new EcoInfo();
+    private static final EcoInfo info = EcoInfo.getInstance();
 
     private final Map<String, List<String>> averageData = new HashMap<>();
     private final Map<String, List<String>> summaryData = new HashMap<>();

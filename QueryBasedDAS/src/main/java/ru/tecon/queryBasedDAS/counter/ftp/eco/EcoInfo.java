@@ -19,9 +19,25 @@ import java.util.stream.Collectors;
  */
 public class EcoInfo implements CounterInfo {
 
+    private static volatile EcoInfo instance;
+
     private static final Logger logger = LoggerFactory.getLogger(EcoInfo.class);
 
     private static final String COUNTER_NAME = "Ecomonitoring";
+
+    private EcoInfo() {
+    }
+
+    public static EcoInfo getInstance() {
+        if (instance == null) {
+            synchronized (EcoInfo.class) {
+                if (instance == null) {
+                    instance = new EcoInfo();
+                }
+            }
+        }
+        return instance;
+    }
 
     @Override
     public String getCounterName() {

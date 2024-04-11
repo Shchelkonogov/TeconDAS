@@ -29,7 +29,7 @@ import java.util.stream.Stream;
  */
 public class VISTCounter extends MctFtpCounter {
 
-    private static final VISTInfo info = new VISTInfo();
+    private static final VISTInfo info = VISTInfo.getInstance();
 
     public VISTCounter() {
         super(info);

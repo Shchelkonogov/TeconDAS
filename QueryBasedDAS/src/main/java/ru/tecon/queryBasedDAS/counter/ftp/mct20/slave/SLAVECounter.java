@@ -28,7 +28,7 @@ import java.util.stream.Stream;
  */
 public class SLAVECounter extends FtpCounterWithAsyncRequest {
 
-    private static final SLAVEInfo info = new SLAVEInfo();
+    private static final SLAVEInfo info = SLAVEInfo.getInstance();
 
     public SLAVECounter() {
         super(info);

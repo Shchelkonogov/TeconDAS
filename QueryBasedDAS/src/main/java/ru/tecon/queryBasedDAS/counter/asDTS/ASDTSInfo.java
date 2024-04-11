@@ -14,13 +14,30 @@ import java.util.List;
  */
 public class ASDTSInfo implements CounterInfo {
 
+    private static volatile ASDTSInfo instance;
+
     private static final String COUNTER_NAME = "IASDTU";
 
     private final ASDTSMsSqlBean bean;
 
-    public ASDTSInfo() throws NamingException {
+    private ASDTSInfo() throws NamingException {
         InitialContext ctx = new InitialContext();
         bean = (ASDTSMsSqlBean) ctx.lookup("java:global/queryBasedDAS/ejb/asDTSMsSql");
+    }
+
+    public static ASDTSInfo getInstance() {
+        if (instance == null) {
+            synchronized (ASDTSInfo.class) {
+                if (instance == null) {
+                    try {
+                        instance = new ASDTSInfo();
+                    } catch (NamingException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            }
+        }
+        return instance;
     }
 
     @Override
