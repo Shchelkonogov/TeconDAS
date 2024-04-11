@@ -187,6 +187,29 @@ public class QueryBasedDASSingletonBean {
                 throw new RuntimeException("Error application parameters");
             }
 
+            if (!appProperties.contains("periodicity") ||
+                    !appProperties.contains("concurrencyDepth") ||
+                    !appProperties.contains("concurrencyAlarmDepth")) {
+                throw new RuntimeException("Error application parameters");
+            }
+
+            try {
+                Periodicity.valueOf(appProperties.getProperty("periodicity"));
+            } catch (IllegalArgumentException e) {
+                throw new RuntimeException("Error application parameters. Unknown periodicity.");
+            }
+
+            try {
+                int concurrencyDepth = Integer.parseInt(appProperties.getProperty("concurrencyDepth"));
+                int concurrencyAlarmDepth = Integer.parseInt(appProperties.getProperty("concurrencyAlarmDepth"));
+
+                if ((concurrencyDepth <= 0) || (concurrencyAlarmDepth <= 0)) {
+                    throw new RuntimeException("Error application parameters. concurrencyDepth or concurrencyAlarmDepth <= 0");
+                }
+            } catch (NumberFormatException e) {
+                throw new RuntimeException("Error application parameters. " + e.getMessage());
+            }
+
             return appProperties;
         } catch (IOException e) {
             throw new RuntimeException(e);
