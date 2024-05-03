@@ -54,9 +54,9 @@ public class ConfigRequestStatelessBean implements ConfigRequestRemote {
 
             logger.info("config for {} {} {}", requestData.getCounter(), requestData.getObjectName(), config);
 
-            UploaderServiceRemote remote = remoteEJBFactory.getUploadServiceRemote(requestData.getServerName());
-
             if (!config.isEmpty()) {
+                UploaderServiceRemote remote = remoteEJBFactory.getUploadServiceRemote(requestData.getServerName());
+
                 int uploadCount = remote.uploadConfig(config, requestData.getObjectId(), requestData.getObjectName());
 
                 if (uploadCount < 0) {

@@ -1,0 +1,16 @@
+body .ui-menu.ui-menubar>.ui-menu-list>.ui-menuitem.ui-menubar-options {
+    margin-right: unset;
+}
+
+body .ui-dialog .ui-dialog-footer {
+    padding: 0.5em 0.6em 0.3em 0.7em;
+}
+
+body .ui-menu .ui-menu-parent ul.ui-menu-child {
+    white-space: nowrap;
+    width: auto;
+}
+
+body .ui-menu.ui-contextmenu {
+    width: auto;
+}

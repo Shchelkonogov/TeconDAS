@@ -1,10 +1,12 @@
 package ru.tecon.queryBasedDAS.ejb;
 
 import org.slf4j.Logger;
-import ru.tecon.queryBasedDAS.counter.Counter;
-import ru.tecon.queryBasedDAS.counter.Periodicity;
+import ru.tecon.queryBasedDAS.counter.*;
 import ru.tecon.queryBasedDAS.counter.ftp.FtpCounterAlarm;
 import ru.tecon.queryBasedDAS.counter.ftp.FtpCounterExtension;
+import ru.tecon.queryBasedDAS.counter.statistic.StatData;
+import ru.tecon.queryBasedDAS.counter.statistic.StatKey;
+import ru.tecon.queryBasedDAS.counter.statistic.WebConsole;
 import ru.tecon.uploaderService.ejb.UploaderServiceRemote;
 import ru.tecon.uploaderService.model.DataModel;
 import ru.tecon.uploaderService.model.SubscribedObject;
@@ -83,6 +85,19 @@ public class QueryBasedDASStatelessBean {
     public boolean uploadCounterObjects(String serverName, Map<String, List<String>> counterObjects) {
         try {
             remoteEJBFactory.getUploadServiceRemote(serverName).uploadObjects(counterObjects);
+
+            // Добавление статистики
+            for (Map.Entry<String, List<String>> entry: counterObjects.entrySet()) {
+                WebConsole counterWebConsole = bean.getCounterWebConsole(entry.getKey());
+                if (counterWebConsole != null) {
+                    counterWebConsole.clearStatistic();
+
+                    for (String counterName: entry.getValue()) {
+                        StatData build = StatData.builder(serverName, counterName).build();
+                        counterWebConsole.merge(new StatKey(serverName, counterName), build, (statData, statData2) -> statData2);
+                    }
+                }
+            }
             return true;
         } catch (NamingException e) {
             logger.warn("Remote service {} is unavailable", serverName);
@@ -334,6 +349,9 @@ public class QueryBasedDASStatelessBean {
             Map<String, Counter> loadedCounters = new HashMap<>();
 
             for (SubscribedObject object: objects) {
+                StatData.Builder builder = StatData.builder(uploadServerName, object.getObjectName())
+                        .startRequestTime(LocalDateTime.now());
+
                 List<DataModel> objectModel = uploadServiceRemote.loadObjectModelWithStartTimes(object.getId());
 
                 logger.info("object model for {} {}", object.getObjectName(), objectModel);
@@ -347,6 +365,16 @@ public class QueryBasedDASStatelessBean {
                             cl = (Counter) Class.forName(bean.getCounter(object.getServerName())).getDeclaredConstructor().newInstance();
                             loadedCounters.put(object.getServerName(), cl);
                         }
+
+                        // Добавление статистики
+                        String objectNames = objectModel.stream()
+                                .map(dataModel -> String.valueOf(dataModel.getObjectName()))
+                                .distinct()
+                                .collect(Collectors.joining(", "));
+                        builder.objectName(objectNames);
+
+                        objectModel.forEach(dataModel -> builder.addRequestedValue(dataModel.getParamName(), dataModel.getStartDateTime()));
+
                         cl.loadData(objectModel, object.getObjectName());
                     } catch (ReflectiveOperationException e) {
                         logger.warn("error load counter = {}", object.getServerName(), e);
@@ -359,9 +387,24 @@ public class QueryBasedDASStatelessBean {
                                 objectModel.stream().map(dataModel -> dataModel.getData().size()).collect(Collectors.toList()));
 
                         uploadServiceRemote.uploadDataAsync(objectModel);
+
+                        // Добавление статистики
+                        objectModel.forEach(dataModel -> {
+                            if (dataModel.getData() instanceof TreeSet) {
+                                TreeSet<DataModel.ValueModel> data = (TreeSet<DataModel.ValueModel>) dataModel.getData();
+                                builder.addLastValue(dataModel.getParamName(), data.last().getValue(), data.last().getDateTime());
+                            }
+                        });
                     }
                 } else {
                     logger.warn("empty model for {}", object);
+                }
+
+                builder.endRequestTime(LocalDateTime.now());
+
+                WebConsole counterWebConsole = bean.getCounterWebConsole(object.getServerName());
+                if (counterWebConsole != null) {
+                    counterWebConsole.merge(new StatKey(uploadServerName, object.getObjectName()), builder.build(), (statData1, statData2) -> statData2);
                 }
             }
         } catch (NamingException e) {

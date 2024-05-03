@@ -8,7 +8,18 @@ package ru.tecon.queryBasedDAS.counter;
  */
 public enum Periodicity {
 
-    ONE_TIME_PER_HOUR,
-    THREE_TIME_PER_HOUR,
-    EVERY_TEN_MINUTES
+    DISABLED("Никогда"),
+    ONE_TIME_PER_HOUR("Раз в час"),
+    THREE_TIME_PER_HOUR("Три раза в час"),
+    EVERY_TEN_MINUTES("Каждые 10 минут");
+
+    private final String desc;
+
+    Periodicity(String desc) {
+        this.desc = desc;
+    }
+
+    public String getDesc() {
+        return desc;
+    }
 }

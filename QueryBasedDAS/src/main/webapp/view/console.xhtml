@@ -14,9 +14,12 @@
     <h:form>
         <div class="flex flex-wrap justify-content-center column-gap-4 row-gap-4">
             <c:forEach var="item" varStatus="loop" items="#{console.allConsoleMap}">
-                <div class="border-round w-12rem h-6rem bg-primary font-bold flex align-items-center justify-content-center cursor-pointer"
-                     onclick="window.location.href = '#{request.contextPath}#{item.value}'">
-                    #{item.key}
+                <div class="border-round w-12rem h-6rem bg-primary font-bold flex
+                            align-items-center justify-content-center cursor-pointer flex-column">
+                    <a href="#{request.contextPath}/console#{item.value}" style="color: inherit; text-decoration: none;"
+                       class="flex align-items-center justify-content-center h-full w-full">
+                        #{item.key}
+                    </a>
                 </div>
             </c:forEach>
         </div>

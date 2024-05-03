@@ -10,7 +10,6 @@ import javax.ejb.*;
 import javax.inject.Inject;
 import javax.sql.DataSource;
 import java.sql.*;
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
@@ -44,12 +43,13 @@ public class UploaderServiceBean implements UploaderServiceRemote {
                                         "cast((xpath('/root/SysInfo/text()', xmlelement(name root, opc_path::xml)))[1] as text), " +
                                         "'::' || cast((xpath('/root/SysInfo/text()', xmlelement(name root, opc_path::xml)))[1] as text), " +
                                         "'')  as display_name, " +
-                "b.aspid_object_id, b.aspid_param_id, b.aspid_agr_id, b.measure_unit_transformer " +
-            "from admin.tsa_linked_element b, admin.tsa_opc_element c " +
+                "b.aspid_object_id, d.obj_name, b.aspid_param_id, b.aspid_agr_id, b.measure_unit_transformer " +
+            "from admin.tsa_linked_element b, admin.tsa_opc_element c, admin.obj_object d " +
             "where b.opc_element_id in (select id from admin.tsa_opc_element where opc_object_id = ?) " +
                 "and b.opc_element_id = c.id " +
                 "and exists(select a.obj_id, a.par_id from admin.dz_par_dev_link a " +
                                 "where a.par_id = b.aspid_param_id and a.obj_id = b.aspid_object_id) " +
+                "and d.obj_id = b.aspid_object_id " +
                 "and b.aspid_agr_id is not null";
 
     private static final String SELECT_LINKED_INSTANT_PARAMETERS =
@@ -72,6 +72,10 @@ public class UploaderServiceBean implements UploaderServiceRemote {
 
     private static final String INSERT_ASYNC_REFRESH_DATA = "insert into admin.arm_async_refresh_data " +
             "values (?, ?, current_timestamp at time zone 'utc', ?, ?, ?, current_timestamp, null, null)";
+
+    private static final String SELECT_COUNTER_OBJECT_ID = "select id from admin.tsa_opc_object " +
+            "where cast((xpath('/root/Server/text()', xmlelement(name root, opc_path::xml)))[1] as text) = ? " +
+                "and cast((xpath('/root/ItemName/text()', xmlelement(name root, opc_path::xml)))[1] as text) = ?";
 
     @Inject
     private Logger logger;
@@ -200,35 +204,32 @@ public class UploaderServiceBean implements UploaderServiceRemote {
         try (Connection connect = dsRead.getConnection();
              PreparedStatement stmGetLinkedParameters = connect.prepareStatement(SELECT_LINKED_PARAMETERS);
              PreparedStatement stmGetStartDate = connect.prepareStatement(SELECT_START_DATE)) {
-            LocalDateTime startDate;
             ResultSet resStartDate;
 
             stmGetLinkedParameters.setString(1, id);
 
             ResultSet resLinked = stmGetLinkedParameters.executeQuery();
             while (resLinked.next()) {
-                stmGetStartDate.setInt(1, resLinked.getInt(2));
-                stmGetStartDate.setInt(2, resLinked.getInt(3));
-                stmGetStartDate.setInt(3, resLinked.getInt(4));
+                DataModel.Builder builder = DataModel.builder(resLinked.getString("display_name"),
+                                                resLinked.getInt("aspid_object_id"), resLinked.getInt("aspid_param_id"),
+                                                resLinked.getInt("aspid_agr_id"))
+                                            .objectName(resLinked.getString("obj_name"));
 
-                startDate = null;
+                stmGetStartDate.setInt(1, resLinked.getInt("aspid_object_id"));
+                stmGetStartDate.setInt(2, resLinked.getInt("aspid_param_id"));
+                stmGetStartDate.setInt(3, resLinked.getInt("aspid_agr_id"));
 
                 resStartDate = stmGetStartDate.executeQuery();
-                while (resStartDate.next()) {
-                    startDate = resStartDate.getTimestamp("time_stamp").toLocalDateTime();
+                if (resStartDate.next()) {
+                    builder.startDateTime(resStartDate.getTimestamp("time_stamp").toLocalDateTime());
                 }
 
-                String incrementValue = null;
                 if ((resLinked.getString("measure_unit_transformer") != null)
                         && !resLinked.getString("measure_unit_transformer").equals("")) {
-                    incrementValue = resLinked.getString("measure_unit_transformer").substring(2);
+                    builder.incrementValue(resLinked.getString("measure_unit_transformer").substring(2));
                 }
 
-                result.add(
-                        new DataModel(resLinked.getString("display_name"), resLinked.getInt("aspid_object_id"),
-                                        resLinked.getInt("aspid_param_id"), resLinked.getInt("aspid_agr_id"),
-                                        incrementValue, startDate)
-                );
+                result.add(builder.build());
             }
         } catch (SQLException ex) {
             logger.warn("error load object model for {}", id, ex);
@@ -249,8 +250,9 @@ public class UploaderServiceBean implements UploaderServiceRemote {
             ResultSet resLinked = stmGetLinkedParameters.executeQuery();
             while (resLinked.next()) {
                 result.add(
-                        new DataModel(resLinked.getString("display_name"), resLinked.getInt("aspid_object_id"),
-                                resLinked.getInt("aspid_param_id"), resLinked.getInt("aspid_agr_id"))
+                        DataModel.builder(resLinked.getString("display_name"), resLinked.getInt("aspid_object_id"),
+                                            resLinked.getInt("aspid_param_id"), resLinked.getInt("aspid_agr_id"))
+                                .build()
                 );
             }
         } catch (SQLException ex) {
@@ -336,5 +338,24 @@ public class UploaderServiceBean implements UploaderServiceRemote {
             logger.warn("Error upload instant data", ex);
             return -1;
         }
+    }
+
+    @Override
+    public String getCounterObjectId(String counter, String object) {
+        logger.info("load counter object id for counter: {} and object: {}", counter, object);
+        try (Connection connect = dsRead.getConnection();
+             PreparedStatement stm = connect.prepareStatement(SELECT_COUNTER_OBJECT_ID)) {
+
+            stm.setString(1, counter);
+            stm.setString(2, object);
+
+            ResultSet res = stm.executeQuery();
+            if (res.next()) {
+                return res.getString("id");
+            }
+        } catch (SQLException ex) {
+            logger.warn("error load counter object id", ex);
+        }
+        return null;
     }
 }

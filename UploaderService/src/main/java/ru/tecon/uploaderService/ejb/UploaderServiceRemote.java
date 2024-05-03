@@ -82,4 +82,13 @@ public interface UploaderServiceRemote {
      * @param paramList модель с измерениями
      */
     int uploadInstantData(String requestId, List<DataModel> paramList);
+
+    /**
+     * Получение идентификатора объекта счетчика
+     *
+     * @param counter имя счетчика
+     * @param object имя объекта
+     * @return идентификатор объекта счетчика
+     */
+    String getCounterObjectId(String counter, String object);
 }

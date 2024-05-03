@@ -339,6 +339,10 @@ public class EcoCounter extends FtpCounter {
 
     @Override
     public void showData(String path) throws IOException {
+        counterData.clear();
+        averageData.clear();
+        summaryData.clear();
+
         FtpClient ftpClient = new EcoFtpClient();
         ftpClient.open();
 
@@ -363,6 +367,10 @@ public class EcoCounter extends FtpCounter {
         System.out.println(this);
 
         ftpClient.close();
+    }
+
+    public Map<String, CounterData> getHist() {
+        return counterData;
     }
 
     @Override

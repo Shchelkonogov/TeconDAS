@@ -20,26 +20,17 @@ public final class DataModel implements Comparable<DataModel>, Serializable {
     private final int paramId;
     private final int aggregateId;
 
+    private String objectName;
     private String incrementValue;
     private LocalDateTime startDateTime;
 
     private final Set<ValueModel> data = new TreeSet<>();
 
-    public DataModel(String paramName, int objectId, int paramId, int aggregateId) {
+    private DataModel(String paramName, int objectId, int paramId, int aggregateId) {
         this.paramName = paramName;
         this.objectId = objectId;
         this.paramId = paramId;
         this.aggregateId = aggregateId;
-    }
-
-    public DataModel(String paramName, int objectId, int paramId, int aggregateId, String incrementValue) {
-        this(paramName, objectId, paramId, aggregateId);
-        this.incrementValue = incrementValue;
-    }
-
-    public DataModel(String paramName, int objectId, int paramId, int aggregateId, String incrementValue, LocalDateTime startDateTime) {
-        this(paramName, objectId, paramId, aggregateId, incrementValue);
-        this.startDateTime = startDateTime;
     }
 
     public void addData(String value, LocalDateTime time) {
@@ -56,6 +47,10 @@ public final class DataModel implements Comparable<DataModel>, Serializable {
         data.add(new ValueModel(value, time, quality));
     }
 
+    public static Builder builder(String paramName, int objectId, int paramId, int aggregateId) {
+        return new Builder(paramName, objectId, paramId, aggregateId);
+    }
+
     public String getParamName() {
         return paramName;
     }
@@ -70,6 +65,10 @@ public final class DataModel implements Comparable<DataModel>, Serializable {
 
     public int getAggregateId() {
         return aggregateId;
+    }
+
+    public String getObjectName() {
+        return objectName;
     }
 
     public LocalDateTime getStartDateTime() {
@@ -163,6 +162,48 @@ public final class DataModel implements Comparable<DataModel>, Serializable {
                     .add("time=" + dateTime)
                     .add("quality=" + quality)
                     .toString();
+        }
+    }
+
+    public static final class Builder {
+
+        private final String paramName;
+        private final int objectId;
+        private final int paramId;
+        private final int aggregateId;
+
+        private String objectName;
+        private String incrementValue;
+        private LocalDateTime startDateTime;
+
+        private Builder(String paramName, int objectId, int paramId, int aggregateId) {
+            this.paramName = paramName;
+            this.objectId = objectId;
+            this.paramId = paramId;
+            this.aggregateId = aggregateId;
+        }
+
+        public Builder incrementValue(String incrementValue) {
+            this.incrementValue = incrementValue;
+            return this;
+        }
+
+        public Builder startDateTime(LocalDateTime startDateTime) {
+            this.startDateTime = startDateTime;
+            return this;
+        }
+
+        public Builder objectName(String objectName) {
+            this.objectName = objectName;
+            return this;
+        }
+
+        public DataModel build() {
+            DataModel dataModel = new DataModel(paramName, objectId, paramId, aggregateId);
+            dataModel.incrementValue = incrementValue;
+            dataModel.startDateTime = startDateTime;
+            dataModel.objectName = objectName;
+            return dataModel;
         }
     }
 }

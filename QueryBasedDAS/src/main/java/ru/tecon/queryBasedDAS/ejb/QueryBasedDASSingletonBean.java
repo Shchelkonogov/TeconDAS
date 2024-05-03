@@ -5,7 +5,7 @@ import ru.tecon.queryBasedDAS.PropertiesLoader;
 import ru.tecon.queryBasedDAS.counter.Counter;
 import ru.tecon.queryBasedDAS.counter.CounterInfo;
 import ru.tecon.queryBasedDAS.counter.Periodicity;
-import ru.tecon.queryBasedDAS.counter.WebConsole;
+import ru.tecon.queryBasedDAS.counter.statistic.WebConsole;
 import ru.tecon.queryBasedDAS.counter.ftp.FtpCounterAlarm;
 import ru.tecon.queryBasedDAS.counter.ftp.FtpCounterAsyncRequest;
 import ru.tecon.queryBasedDAS.counter.ftp.FtpCounterExtension;
@@ -16,6 +16,10 @@ import javax.ejb.Singleton;
 import javax.ejb.Startup;
 import javax.inject.Inject;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 
 /**
@@ -44,6 +48,7 @@ public class QueryBasedDASSingletonBean {
 
     private static final Map<String, String> COUNTERS_MAP = new HashMap<>();
     private static final Map<String, Properties> COUNTERS_PROP_MAP = new HashMap<>();
+    private static final Map<String, CounterInfo> COUNTERS_INFO_MAP = new HashMap<>();
 
     @PostConstruct
     private void init() {
@@ -55,13 +60,26 @@ public class QueryBasedDASSingletonBean {
             try {
                 Counter instance = (Counter) Class.forName(counter).getDeclaredConstructor().newInstance();
                 COUNTERS_MAP.put(instance.getCounterInfo().getCounterName(), counter);
+                COUNTERS_INFO_MAP.put(instance.getCounterInfo().getCounterName(), instance.getCounterInfo());
 
-                try {
-                    Properties prop = PropertiesLoader.loadProperties(instance.getCounterInfo().getCounterName() + ".properties");
-                    if (!prop.isEmpty()) {
+                Path path = Paths.get(Paths.get("").toAbsolutePath() +
+                                "/" + appProperties.getProperty("dasName") +
+                                "/" + instance.getCounterInfo().getCounterName() + ".properties");
+                if (Files.exists(path)) {
+                    try (InputStream inputStream = Files.newInputStream(path)) {
+                        Properties prop = new Properties();
+                        prop.load(inputStream);
                         COUNTERS_PROP_MAP.put(instance.getCounterInfo().getCounterName(), prop);
+                    } catch (IOException ignore) {
                     }
-                } catch (IOException ignore) {
+                } else {
+                    try {
+                        Properties prop = PropertiesLoader.loadProperties(instance.getCounterInfo().getCounterName() + ".properties");
+                        if (!prop.isEmpty()) {
+                            COUNTERS_PROP_MAP.put(instance.getCounterInfo().getCounterName(), prop);
+                        }
+                    } catch (IOException ignore) {
+                    }
                 }
             } catch (ReflectiveOperationException e) {
                 logger.warn("error load counter {}", counter, e);
@@ -205,9 +223,9 @@ public class QueryBasedDASSingletonBean {
                 throw new RuntimeException("Error application parameters");
             }
 
-            if (!appProperties.contains("periodicity") ||
-                    !appProperties.contains("concurrencyDepth") ||
-                    !appProperties.contains("concurrencyAlarmDepth")) {
+            if (!appProperties.containsKey("periodicity") ||
+                    !appProperties.containsKey("concurrencyDepth") ||
+                    !appProperties.containsKey("concurrencyAlarmDepth")) {
                 throw new RuntimeException("Error application parameters");
             }
 
@@ -241,6 +259,31 @@ public class QueryBasedDASSingletonBean {
     public String getCounterProperty(String counterName, String key) {
         if (COUNTERS_PROP_MAP.containsKey(counterName)) {
             return COUNTERS_PROP_MAP.get(counterName).getProperty(key);
+        } else {
+            return null;
+        }
+    }
+
+    public void setCounterProperty(String counterName, String key, String value) {
+        if (COUNTERS_PROP_MAP.containsKey(counterName)) {
+            COUNTERS_PROP_MAP.get(counterName).setProperty(key, value);
+        } else {
+            Properties prop = new Properties();
+            prop.setProperty(key, value);
+            COUNTERS_PROP_MAP.put(counterName, prop);
+        }
+
+        try {
+            PropertiesLoader.storeProperties(getProperty("dasName") + "/" + counterName + ".properties",
+                                                COUNTERS_PROP_MAP.get(counterName));
+        } catch (IOException e) {
+            logger.warn("Error write property", e);
+        }
+    }
+
+    public WebConsole getCounterWebConsole(String counterName) {
+        if (COUNTERS_INFO_MAP.get(counterName) instanceof WebConsole) {
+            return (WebConsole) COUNTERS_INFO_MAP.get(counterName);
         } else {
             return null;
         }

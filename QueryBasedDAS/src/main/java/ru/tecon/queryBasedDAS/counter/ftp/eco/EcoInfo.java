@@ -2,15 +2,21 @@ package ru.tecon.queryBasedDAS.counter.ftp.eco;
 
 import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.ftp.FTPFile;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.tecon.queryBasedDAS.counter.CounterInfo;
-import ru.tecon.queryBasedDAS.counter.WebConsole;
+import ru.tecon.queryBasedDAS.counter.statistic.StatData;
+import ru.tecon.queryBasedDAS.counter.statistic.StatKey;
+import ru.tecon.queryBasedDAS.counter.statistic.WebConsole;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 /**
@@ -24,6 +30,8 @@ public class EcoInfo implements CounterInfo, WebConsole {
     private static final Logger logger = LoggerFactory.getLogger(EcoInfo.class);
 
     private static final String COUNTER_NAME = "Ecomonitoring";
+
+    private final Map<StatKey, StatData> statistic = new ConcurrentHashMap<>();
 
     private EcoInfo() {
     }
@@ -74,5 +82,20 @@ public class EcoInfo implements CounterInfo, WebConsole {
     @Override
     public String getConsoleUrl() {
         return "/eco";
+    }
+
+    @Override
+    public void clearStatistic() {
+        statistic.clear();
+    }
+
+    @Override
+    public void merge(StatKey key, @NotNull StatData value, @NotNull BiFunction<? super StatData, ? super StatData, ? extends StatData> remappingFunction) {
+        statistic.merge(key, value, remappingFunction);
+    }
+
+    @Override
+    public Map<StatKey, StatData> getStatistic() {
+        return statistic;
     }
 }
