@@ -89,7 +89,7 @@ public class ASDTSMsSqlBean {
 
                 ResultSet res = stm.executeQuery();
                 while (res.next()) {
-                    item.addData(res.getString(1), res.getTimestamp(2).toLocalDateTime().minusHours(4));
+                    item.addData(res.getString(1), res.getTimestamp(2).toLocalDateTime().minusHours(3));
                 }
             }
         } catch (SQLException e) {
