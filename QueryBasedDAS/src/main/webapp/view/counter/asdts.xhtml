@@ -18,57 +18,53 @@
         <p:menubar id="menuBar" style="margin: 3px; background: #f8f9fa; padding: 0.1rem;">
             <p:submenu label="Действия">
                 <p:menuitem value="Загрузить счетчики" icon="pi pi-fw pi-cloud-upload"
-                            action="#{ecoController.loadObjects()}" update="statTable" oncomplete="PF('bui').hide();">
+                            action="#{asdtsController.loadObjects()}" update="statTable" oncomplete="PF('bui').hide();">
                     <p:confirm header="Подтверждение" message="Так же будет очищена статистика"
                                icon="pi pi-info-circle"/>
                 </p:menuitem>
-                <p:menuitem value="Загрузить конфигурацию" disabled="#{ecoController.selectedStat == null}"
+                <p:menuitem value="Загрузить конфигурацию" disabled="#{asdtsController.selectedStat == null}"
                             icon="pi pi-fw pi-cloud-upload" onstart="PF('statusDialog').show()"
-                            action="#{ecoController.requestConfig()}"
+                            action="#{asdtsController.requestConfig()}"
                             oncomplete="PF('configDataWidget').show(); PF('statusDialog').hide();"
                             update="configDataTable configDialogHeader"/>
                 <p:divider/>
                 <p:menuitem value="Очистить статистику" icon="pi pi-fw pi-trash"
-                            action="#{ecoController.clearStatistic()}" update="statTable"/>
+                            action="#{asdtsController.clearStatistic()}" update="statTable"/>
             </p:submenu>
             <p:submenu label="Просмотр">
-                <p:menuitem value="Архивные данные" disabled="#{ecoController.selectedStat == null}"
-                            icon="pi pi-fw pi-file-import" oncomplete="PF('archiveDataWidget').show();"
-                            update="archiveDialogHeader"/>
-                <p:divider/>
-                <p:menuitem value="Запрашиваемые данные" disabled="#{ecoController.selectedStat == null}"
+                <p:menuitem value="Запрашиваемые данные" disabled="#{asdtsController.selectedStat == null}"
                             icon="pi pi-fw pi-book" oncomplete="PF('requestDataWidget').show();"
                             update="requestDataTable requestDialogHeader"/>
-                <p:menuitem value="Переданные данные" disabled="#{ecoController.selectedStat == null}"
+                <p:menuitem value="Переданные данные" disabled="#{asdtsController.selectedStat == null}"
                             icon="pi pi-fw pi-book" oncomplete="PF('lastDataWidget').show();"
                             update="lastDataTable lastDialogHeader"/>
             </p:submenu>
             <p:submenu label="Выгрузка">
                 <p:menuitem value="xlsx" icon="pi pi-fw pi-file-excel" ajax="false"
-                            action="#{ecoController.createExcelReport()}"/>
+                            action="#{asdtsController.createExcelReport()}"/>
                 <p:menuitem value="pdf" icon="pi pi-fw pi-file-pdf" ajax="false"
-                            action="#{ecoController.createPdfReport()}"/>
+                            action="#{asdtsController.createPdfReport()}"/>
             </p:submenu>
-            <p:submenu label="Настройки" rendered="#{ecoController.admin}">
+            <p:submenu label="Настройки" rendered="#{asdtsController.admin}">
                 <p:submenu label="Частота опроса">
-                    <c:forEach var="period" items="#{ecoController.periodicityMenu}">
-                        <p:menuitem value="#{period.desc}" action="#{ecoController.changePeriodicity(period.name())}"
-                                    icon="#{ecoController.getPeriodicityMenuIcon(period.name())}" update="menuBar"/>
+                    <c:forEach var="period" items="#{asdtsController.periodicityMenu}">
+                        <p:menuitem value="#{period.desc}" action="#{asdtsController.changePeriodicity(period.name())}"
+                                    icon="#{asdtsController.getPeriodicityMenuIcon(period.name())}" update="menuBar"/>
                     </c:forEach>
                 </p:submenu>
-                <p:menuitem value="Количество потоков (#{ecoController.threadCount})"
+                <p:menuitem value="Количество потоков (#{asdtsController.threadCount})"
                             oncomplete="PF('threadConfigWidget').show();"/>
             </p:submenu>
 
             <f:facet name="options">
                 <p:outputLabel value="Удаленный сервер:" styleClass="mr-1 font-bold"/>
-                <p:selectOneMenu value="#{ecoController.remoteSelected}" styleClass="mr-3"
+                <p:selectOneMenu value="#{asdtsController.remoteSelected}" styleClass="mr-3"
                                  style="vertical-align: top; width: 150px;">
-                    <p:ajax listener="#{ecoController.setSelectedStat(null)}" update="statTable menuBar"/>
-                    <f:selectItems value="#{ecoController.remotes}"/>
+                    <p:ajax listener="#{asdtsController.setSelectedStat(null)}" update="statTable menuBar"/>
+                    <f:selectItems value="#{asdtsController.remotes}"/>
                 </p:selectOneMenu>
                 <p:outputLabel value="Пользователь:" styleClass="mr-1 font-bold"/>
-                <p:outputLabel value="#{ecoController.principal}" styleClass="mr-2"/>
+                <p:outputLabel value="#{asdtsController.principal}" styleClass="mr-2"/>
                 <p:button href="#{request.contextPath}/console/logout" value="Выход" icon="pi pi-fw pi-sign-out"
                           styleClass="ui-button-info"/>
             </f:facet>
@@ -83,9 +79,9 @@
         </p:confirmDialog>
 
         <div style="height: calc(100% - 51px); padding: 0 0 3px 3px;">
-            <p:dataTable id="statTable" var="stat" value="#{ecoController.statistic}" rowIndexVar="index"
+            <p:dataTable id="statTable" var="stat" value="#{asdtsController.statistic}" rowIndexVar="index"
                          scrollable="true" rowKey="#{stat.counterName}" scrollHeight="100%" size="small"
-                         selection="#{ecoController.selectedStat}" selectionMode="single"
+                         selection="#{asdtsController.selectedStat}" selectionMode="single"
                          emptyMessage="#{global['table.empty.value']}">
 
                 <p:ajax event="rowSelect" update="statForm:menuBar"/>
@@ -101,12 +97,12 @@
                           styleClass="text-center">
                     <h:outputText value="#{stat.counterName}"/>
                 </p:column>
-                <p:column headerText="Начало опроса" rendered="#{ecoController.admin}" styleClass="text-center">
+                <p:column headerText="Начало опроса" rendered="#{asdtsController.admin}" styleClass="text-center">
                     <h:outputText value="#{stat.startRequestTime}">
                         <f:convertDateTime type="localDateTime" pattern="dd.MM.yyyy HH:mm:ss:SSS"/>
                     </h:outputText>
                 </p:column>
-                <p:column headerText="Время опроса, мс" rendered="#{ecoController.admin}" styleClass="text-center">
+                <p:column headerText="Время опроса, мс" rendered="#{asdtsController.admin}" styleClass="text-center">
                     <h:outputText value="#{stat.requestTime}"/>
                 </p:column>
                 <p:column headerText="Дата последних данных" styleClass="text-center">
@@ -119,12 +115,9 @@
 
             <p:contextMenu for="statTable">
                 <p:menuitem value="Загрузить конфигурацию" icon="pi pi-fw pi-cloud-upload"
-                            onstart="PF('statusDialog').show();" action="#{ecoController.requestConfig()}"
+                            onstart="PF('statusDialog').show();" action="#{asdtsController.requestConfig()}"
                             oncomplete="PF('configDataWidget').show(); PF('statusDialog').hide();"
                             update="configDataTable configDialogHeader"/>
-                <p:divider/>
-                <p:menuitem value="Архивные данные" icon="pi pi-fw pi-file-import"
-                            oncomplete="PF('archiveDataWidget').show();" update="archiveDialogHeader"/>
                 <p:divider/>
                 <p:menuitem value="Запрашиваемые данные" oncomplete="PF('requestDataWidget').show();"
                             icon="pi pi-fw pi-book" update="requestDataTable requestDialogHeader"/>
@@ -143,11 +136,11 @@
 
         <f:facet name="header">
             <h:outputText id="requestDialogHeader"
-                          value="Запрашиваемые данные #{ecoController.selectedStat.counterName}"/>
+                          value="Запрашиваемые данные #{asdtsController.selectedStat.counterName}"/>
         </f:facet>
 
         <div style="padding: 3px 0 3px 3px; height: calc(100% - 6px);">
-            <p:dataTable id="requestDataTable" value="#{ecoController.selectedStat.requestedValues}" var="requestData"
+            <p:dataTable id="requestDataTable" value="#{asdtsController.selectedStat.requestedValues}" var="requestData"
                          scrollable="true" scrollHeight="100%" emptyMessage="#{global['table.empty.value']}">
 
                 <p:column headerText="Название" width="600">
@@ -167,11 +160,11 @@
 
         <f:facet name="header">
             <h:outputText id="lastDialogHeader"
-                          value="Переданные данные #{ecoController.selectedStat.counterName}"/>
+                          value="Переданные данные #{asdtsController.selectedStat.counterName}"/>
         </f:facet>
 
         <div style="padding: 3px 0 3px 3px; height: calc(100% - 6px);">
-            <p:dataTable id="lastDataTable" value="#{ecoController.selectedStat.lastValues}" var="lastData"
+            <p:dataTable id="lastDataTable" value="#{asdtsController.selectedStat.lastValues}" var="lastData"
                          scrollable="true" scrollHeight="100%" emptyMessage="#{global['table.empty.value']}">
 
                 <p:column headerText="Название" width="600">
@@ -192,64 +185,21 @@
     <p:dialog widgetVar="configDataWidget" width="600" height="600" modal="true"
               resizable="false" styleClass="tc-panel" showEffect="fade" hideEffect="fade">
 
-        <p:ajax event="close" update="configDataTable" listener="#{ecoController.clearConfig()}"/>
+        <p:ajax event="close" update="configDataTable" listener="#{asdtsController.clearConfig()}"/>
 
         <f:facet name="header">
             <h:outputText id="configDialogHeader"
-                          value="Конфигурация #{ecoController.selectedStat.counterName}"/>
+                          value="Конфигурация #{asdtsController.selectedStat.counterName}"/>
         </f:facet>
 
         <div style="padding: 3px 0 3px 3px; height: calc(100% - 6px);">
-            <p:dataTable id="configDataTable" value="#{ecoController.config}" var="configData"
+            <p:dataTable id="configDataTable" value="#{asdtsController.config}" var="configData"
                          scrollable="true" scrollHeight="100%" emptyMessage="#{global['table.empty.value']}">
 
                 <p:column headerText="Название" width="600">
                     <h:outputText value="#{configData}"/>
                 </p:column>
             </p:dataTable>
-        </div>
-    </p:dialog>
-
-    <p:dialog widgetVar="archiveDataWidget" width="1280" height="600" modal="true"
-              resizable="false" styleClass="tc-panel" showEffect="fade" hideEffect="fade"
-              focus="archiveDataForm:loadArchiveBtn">
-
-        <p:ajax event="close" update="archiveDataTable" listener="#{ecoController.clearArchiveData()}"/>
-
-        <f:facet name="header">
-            <h:outputText id="archiveDialogHeader"
-                          value="Архивные данные #{ecoController.selectedStat.counterName}"/>
-        </f:facet>
-
-        <h:form id="archiveDataForm" style="padding: 3px;">
-            <div class="formgroup-inline justify-content-center">
-                <div class="field" style="margin-bottom: 0;">
-                    <p:outputLabel value="Время запрашиваемых данных:" for="@next" styleClass="mr-1 font-bold"/>
-                    <p:datePicker id="dateSelecter" value="#{ecoController.selectedDateTime}" showTime="true"
-                                  maxdate="#{ecoController.selectedDateTime}"
-                                  mindate="#{ecoController.minDate}" styleClass="mr-1"/>
-                </div>
-                <p:commandButton id="loadArchiveBtn" value="Загрузить" onclick="PF('archiveBui').show();"
-                                 action="#{ecoController.loadArchiveData()}" oncomplete="PF('archiveBui').hide();"
-                                 styleClass="tc-no-loading" update="archiveDataTable"/>
-            </div>
-        </h:form>
-        <div style="height: calc(100% - 43px); padding: 0 0 3px 3px;">
-            <p:dataTable id="archiveDataTable" value="#{ecoController.archiveData}" var="archiveData"
-                         scrollable="true" scrollHeight="518" emptyMessage="#{global['table.empty.value']}"
-                         frozenColumns="1" scrollWidth="862">
-
-                <p:column headerText="Название" styleClass="tc-text-overflow"
-                          style="min-width: 400px; max-width: 400px;">
-                    <h:outputText value="#{archiveData.key}" title="#{archiveData.key}"/>
-                </p:column>
-                <p:columns value="#{ecoController.archiveColumnHeader}" var="column"
-                           headerText="#{column.header}" field="#{column.valueProperty}"
-                           sortable="false" filterable="false" styleClass="tc-text-overflow"
-                           style="max-width: 170px; min-width: 170px;"/>
-            </p:dataTable>
-
-            <p:blockUI widgetVar="archiveBui" block="archiveDataTable"/>
         </div>
     </p:dialog>
 
@@ -262,7 +212,7 @@
         <h:form id="threadConfigForm" style="margin: 3px;">
             <div class="text-center" style="margin-bottom: 3px;">
                 <p:outputLabel for="@next" value="Количество потоков:" styleClass="mr-1 font-bold"/>
-                <p:inputNumber value="#{ecoController.threadCount}" minValue="1" maxValue="20"/>
+                <p:inputNumber value="#{asdtsController.threadCount}" minValue="1" maxValue="20"/>
             </div>
             <div class="flex justify-content-end gap-1">
                 <p:commandButton value="Сохранить" styleClass="tc-no-loading"

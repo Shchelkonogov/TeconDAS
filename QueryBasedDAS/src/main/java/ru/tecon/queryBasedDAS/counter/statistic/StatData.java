@@ -65,7 +65,7 @@ public class StatData {
         LocalDateTime dateTime = lastValues.stream()
                 .map(LastValue::getDateTime)
                 .filter(Objects::nonNull)
-                .min(LocalDateTime::compareTo)
+                .max(LocalDateTime::compareTo)
                 .orElse(null);
         if (dateTime != null) {
             return dateTime.format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss"));

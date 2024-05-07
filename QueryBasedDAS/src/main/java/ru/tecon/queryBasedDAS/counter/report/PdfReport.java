@@ -7,6 +7,8 @@ import com.lowagie.text.pdf.PdfWriter;
 import ru.tecon.queryBasedDAS.counter.statistic.StatData;
 
 import java.io.OutputStream;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 /**
@@ -24,9 +26,10 @@ public class PdfReport {
      * Метод формирует отчет по статистике
      *
      * @param outputStream поток в который записывается отчет
+     * @param counterName название контроллера, для отображения в шапки
      * @param statisticList данные для отчета
      */
-    public static void generateReport(OutputStream outputStream, List<StatData> statisticList) {
+    public static void generateReport(OutputStream outputStream, String counterName, List<StatData> statisticList) {
         Document document = new Document(PageSize.A4.rotate());
 
         PdfWriter.getInstance(document, outputStream);
@@ -35,7 +38,7 @@ public class PdfReport {
 
         FontFactory.register("font/Times New Roman.ttf", "TimeNewRoman");
 
-        Paragraph p = new Paragraph("Статистика работы контроллеров Экомониторинга",
+        Paragraph p = new Paragraph("Статистика работы контроллеров " + counterName,
                 FontFactory.getFont("TimeNewRoman", BaseFont.IDENTITY_H, BaseFont.EMBEDDED, 16, Font.BOLD));
         p.setAlignment(Element.ALIGN_CENTER);
         document.add(p);
@@ -68,6 +71,14 @@ public class PdfReport {
             i++;
         }
         document.add(dataTable);
+
+        String createText = "Отчет сформирован " +
+                LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss"));
+
+        p = new Paragraph(createText,
+                FontFactory.getFont("TimeNewRoman", BaseFont.IDENTITY_H, BaseFont.EMBEDDED, 12));
+        p.setAlignment(Element.ALIGN_LEFT);
+        document.add(p);
 
         document.close();
     }

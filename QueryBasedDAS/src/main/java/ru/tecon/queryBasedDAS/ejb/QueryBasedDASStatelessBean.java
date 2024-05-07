@@ -136,6 +136,30 @@ public class QueryBasedDASStatelessBean {
     }
 
     /**
+     * Загрузка конфигурации в базу по имени объекта счетчика.
+     * Данная операция рискованная, т.к. происходит поиск объекта по имени в базе
+     *
+     * @param counterName название счетчика
+     * @param counterObjectName название объекта счетчика
+     * @param remoteServer удаленный сервер
+     * @param config конфигурация
+     */
+    public void tryUploadConfigByCounterName(String counterName, String counterObjectName,
+                                             String remoteServer, Set<String> config) {
+        try {
+            UploaderServiceRemote remote = remoteEJBFactory.getUploadServiceRemote(remoteServer);
+
+            String counterObjectId = remote.getCounterObjectId(counterName, counterObjectName);
+            if (counterObjectId != null) {
+                remote.uploadConfig(config, counterObjectId, counterObjectName);
+            }
+
+        } catch (NamingException e) {
+            logger.warn("remote service {} unavailable", remoteServer, e);
+        }
+    }
+
+    /**
      * Очистка исторических файлов
      */
     @Asynchronous

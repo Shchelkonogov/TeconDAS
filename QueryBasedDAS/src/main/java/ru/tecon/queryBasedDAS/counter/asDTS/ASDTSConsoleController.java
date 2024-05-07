@@ -1,10 +1,9 @@
-package ru.tecon.queryBasedDAS.counter.ftp.eco;
+package ru.tecon.queryBasedDAS.counter.asDTS;
 
 import fish.payara.security.openid.api.OpenIdContext;
 import org.slf4j.Logger;
 import ru.tecon.queryBasedDAS.AlphaNumComparator;
 import ru.tecon.queryBasedDAS.counter.Periodicity;
-import ru.tecon.queryBasedDAS.counter.ftp.FtpCounterExtension;
 import ru.tecon.queryBasedDAS.counter.report.ExcelReport;
 import ru.tecon.queryBasedDAS.counter.report.PdfReport;
 import ru.tecon.queryBasedDAS.counter.statistic.StatData;
@@ -24,20 +23,16 @@ import java.io.OutputStream;
 import java.io.Serializable;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * Контроллер для консоли экомониторинга
- *
  * @author Maksim Shchelkonogov
- * 09.04.2024
+ * 03.05.2024
  */
 @ViewScoped
-@Named("ecoController")
-public class EcoConsoleController implements Serializable {
+@Named("asdtsController")
+public class ASDTSConsoleController implements Serializable {
 
     @Inject
     private SecurityContext securityContext;
@@ -56,18 +51,14 @@ public class EcoConsoleController implements Serializable {
 
     private String remoteSelected;
     private StatData selectedStat;
-    private LocalDateTime selectedDateTime;
     private Set<String> config = new HashSet<>();
-    private final Map<String, String[]> archiveData = new HashMap<>();
-    private final List<ColumnModel> archiveColumnHeader = new ArrayList<>();
 
-    private final EcoCounter counter = new EcoCounter();
-    private final EcoInfo info = EcoInfo.getInstance();
+    private final ASDTSCounter counter = new ASDTSCounter();
+    private final ASDTSInfo info = ASDTSInfo.getInstance();
 
     @PostConstruct
     private void init() {
         remoteSelected = getRemotes()[0];
-        clearArchiveData();
     }
 
     /**
@@ -141,46 +132,6 @@ public class EcoConsoleController implements Serializable {
     }
 
     /**
-     * Загрузка исторических данных
-     */
-    public void loadArchiveData() {
-        String stationNumber = selectedStat.getCounterName().replace("Станция ", "");
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm");
-        DateTimeFormatter headerFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
-
-        archiveColumnHeader.clear();
-
-        for (int i = 0, j = 0; i < 60; i+=10, j++) {
-            archiveColumnHeader.add(new ColumnModel(selectedDateTime.withMinute(i).format(headerFormatter), "getValue()[" + j + "]"));
-            try {
-                ((FtpCounterExtension) counter).showData("/[measure_529]_" +
-                        "[" + stationNumber + "]_" +
-                        "[" + selectedDateTime.withMinute(i).format(formatter) + "].xml");
-                int finalJ = j;
-                counter.getHist().forEach((key, value) -> {
-                    if (archiveData.containsKey(key)) {
-                        archiveData.get(key)[finalJ] = value.getValue();
-                    } else {
-                        String[] values = new String[6];
-                        values[finalJ] = value.getValue();
-                        archiveData.put(key, values);
-                    }
-                });
-            } catch (IOException e) {
-                logger.warn("Error load archive data", e);
-            }
-        }
-    }
-
-    public void clearArchiveData() {
-        archiveData.clear();
-        archiveColumnHeader.clear();
-        for (int i = 0; i < 6; i++) {
-            archiveColumnHeader.add(new ColumnModel(i + "0"));
-        }
-    }
-
-    /**
      * Создание xlsx отчета
      */
     public void createExcelReport() {
@@ -191,11 +142,12 @@ public class EcoConsoleController implements Serializable {
         ec.setResponseContentType("application/vnd.ms-excel; charset=UTF-8");
         ec.setResponseHeader("Content-Disposition", "attachment; filename=\"" +
                 URLEncoder.encode("Статистика", StandardCharsets.UTF_8) + " " +
-                URLEncoder.encode("Экомониторинга.xlsx", StandardCharsets.UTF_8) + "\"");
+                URLEncoder.encode("АС", StandardCharsets.UTF_8) + " " +
+                URLEncoder.encode("ДТС.xlsx", StandardCharsets.UTF_8) + "\"");
         ec.setResponseCharacterEncoding("UTF-8");
 
         try (OutputStream outputStream = ec.getResponseOutputStream()) {
-            ExcelReport.generateReport(outputStream, "'Экомониторинг'", getStatistic());
+            ExcelReport.generateReport(outputStream, "АС 'ДТС'", getStatistic());
             outputStream.flush();
         } catch (IOException e) {
             logger.warn("error send report", e);
@@ -215,11 +167,12 @@ public class EcoConsoleController implements Serializable {
         ec.setResponseContentType("application/vnd.ms-excel; charset=UTF-8");
         ec.setResponseHeader("Content-Disposition", "attachment; filename=\"" +
                 URLEncoder.encode("Статистика", StandardCharsets.UTF_8) + " " +
-                URLEncoder.encode("Экомониторинга.pdf", StandardCharsets.UTF_8) + "\"");
+                URLEncoder.encode("АС", StandardCharsets.UTF_8) + " " +
+                URLEncoder.encode("ДТС.pdf", StandardCharsets.UTF_8) + "\"");
         ec.setResponseCharacterEncoding("UTF-8");
 
         try (OutputStream outputStream = ec.getResponseOutputStream()) {
-            PdfReport.generateReport(outputStream, "'Экомониторинг'", getStatistic());
+            PdfReport.generateReport(outputStream, "АС 'ДТС'", getStatistic());
             outputStream.flush();
         } catch (IOException e) {
             logger.warn("error send report", e);
@@ -278,50 +231,7 @@ public class EcoConsoleController implements Serializable {
         this.selectedStat = selectedStat;
     }
 
-    public LocalDateTime getSelectedDateTime() {
-        return LocalDateTime.now().withMinute(0);
-    }
-
-    public LocalDateTime getMinDate() {
-        return LocalDateTime.now().minusDays(7).withHour(1).withMinute(0);
-    }
-
-    public void setSelectedDateTime(LocalDateTime selectedDateTime) {
-        this.selectedDateTime = selectedDateTime;
-    }
-
-    public Set<Map.Entry<String, String[]>> getArchiveData() {
-        return archiveData.entrySet();
-    }
-
-    public List<ColumnModel> getArchiveColumnHeader() {
-        return archiveColumnHeader;
-    }
-
     public Set<String> getConfig() {
         return config;
-    }
-
-    public static final class ColumnModel {
-
-        private final String header;
-        private String valueProperty;
-
-        private ColumnModel(String header) {
-            this.header = header;
-        }
-
-        private ColumnModel(String header, String valueProperty) {
-            this.header = header;
-            this.valueProperty = valueProperty;
-        }
-
-        public String getHeader() {
-            return header;
-        }
-
-        public String getValueProperty() {
-            return valueProperty;
-        }
     }
 }

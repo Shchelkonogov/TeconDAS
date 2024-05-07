@@ -11,6 +11,8 @@ import ru.tecon.queryBasedDAS.counter.statistic.StatData;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,9 +33,10 @@ public class ExcelReport {
      * Метод формирует отчет по статистике
      *
      * @param outputStream поток в который записывается отчет
+     * @param counterName название контроллера, для отображения в шапки
      * @param statisticList данные для отчета
      */
-    public static void generateReport(OutputStream outputStream, List<StatData> statisticList) {
+    public static void generateReport(OutputStream outputStream, String counterName, List<StatData> statisticList) {
         try (SXSSFWorkbook wb = new SXSSFWorkbook()) {
             SXSSFSheet sheet = wb.createSheet("Статистика");
 
@@ -47,7 +50,7 @@ public class ExcelReport {
 
             Row row = sheet.createRow(1);
             Cell cell = row.createCell(1);
-            cell.setCellValue("Статистика работы контроллеров Экомониторинга");
+            cell.setCellValue("Статистика работы контроллеров " + counterName);
             cell.setCellStyle(styleMap.get("header"));
             CellRangeAddress cellAddresses = new CellRangeAddress(1, 1, 1, HEAD.length);
             sheet.addMergedRegion(cellAddresses);
@@ -69,6 +72,13 @@ public class ExcelReport {
             for (int i = 0; i < HEAD.length; i++) {
                 sheet.autoSizeColumn(i + 1);
             }
+
+            String createText = "Отчет сформирован " +
+                    LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss"));
+
+            createRow(sheet.createRow(index + 1), styleMap.get("text"), createText);
+            cellAddresses = new CellRangeAddress(index + 1, index + 1, 1, HEAD.length);
+            sheet.addMergedRegion(cellAddresses);
 
             wb.write(outputStream);
         } catch (IOException e) {
@@ -149,6 +159,13 @@ public class ExcelReport {
         style.setBorderTop(BorderStyle.THIN);
 
         styles.put("cellLeft", style);
+
+        style = wb.createCellStyle();
+        style.setFont(font12);
+        style.setAlignment(HorizontalAlignment.LEFT);
+        style.setVerticalAlignment(VerticalAlignment.CENTER);
+
+        styles.put("text", style);
 
         return styles;
     }
