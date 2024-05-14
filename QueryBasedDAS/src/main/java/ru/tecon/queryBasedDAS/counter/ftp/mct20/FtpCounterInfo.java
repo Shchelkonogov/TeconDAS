@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.tecon.queryBasedDAS.counter.CounterInfo;
 import ru.tecon.queryBasedDAS.counter.ftp.FtpClient;
+import ru.tecon.queryBasedDAS.counter.statistic.WebConsole;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -19,7 +20,7 @@ import java.util.stream.Collectors;
  * @author Maksim Shchelkonogov
  * 06.02.2024
  */
-public abstract class FtpCounterInfo implements CounterInfo {
+public abstract class FtpCounterInfo implements CounterInfo, WebConsole {
 
     private static final Logger logger = LoggerFactory.getLogger(FtpCounterInfo.class);
 
@@ -118,5 +119,10 @@ public abstract class FtpCounterInfo implements CounterInfo {
 
     private interface FilesFilter<T> {
         T load(FTPClient ftpClient, String pathName) throws IOException;
+    }
+
+    @Override
+    public String getConsoleUrl() {
+        return "/mct";
     }
 }

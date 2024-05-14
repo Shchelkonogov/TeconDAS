@@ -14,23 +14,28 @@ import java.util.*;
  */
 public class StatData {
 
+    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss");
+
     private final String remoteName;
     private final String counterName;
+    private final String counter;
 
     private String objectName;
     private LocalDateTime startRequestTime;
     private LocalDateTime endRequestTime;
+    private LocalDateTime lastValuesUploadTime;
 
     private List<RequestedValue> requestedValues = new ArrayList<>();
     private List<LastValue> lastValues = new ArrayList<>();
 
-    private StatData(String remoteName, String counterName) {
+    private StatData(String remoteName, String counterName, String counter) {
         this.remoteName = remoteName;
         this.counterName = counterName;
+        this.counter = counter;
     }
 
-    public static Builder builder(String remoteName, String counterName) {
-        return new Builder(remoteName, counterName);
+    public static Builder builder(String remoteName, String counterName, String counter) {
+        return new Builder(remoteName, counterName, counter);
     }
 
     public String getRemoteName() {
@@ -39,6 +44,10 @@ public class StatData {
 
     public String getCounterName() {
         return counterName;
+    }
+
+    public String getCounter() {
+        return counter;
     }
 
     public String getObjectName() {
@@ -68,7 +77,7 @@ public class StatData {
                 .max(LocalDateTime::compareTo)
                 .orElse(null);
         if (dateTime != null) {
-            return dateTime.format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss"));
+            return dateTime.format(FORMATTER);
         }
         return "";
     }
@@ -87,9 +96,13 @@ public class StatData {
     private String parseDate(LocalDateTime dateTime) {
         String result = "Все известные";
         if (dateTime != null) {
-            result = dateTime.format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss"));
+            result = dateTime.format(FORMATTER);
         }
         return result;
+    }
+
+    public LocalDateTime getLastValuesUploadTime() {
+        return lastValuesUploadTime;
     }
 
     public List<LastValue> getLastValues() {
@@ -117,16 +130,19 @@ public class StatData {
 
         private final String remoteName;
         private final String counterName;
+        private final String counter;
         private String objectName;
         private LocalDateTime startRequestTime;
         private LocalDateTime endRequestTime;
+        private LocalDateTime lastValuesUploadTime;
 
         private final List<RequestedValue> requestedValues = new ArrayList<>();
         private final List<LastValue> lastValues = new ArrayList<>();
 
-        public Builder(String remoteName, String counterName) {
+        private Builder(String remoteName, String counterName, String counter) {
             this.remoteName = remoteName;
             this.counterName = counterName;
+            this.counter = counter;
         }
 
         public Builder objectName(String objectName) {
@@ -154,13 +170,29 @@ public class StatData {
             return this;
         }
 
+        public Builder requestedValue(List<RequestedValue> requestedValues) {
+            this.requestedValues.addAll(requestedValues);
+            return this;
+        }
+
+        public Builder lastValue(List<LastValue> lastValues) {
+            this.lastValues.addAll(lastValues);
+            return this;
+        }
+
+        public Builder lastValuesUploadTime(LocalDateTime lastValuesUploadTime) {
+            this.lastValuesUploadTime = lastValuesUploadTime;
+            return this;
+        }
+
         public StatData build() {
-            StatData statData = new StatData(remoteName, counterName);
+            StatData statData = new StatData(remoteName, counterName, counter);
             statData.objectName = objectName;
             statData.startRequestTime = startRequestTime;
             statData.endRequestTime = endRequestTime;
             statData.requestedValues = requestedValues;
             statData.lastValues = lastValues;
+            statData.lastValuesUploadTime = lastValuesUploadTime;
             return statData;
         }
     }

@@ -93,8 +93,8 @@ public class QueryBasedDASStatelessBean {
                     counterWebConsole.clearStatistic();
 
                     for (String counterName: entry.getValue()) {
-                        StatData build = StatData.builder(serverName, counterName).build();
-                        counterWebConsole.merge(new StatKey(serverName, counterName), build, (statData, statData2) -> statData2);
+                        StatData build = StatData.builder(serverName, counterName, entry.getKey()).build();
+                        counterWebConsole.merge(new StatKey(serverName, counterName), build);
                     }
                 }
             }
@@ -373,7 +373,7 @@ public class QueryBasedDASStatelessBean {
             Map<String, Counter> loadedCounters = new HashMap<>();
 
             for (SubscribedObject object: objects) {
-                StatData.Builder builder = StatData.builder(uploadServerName, object.getObjectName())
+                StatData.Builder builder = StatData.builder(uploadServerName, object.getObjectName(), object.getServerName())
                         .startRequestTime(LocalDateTime.now());
 
                 List<DataModel> objectModel = uploadServiceRemote.loadObjectModelWithStartTimes(object.getId());
@@ -413,6 +413,7 @@ public class QueryBasedDASStatelessBean {
                         uploadServiceRemote.uploadDataAsync(objectModel);
 
                         // Добавление статистики
+                        builder.lastValuesUploadTime(LocalDateTime.now());
                         objectModel.forEach(dataModel -> {
                             if (dataModel.getData() instanceof TreeSet) {
                                 TreeSet<DataModel.ValueModel> data = (TreeSet<DataModel.ValueModel>) dataModel.getData();
@@ -428,7 +429,7 @@ public class QueryBasedDASStatelessBean {
 
                 WebConsole counterWebConsole = bean.getCounterWebConsole(object.getServerName());
                 if (counterWebConsole != null) {
-                    counterWebConsole.merge(new StatKey(uploadServerName, object.getObjectName()), builder.build(), (statData1, statData2) -> statData2);
+                    counterWebConsole.merge(new StatKey(uploadServerName, object.getObjectName()), builder.build());
                 }
             }
         } catch (NamingException e) {

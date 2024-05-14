@@ -109,6 +109,11 @@
                 <p:column headerText="Время опроса, мс" rendered="#{ecoController.admin}" styleClass="text-center">
                     <h:outputText value="#{stat.requestTime}"/>
                 </p:column>
+                <p:column headerText="Загрузка последних данных" styleClass="text-center">
+                    <h:outputText value="#{stat.lastValuesUploadTime}">
+                        <f:convertDateTime type="localDateTime" pattern="dd.MM.yyyy HH:mm:ss"/>
+                    </h:outputText>
+                </p:column>
                 <p:column headerText="Дата последних данных" styleClass="text-center">
                     <h:outputText value="#{stat.lastDataTimeString}"/>
                 </p:column>
@@ -226,7 +231,7 @@
                 <div class="field" style="margin-bottom: 0;">
                     <p:outputLabel value="Время запрашиваемых данных:" for="@next" styleClass="mr-1 font-bold"/>
                     <p:datePicker id="dateSelecter" value="#{ecoController.selectedDateTime}" showTime="true"
-                                  maxdate="#{ecoController.selectedDateTime}"
+                                  maxdate="#{ecoController.selectedDateTime}" readonlyInput="true"
                                   mindate="#{ecoController.minDate}" styleClass="mr-1"/>
                 </div>
                 <p:commandButton id="loadArchiveBtn" value="Загрузить" onclick="PF('archiveBui').show();"
@@ -253,7 +258,7 @@
         </div>
     </p:dialog>
 
-    <p:dialog widgetVar="threadConfigWidget" width="500" modal="true"
+    <p:dialog widgetVar="threadConfigWidget" width="500" modal="true" rendered="#{ecoController.admin}"
               resizable="false" styleClass="tc-panel" showEffect="fade" hideEffect="fade"
               header="Настройка количества потоков">
 

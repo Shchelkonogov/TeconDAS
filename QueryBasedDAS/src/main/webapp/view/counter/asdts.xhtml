@@ -105,6 +105,11 @@
                 <p:column headerText="Время опроса, мс" rendered="#{asdtsController.admin}" styleClass="text-center">
                     <h:outputText value="#{stat.requestTime}"/>
                 </p:column>
+                <p:column headerText="Загрузка последних данных" styleClass="text-center">
+                    <h:outputText value="#{stat.lastValuesUploadTime}">
+                        <f:convertDateTime type="localDateTime" pattern="dd.MM.yyyy HH:mm:ss"/>
+                    </h:outputText>
+                </p:column>
                 <p:column headerText="Дата последних данных" styleClass="text-center">
                     <h:outputText value="#{stat.lastDataTimeString}"/>
                 </p:column>
@@ -203,7 +208,7 @@
         </div>
     </p:dialog>
 
-    <p:dialog widgetVar="threadConfigWidget" width="500" modal="true"
+    <p:dialog widgetVar="threadConfigWidget" width="500" modal="true" rendered="#{asdtsController.admin}"
               resizable="false" styleClass="tc-panel" showEffect="fade" hideEffect="fade"
               header="Настройка количества потоков">
 

@@ -139,6 +139,8 @@ public abstract class MctFtpCounter extends FtpCounter {
 
     @Override
     public void showData(String path) throws IOException {
+        counterData.clear();
+
         FtpClient ftpClient = new MctFtpClient();
         ftpClient.open();
 
@@ -164,6 +166,21 @@ public abstract class MctFtpCounter extends FtpCounter {
 //        System.out.println(filesForLoad);
 
         ftpClient.close();
+    }
+
+    public Map<String, CounterData> getHist() {
+        return counterData;
+    }
+
+    /**
+     * Получение файлов с ftp по имени объекта счетчика
+     *
+     * @param counterName имя счетчика
+     * @param dateTime время за которое нужен файл
+     * @return файлы под заданные параметры
+     */
+    public List<String> getFileNames(String counterName, LocalDateTime dateTime) {
+        return new ArrayList<>();
     }
 
     @Override

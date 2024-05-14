@@ -26,6 +26,28 @@ public interface WebConsole {
     void clearStatistic();
 
     /**
+     * Добавление значений в статистику (дефолтная функция объединения)
+     *
+     * @param key ключ
+     * @param value значение
+     */
+    default void merge(StatKey key, @NotNull StatData value) {
+        getStatistic().merge(key, value, (statData, statData2) -> {
+            if (statData2.getLastValues().isEmpty() && !statData.getLastValues().isEmpty()) {
+                return StatData.builder(statData2.getRemoteName(), statData2.getCounterName(), statData2.getCounter())
+                        .objectName(statData2.getObjectName())
+                        .startRequestTime(statData2.getStartRequestTime())
+                        .endRequestTime(statData2.getEndRequestTime())
+                        .requestedValue(statData2.getRequestedValues())
+                        .lastValue(statData.getLastValues())
+                        .lastValuesUploadTime(statData.getLastValuesUploadTime())
+                        .build();
+            }
+            return statData2;
+        });
+    }
+
+    /**
      * Добавление значений в статистику
      *
      * @param key ключ

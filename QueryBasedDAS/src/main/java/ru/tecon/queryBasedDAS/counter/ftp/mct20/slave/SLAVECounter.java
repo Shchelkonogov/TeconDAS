@@ -17,6 +17,8 @@ import java.time.format.DateTimeParseException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -58,6 +60,23 @@ public class SLAVECounter extends FtpCounterWithAsyncRequest {
                                         .collect(Collectors.toSet())
                                         .contains(dataModel.getParamName()));
         super.loadData(params, objectName);
+    }
+
+    @Override
+    public List<String> getFileNames(String counterName, LocalDateTime dateTime) {
+        List<String> fileNames = super.getFileNames(counterName, dateTime);
+
+        Pattern compile = Pattern.compile("^" + info.getCounterName() + "-(?<path2>(?<path1>\\d{2})\\d{2})$");
+        Matcher matcher = compile.matcher(counterName);
+
+        if (matcher.find()) {
+            fileNames.clear();
+
+            fileNames.add("/" + matcher.group("path1") +
+                    "/" + matcher.group("path2") +
+                    "/" + matcher.group("path2") + "b" + dateTime.format(DateTimeFormatter.ofPattern("yyyyMMdd-HH")));
+        }
+        return fileNames;
     }
 
     @Override

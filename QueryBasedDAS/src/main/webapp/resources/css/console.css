@@ -14,3 +14,15 @@ body .ui-menu .ui-menu-parent ul.ui-menu-child {
 body .ui-menu.ui-contextmenu {
     width: auto;
 }
+
+body .ui-datatable .ui-paginator {
+    padding: 0.1rem;
+}
+
+body .ui-paginator .ui-paginator-current {
+    margin: 0.25rem;
+}
+
+body .ui-menu .ui-menu-list .ui-menuitem .ui-menuitem-link .ui-icon-triangle-1-e:last-child {
+    margin-top: 0.25rem;
+}

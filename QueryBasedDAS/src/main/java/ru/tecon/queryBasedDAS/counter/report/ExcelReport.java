@@ -27,7 +27,9 @@ public class ExcelReport {
     private static final Logger logger = LoggerFactory.getLogger(ExcelReport.class);
 
     private static final String[] HEAD = {"№", "Имя объекта", "Имя прибора", "Дата последних данных",
-            "Диапазон запрашиваемых измерений"};
+            "Загрузка последних данных", "Диапазон запрашиваемых измерений"};
+
+    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss");
 
     /**
      * Метод формирует отчет по статистике
@@ -59,10 +61,16 @@ public class ExcelReport {
 
             int index = 4;
             for (StatData statistic: statisticList) {
+                String lastValuesUploadTime = "";
+                if (statistic.getLastValuesUploadTime() != null) {
+                    lastValuesUploadTime = statistic.getLastValuesUploadTime().format(FORMATTER);
+                }
+
                 createRow(sheet.createRow(index),
                         new StyledValue(String.valueOf(index - 3), styleMap.get("cell")),
                         new StyledValue(statistic.getObjectName(), styleMap.get("cellLeft")),
                         new StyledValue(statistic.getCounterName(), styleMap.get("cell")),
+                        new StyledValue(lastValuesUploadTime, styleMap.get("cell")),
                         new StyledValue(statistic.getLastDataTimeString(), styleMap.get("cell")),
                         new StyledValue(statistic.getRequestedRange(), styleMap.get("cell")));
 
@@ -74,7 +82,7 @@ public class ExcelReport {
             }
 
             String createText = "Отчет сформирован " +
-                    LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss"));
+                    LocalDateTime.now().format(FORMATTER);
 
             createRow(sheet.createRow(index + 1), styleMap.get("text"), createText);
             cellAddresses = new CellRangeAddress(index + 1, index + 1, 1, HEAD.length);

@@ -79,7 +79,8 @@ public class EcoConsoleController implements Serializable {
         return info.getStatistic().entrySet().stream()
                 .filter(entry -> entry.getKey().getServer().equals(remoteSelected))
                 .map(Map.Entry::getValue)
-                .sorted(Comparator.comparing(StatData::getCounterName, new AlphaNumComparator()))
+                .sorted(Comparator.comparing(statData -> statData.getObjectName() == null ? "" : statData.getObjectName(),
+                                            new AlphaNumComparator()))
                 .collect(Collectors.toCollection(ArrayList::new));
     }
 

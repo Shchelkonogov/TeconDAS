@@ -1,0 +1,346 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="http://xmlns.jcp.org/jsf/html"
+      xmlns:f="http://xmlns.jcp.org/jsf/core"
+      xmlns:p="http://primefaces.org/ui"
+      xmlns:c="http://xmlns.jcp.org/jsp/jstl/core">
+<h:head>
+   <h:outputStylesheet name="webjars/primeflex/3.3.1/primeflex.min.css"/>
+   <h:outputStylesheet name="system/style.css" library="css"/>
+   <h:outputStylesheet name="console.css" library="css"/>
+   <h:outputScript name="console.js" library="js"/>
+   <link rel="shortcut icon" type="image/x-icon" href="#{resource['images/logo.png']}"/>
+</h:head>
+<h:body>
+   <h:form id="statForm" style="height: 100%;">
+      <p:menubar id="menuBar" style="margin: 3px; background: #f8f9fa; padding: 0.1rem;">
+         <p:submenu label="Действия">
+            <p:submenu label="Загрузить счетчики" icon="pi pi-fw pi-cloud-upload">
+               <c:forEach var="counter" items="#{mctController.counters}">
+                  <p:menuitem value="#{counter}" action="#{mctController.loadObjects(counter)}"
+                              icon="pi pi-fw pi-calculator" update="statTable" oncomplete="PF('bui').hide();">
+                     <p:confirm header="Подтверждение" message="Так же будет очищена статистика #{counter}"
+                                icon="pi pi-info-circle"/>
+                  </p:menuitem>
+               </c:forEach>
+            </p:submenu>
+            <p:menuitem value="Загрузить конфигурацию" disabled="#{mctController.selectedStat == null}"
+                        icon="pi pi-fw pi-cloud-upload" onstart="PF('statusDialog').show()"
+                        action="#{mctController.requestConfig()}"
+                        oncomplete="PF('configDataWidget').show(); PF('statusDialog').hide();"
+                        update="configDataTable configDialogHeader"/>
+            <p:divider/>
+            <p:menuitem value="Очистить статистику" icon="pi pi-fw pi-trash"
+                        action="#{mctController.clearStatistic()}" update="statTable"/>
+         </p:submenu>
+         <p:submenu label="Просмотр">
+            <p:menuitem value="Архивные данные" disabled="#{mctController.selectedStat == null}"
+                        icon="pi pi-fw pi-file-import" oncomplete="PF('archiveDataWidget').show();"
+                        update="archiveDialogHeader"/>
+            <p:menuitem value="Мгновенные данные"
+                        disabled="#{(mctController.selectedStat == null) or !mctController.asyncRequest}"
+                        onstart="PF('statusDialog').show()"
+                        action="#{mctController.requestAsync()}"
+                        oncomplete="PF('asyncDataWidget').show(); PF('statusDialog').hide();"
+                        update="asyncDataTable asyncDialogHeader"
+                        icon="pi pi-fw pi-file-import"/>
+            <p:divider/>
+            <p:menuitem value="Запрашиваемые данные" disabled="#{mctController.selectedStat == null}"
+                        icon="pi pi-fw pi-book" oncomplete="PF('requestDataWidget').show();"
+                        update="requestDataTable requestDialogHeader"/>
+            <p:menuitem value="Переданные данные" disabled="#{mctController.selectedStat == null}"
+                        icon="pi pi-fw pi-book" oncomplete="PF('lastDataWidget').show();"
+                        update="lastDataTable lastDialogHeader"/>
+         </p:submenu>
+         <p:submenu label="Выгрузка">
+            <p:menuitem value="xlsx" icon="pi pi-fw pi-file-excel" ajax="false"
+                        action="#{mctController.createExcelReport()}"/>
+            <p:menuitem value="pdf" icon="pi pi-fw pi-file-pdf" ajax="false"
+                        action="#{mctController.createPdfReport()}"/>
+         </p:submenu>
+         <p:submenu label="Настройки" rendered="#{mctController.admin}">
+            <p:submenu label="Частота опроса" style="width: 180px;">
+               <c:forEach var="counter" items="#{mctController.counters}">
+                  <p:submenu label="#{counter}" style="width: 140px;">
+                     <c:forEach var="period" items="#{mctController.periodicityMenu}">
+                        <p:menuitem value="#{period.desc}"
+                                    action="#{mctController.changePeriodicity(counter, period.name())}"
+                                    icon="#{mctController.getPeriodicityMenuIcon(counter, period.name())}"
+                                    update="menuBar"/>
+                     </c:forEach>
+                  </p:submenu>
+               </c:forEach>
+            </p:submenu>
+            <p:submenu label="Количество потоков" style="width: 180px;">
+               <c:forEach var="counter" items="#{mctController.counters}">
+                  <p:menuitem value="#{counter} (#{mctController.initCounterForUpdate(counter)})"
+                              action="#{mctController.initCounterForUpdate(counter)}"
+                              oncomplete="PF('threadConfigWidget').show();"
+                              update="threadConfigDialogHeader threadConfigForm"/>
+               </c:forEach>
+            </p:submenu>
+         </p:submenu>
+
+         <f:facet name="options">
+            <p:outputLabel value="Удаленный сервер:" styleClass="mr-1 font-bold"/>
+            <p:selectOneMenu value="#{mctController.remoteSelected}" styleClass="mr-3"
+                             style="vertical-align: top; width: 150px;">
+               <p:ajax listener="#{mctController.setSelectedStat(null)}" update="statTable menuBar"/>
+               <f:selectItems value="#{mctController.remotes}"/>
+            </p:selectOneMenu>
+            <p:outputLabel value="Пользователь:" styleClass="mr-1 font-bold"/>
+            <p:outputLabel value="#{mctController.principal}" styleClass="mr-2"/>
+            <p:button href="#{request.contextPath}/console/logout" value="Выход" icon="pi pi-fw pi-sign-out"
+                      styleClass="ui-button-info"/>
+         </f:facet>
+      </p:menubar>
+
+      <p:confirmDialog global="true" showEffect="fade" hideEffect="fade" responsive="true" width="380"
+                       styleClass="tc-panel">
+         <p:commandButton value="Нет" type="button"
+                          styleClass="ui-confirmdialog-no ui-button-secondary tc-no-loading"/>
+         <p:commandButton value="Да" type="button" onclick="PF('bui').show();"
+                          styleClass="ui-confirmdialog-yes tc-no-loading"/>
+      </p:confirmDialog>
+
+      <div style="height: calc(100% - 51px); padding: 0 0 3px 3px;">
+         <p:dataTable id="statTable" var="stat" value="#{mctController.statistic}" rowIndexVar="index"
+                      scrollable="true" rowKey="#{stat.counterName}" scrollHeight="100%" size="small"
+                      selection="#{mctController.selectedStat}" selectionMode="single"
+                      emptyMessage="#{global['table.empty.value']}"
+                      paginator="true" rows="50"
+                      paginatorPosition="bottom"
+                      paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+                      currentPageReportTemplate="{startRecord}-{endRecord} из {totalRecords} записей">
+
+            <p:ajax event="rowSelect" update="statForm:menuBar"/>
+            <p:ajax event="contextMenu" update="statForm:menuBar statForm:contextMenu"/>
+
+            <p:column headerText="№">
+               <h:outputText value="#{index + 1}"/>
+            </p:column>
+            <p:column headerText="Имя объекта" filterBy="#{stat.objectName}" filterMatchMode="contains">
+               <h:outputText value="#{stat.objectName}"/>
+            </p:column>
+            <p:column headerText="Имя прибора" filterBy="#{stat.counterName}" filterMatchMode="contains"
+                      styleClass="text-center">
+               <h:outputText value="#{stat.counterName}"/>
+            </p:column>
+            <p:column headerText="Начало опроса" rendered="#{mctController.admin}" styleClass="text-center">
+               <h:outputText value="#{stat.startRequestTime}">
+                  <f:convertDateTime type="localDateTime" pattern="dd.MM.yyyy HH:mm:ss:SSS"/>
+               </h:outputText>
+            </p:column>
+            <p:column headerText="Время опроса, мс" rendered="#{mctController.admin}" styleClass="text-center">
+               <h:outputText value="#{stat.requestTime}"/>
+            </p:column>
+            <p:column headerText="Загрузка последних данных" styleClass="text-center">
+               <h:outputText value="#{stat.lastValuesUploadTime}">
+                  <f:convertDateTime type="localDateTime" pattern="dd.MM.yyyy HH:mm:ss"/>
+               </h:outputText>
+            </p:column>
+            <p:column headerText="Дата последних данных" styleClass="text-center">
+               <h:outputText value="#{stat.lastDataTimeString}"/>
+            </p:column>
+            <p:column headerText="Диапазон запрашиваемых измерений" styleClass="text-center">
+               <h:outputText value="#{stat.requestedRange}"/>
+            </p:column>
+         </p:dataTable>
+
+         <p:contextMenu id="contextMenu" for="statTable">
+            <p:menuitem value="Загрузить конфигурацию" icon="pi pi-fw pi-cloud-upload"
+                        onstart="PF('statusDialog').show();" action="#{mctController.requestConfig()}"
+                        oncomplete="PF('configDataWidget').show(); PF('statusDialog').hide();"
+                        update="configDataTable configDialogHeader"/>
+            <p:divider/>
+            <p:menuitem value="Архивные данные" icon="pi pi-fw pi-file-import"
+                        oncomplete="PF('archiveDataWidget').show();" update="archiveDialogHeader"/>
+            <p:menuitem value="Мгновенные данные" icon="pi pi-fw pi-file-import"
+                        disabled="#{!mctController.asyncRequest}"
+                        onstart="PF('statusDialog').show();" action="#{mctController.requestAsync()}"
+                        oncomplete="PF('asyncDataWidget').show(); PF('statusDialog').hide();"
+                        update="asyncDataTable asyncDialogHeader"/>
+            <p:divider/>
+            <p:menuitem value="Запрашиваемые данные" oncomplete="PF('requestDataWidget').show();"
+                        icon="pi pi-fw pi-book" update="requestDataTable requestDialogHeader"/>
+            <p:menuitem value="Переданные данные" oncomplete="PF('lastDataWidget').show();"
+                        icon="pi pi-fw pi-book" update="lastDataTable lastDialogHeader"/>
+         </p:contextMenu>
+      </div>
+
+      <p:blockUI widgetVar="bui" block="statTable"/>
+
+      <p:poll interval="30" update="statTable"/>
+   </h:form>
+
+   <p:dialog widgetVar="requestDataWidget" width="824" height="600" modal="true"
+             resizable="false" styleClass="tc-panel" showEffect="fade" hideEffect="fade">
+
+      <f:facet name="header">
+         <h:outputText id="requestDialogHeader"
+                       value="Запрашиваемые данные #{mctController.selectedStat.counterName}"/>
+      </f:facet>
+
+      <div style="padding: 3px 0 3px 3px; height: calc(100% - 6px);">
+         <p:dataTable id="requestDataTable" value="#{mctController.selectedStat.requestedValues}" var="requestData"
+                      scrollable="true" scrollHeight="100%" emptyMessage="#{global['table.empty.value']}">
+
+            <p:column headerText="Название" width="600">
+               <h:outputText value="#{requestData.paramName}"/>
+            </p:column>
+            <p:column headerText="Дата" width="200" styleClass="text-center">
+               <h:outputText value="#{requestData.requestedDateTime}">
+                  <f:convertDateTime type="localDateTime" pattern="dd.MM.yyyy HH:mm:ss"/>
+               </h:outputText>
+            </p:column>
+         </p:dataTable>
+      </div>
+   </p:dialog>
+
+   <p:dialog widgetVar="lastDataWidget" width="1024" height="600" modal="true"
+             resizable="false" styleClass="tc-panel" showEffect="fade" hideEffect="fade">
+
+      <f:facet name="header">
+         <h:outputText id="lastDialogHeader"
+                       value="Переданные данные #{mctController.selectedStat.counterName}"/>
+      </f:facet>
+
+      <div style="padding: 3px 0 3px 3px; height: calc(100% - 6px);">
+         <p:dataTable id="lastDataTable" value="#{mctController.selectedStat.lastValues}" var="lastData"
+                      scrollable="true" scrollHeight="100%" emptyMessage="#{global['table.empty.value']}">
+
+            <p:column headerText="Название" width="600">
+               <h:outputText value="#{lastData.paramName}"/>
+            </p:column>
+            <p:column headerText="Значение" width="200" styleClass="text-center">
+               <h:outputText value="#{lastData.value}"/>
+            </p:column>
+            <p:column headerText="Дата" width="200" styleClass="text-center">
+               <h:outputText value="#{lastData.dateTime}">
+                  <f:convertDateTime type="localDateTime" pattern="dd.MM.yyyy HH:mm:ss"/>
+               </h:outputText>
+            </p:column>
+         </p:dataTable>
+      </div>
+   </p:dialog>
+
+   <p:dialog widgetVar="configDataWidget" width="600" height="600" modal="true"
+             resizable="false" styleClass="tc-panel" showEffect="fade" hideEffect="fade">
+
+      <p:ajax event="close" update="configDataTable" listener="#{mctController.clearConfig()}"/>
+
+      <f:facet name="header">
+         <h:outputText id="configDialogHeader"
+                       value="Конфигурация #{mctController.selectedStat.counterName}"/>
+      </f:facet>
+
+      <div style="padding: 3px 0 3px 3px; height: calc(100% - 6px);">
+         <p:dataTable id="configDataTable" value="#{mctController.config}" var="configData"
+                      scrollable="true" scrollHeight="100%" emptyMessage="#{global['table.empty.value']}">
+
+            <p:column headerText="Название" width="600">
+               <h:outputText value="#{configData}"/>
+            </p:column>
+         </p:dataTable>
+      </div>
+   </p:dialog>
+
+   <p:dialog widgetVar="asyncDataWidget" width="824" height="600" modal="true"
+             resizable="false" styleClass="tc-panel" showEffect="fade" hideEffect="fade">
+
+      <p:ajax event="close" update="asyncDataTable" listener="#{mctController.clearAsyncData()}"/>
+
+      <f:facet name="header">
+         <h:outputText id="asyncDialogHeader"
+                       value="Мгновенные данные #{mctController.selectedStat.counterName}"/>
+      </f:facet>
+
+      <div style="padding: 3px 0 3px 3px; height: calc(100% - 6px);">
+         <p:dataTable id="asyncDataTable" value="#{mctController.async}" var="asyncData"
+                      scrollable="true" scrollHeight="100%" emptyMessage="#{global['table.empty.value']}">
+
+            <p:column headerText="Название" width="600">
+               <h:outputText value="#{asyncData.param}"/>
+            </p:column>
+            <p:column headerText="Значение" width="200" styleClass="text-center">
+               <h:outputText value="#{asyncData.value}"/>
+            </p:column>
+         </p:dataTable>
+      </div>
+   </p:dialog>
+
+   <p:dialog widgetVar="archiveDataWidget" width="1280" height="600" modal="true"
+             resizable="false" styleClass="tc-panel" showEffect="fade" hideEffect="fade"
+             focus="archiveDataForm:loadArchiveBtn">
+
+      <p:ajax event="close" update="archiveDataTable" listener="#{mctController.clearArchiveData()}"/>
+
+      <f:facet name="header">
+         <h:outputText id="archiveDialogHeader"
+                       value="Архивные данные #{mctController.selectedStat.counterName}"/>
+      </f:facet>
+
+      <h:form id="archiveDataForm" style="padding: 3px;">
+         <div class="formgroup-inline justify-content-center">
+            <div class="field" style="margin-bottom: 0;">
+               <p:outputLabel value="Время запрашиваемых данных:" for="@next" styleClass="mr-1 font-bold"/>
+               <p:datePicker id="dateSelecter" value="#{mctController.selectedDateTime}" showTime="false"
+                             maxdate="#{mctController.selectedDateTime}" readonlyInput="true"
+                             mindate="#{mctController.minDate}" styleClass="mr-1"/>
+            </div>
+            <p:commandButton id="loadArchiveBtn" value="Загрузить" onclick="PF('archiveBui').show();"
+                             action="#{mctController.loadArchiveData()}" oncomplete="PF('archiveBui').hide();"
+                             styleClass="tc-no-loading" update="archiveDataTable"/>
+         </div>
+      </h:form>
+      <div style="height: calc(100% - 43px); padding: 0 0 3px 3px;">
+         <p:dataTable id="archiveDataTable" value="#{mctController.archiveData}" var="archiveData"
+                      scrollable="true" scrollHeight="518" emptyMessage="#{global['table.empty.value']}"
+                      frozenColumns="1" scrollWidth="862">
+
+            <p:column headerText="Название" styleClass="tc-text-overflow"
+                      style="min-width: 400px; max-width: 400px;">
+               <h:outputText value="#{archiveData.key}" title="#{archiveData.key}"/>
+            </p:column>
+            <p:columns value="#{mctController.archiveColumnHeader}" var="column"
+                       headerText="#{column.header}" field="#{column.valueProperty}"
+                       sortable="false" filterable="false" styleClass="tc-text-overflow"
+                       style="max-width: 170px; min-width: 170px;"/>
+         </p:dataTable>
+
+         <p:blockUI widgetVar="archiveBui" block="archiveDataTable"/>
+      </div>
+   </p:dialog>
+
+   <p:dialog widgetVar="threadConfigWidget" width="500" modal="true" rendered="#{mctController.admin}"
+             resizable="false" styleClass="tc-panel" showEffect="fade" hideEffect="fade">
+
+      <f:facet name="header">
+         <h:outputText id="threadConfigDialogHeader"
+                       value="Настройка количества потоков #{mctController.counterForUpdateName}"/>
+      </f:facet>
+
+      <p:ajax event="close" update="threadConfigForm" resetValues="true"/>
+
+      <h:form id="threadConfigForm" style="margin: 3px;">
+         <div class="text-center" style="margin-bottom: 3px;">
+            <p:outputLabel for="@next" value="Количество потоков:" styleClass="mr-1 font-bold"/>
+            <p:inputNumber value="#{mctController.threadCount}" minValue="1" maxValue="20"/>
+         </div>
+         <div class="flex justify-content-end gap-1">
+            <p:commandButton value="Сохранить" styleClass="tc-no-loading"
+                             update="statForm:menuBar" onstart="PF('threadConfigWidget').hide();"/>
+            <p:commandButton value="Отмена" styleClass="ui-button-secondary tc-no-loading"
+                             onstart="PF('threadConfigWidget').hide();" process="@this"/>
+         </div>
+      </h:form>
+   </p:dialog>
+
+   <p:dialog id="statusDialog" modal="true" widgetVar="statusDialog" draggable="false" closable="false"
+             resizable="false" style="box-shadow: none;" position="center center" onShow="PF('statusDialog').initPosition();">
+      <i class="pi pi-spinner pi-spin" style="font-size: 5rem;" />
+   </p:dialog>
+</h:body>
+</html>

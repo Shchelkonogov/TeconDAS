@@ -20,7 +20,9 @@ import java.util.List;
 public class PdfReport {
 
     private static final String[] HEAD = {"№", "Имя объекта", "Имя прибора", "Дата последних данных",
-            "Диапазон запрашиваемых измерений"};
+            "Загрузка последних данных", "Диапазон запрашиваемых измерений"};
+
+    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss");
 
     /**
      * Метод формирует отчет по статистике
@@ -46,8 +48,8 @@ public class PdfReport {
         Font font14 = FontFactory.getFont("TimeNewRoman", BaseFont.IDENTITY_H, BaseFont.EMBEDDED, 14, Font.BOLD);
         Font font12 = FontFactory.getFont("TimeNewRoman", BaseFont.IDENTITY_H, BaseFont.EMBEDDED, 12);
 
-        Table dataTable = new Table(5);
-        dataTable.setWidths(new int[]{5, 20, 20, 25, 30});
+        Table dataTable = new Table(HEAD.length);
+        dataTable.setWidths(new int[]{5, 15, 15, 20, 20, 25});
         dataTable.setWidth(100);
         dataTable.setPadding(3);
         dataTable.getDefaultCell().setBorderWidth(1);
@@ -60,12 +62,18 @@ public class PdfReport {
 
         int i = 1;
         for (StatData statData: statisticList) {
+            String lastValuesUploadTime = "";
+            if (statData.getLastValuesUploadTime() != null) {
+                lastValuesUploadTime = statData.getLastValuesUploadTime().format(FORMATTER);
+            }
+
             dataTable.getDefaultCell().setHorizontalAlignment(HorizontalAlignment.CENTER);
             dataTable.addCell(new Phrase(String.valueOf(i), font12));
             dataTable.getDefaultCell().setHorizontalAlignment(HorizontalAlignment.LEFT);
             dataTable.addCell(new Phrase(statData.getObjectName(), font12));
             dataTable.getDefaultCell().setHorizontalAlignment(HorizontalAlignment.CENTER);
             dataTable.addCell(new Phrase(statData.getCounterName(), font12));
+            dataTable.addCell(new Phrase(lastValuesUploadTime, font12));
             dataTable.addCell(new Phrase(statData.getLastDataTimeString(), font12));
             dataTable.addCell(new Phrase(statData.getRequestedRange(), font12));
             i++;
@@ -73,7 +81,7 @@ public class PdfReport {
         document.add(dataTable);
 
         String createText = "Отчет сформирован " +
-                LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss"));
+                LocalDateTime.now().format(FORMATTER);
 
         p = new Paragraph(createText,
                 FontFactory.getFont("TimeNewRoman", BaseFont.IDENTITY_H, BaseFont.EMBEDDED, 12));
