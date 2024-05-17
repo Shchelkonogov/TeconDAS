@@ -61,7 +61,7 @@
                         action="#{mctController.createPdfReport()}"/>
          </p:submenu>
          <p:submenu label="Настройки" rendered="#{mctController.admin}">
-            <p:submenu label="Частота опроса" style="width: 180px;">
+            <p:submenu label="Частота опроса" style="width: 205px;" icon="pi pi-fw pi-cog">
                <c:forEach var="counter" items="#{mctController.counters}">
                   <p:submenu label="#{counter}" style="width: 140px;">
                      <c:forEach var="period" items="#{mctController.periodicityMenu}">
@@ -73,7 +73,7 @@
                   </p:submenu>
                </c:forEach>
             </p:submenu>
-            <p:submenu label="Количество потоков" style="width: 180px;">
+            <p:submenu label="Количество потоков" style="width: 205px;" icon="pi pi-fw pi-cog">
                <c:forEach var="counter" items="#{mctController.counters}">
                   <p:menuitem value="#{counter} (#{mctController.initCounterForUpdate(counter)})"
                               action="#{mctController.initCounterForUpdate(counter)}"

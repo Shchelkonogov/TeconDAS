@@ -26,3 +26,7 @@ body .ui-paginator .ui-paginator-current {
 body .ui-menu .ui-menu-list .ui-menuitem .ui-menuitem-link .ui-icon-triangle-1-e:last-child {
     margin-top: 0.25rem;
 }
+
+.das-button:hover {
+    background: linear-gradient(#116fbf, #034980) !important;
+}

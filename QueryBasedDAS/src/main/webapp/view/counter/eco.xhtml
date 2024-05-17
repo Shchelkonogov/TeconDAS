@@ -50,13 +50,13 @@
                             action="#{ecoController.createPdfReport()}"/>
             </p:submenu>
             <p:submenu label="Настройки" rendered="#{ecoController.admin}">
-                <p:submenu label="Частота опроса">
+                <p:submenu label="Частота опроса" icon="pi pi-fw pi-cog">
                     <c:forEach var="period" items="#{ecoController.periodicityMenu}">
                         <p:menuitem value="#{period.desc}" action="#{ecoController.changePeriodicity(period.name())}"
                                     icon="#{ecoController.getPeriodicityMenuIcon(period.name())}" update="menuBar"/>
                     </c:forEach>
                 </p:submenu>
-                <p:menuitem value="Количество потоков (#{ecoController.threadCount})"
+                <p:menuitem value="Количество потоков (#{ecoController.threadCount})" icon="pi pi-fw pi-cog"
                             oncomplete="PF('threadConfigWidget').show();"/>
             </p:submenu>
 

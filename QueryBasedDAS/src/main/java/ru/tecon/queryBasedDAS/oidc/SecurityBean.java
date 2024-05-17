@@ -23,9 +23,9 @@ import fish.payara.security.annotations.OpenIdAuthenticationDefinition;
         },
         tokenAutoRefresh = true,
         logout = @LogoutDefinition(
-                notifyProvider = true
+                notifyProvider = true,
                 // можно не писать и тогда будет страница от keycloak
-//                redirectURI = "http://localhost:8081/auth/1.html"
+                redirectURI = "${baseURL}/console"
         )
 )
 public class SecurityBean {

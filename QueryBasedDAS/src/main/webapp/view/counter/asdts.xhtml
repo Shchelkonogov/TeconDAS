@@ -46,13 +46,13 @@
                             action="#{asdtsController.createPdfReport()}"/>
             </p:submenu>
             <p:submenu label="Настройки" rendered="#{asdtsController.admin}">
-                <p:submenu label="Частота опроса">
+                <p:submenu label="Частота опроса" icon="pi pi-fw pi-cog">
                     <c:forEach var="period" items="#{asdtsController.periodicityMenu}">
                         <p:menuitem value="#{period.desc}" action="#{asdtsController.changePeriodicity(period.name())}"
                                     icon="#{asdtsController.getPeriodicityMenuIcon(period.name())}" update="menuBar"/>
                     </c:forEach>
                 </p:submenu>
-                <p:menuitem value="Количество потоков (#{asdtsController.threadCount})"
+                <p:menuitem value="Количество потоков (#{asdtsController.threadCount})" icon="pi pi-fw pi-cog"
                             oncomplete="PF('threadConfigWidget').show();"/>
             </p:submenu>
 

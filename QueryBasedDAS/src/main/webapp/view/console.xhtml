@@ -9,20 +9,86 @@
       xmlns:c="http://java.sun.com/jsp/jstl/core">
 <h:head>
     <h:outputStylesheet name="webjars/primeflex/3.3.1/primeflex.min.css"/>
+    <h:outputStylesheet name="system/style.css" library="css"/>
+    <h:outputStylesheet name="console.css" library="css"/>
+    <link rel="shortcut icon" type="image/x-icon" href="#{resource['images/logo.png']}"/>
 </h:head>
 <h:body>
-    <h:form>
-        <div class="flex flex-wrap justify-content-center column-gap-4 row-gap-4">
+    <h:form id="statForm" styleClass="h-full">
+        <p:menubar id="menuBar" style="margin: 3px; background: #f8f9fa; padding: 0.1rem;">
+            <p:submenu label="Настройки" rendered="#{console.admin}">
+                <p:submenu label="Частота опроса" style="width: 205px;" icon="pi pi-fw pi-cog">
+                    <c:forEach var="counter" items="#{console.counters}">
+                        <p:submenu label="#{counter}" style="width: 140px;">
+                            <c:forEach var="period" items="#{console.periodicityMenu}">
+                                <p:menuitem value="#{period.desc}"
+                                            action="#{console.changePeriodicity(counter, period.name())}"
+                                            icon="#{console.getPeriodicityMenuIcon(counter, period.name())}"
+                                            update="menuBar"/>
+                            </c:forEach>
+                        </p:submenu>
+                    </c:forEach>
+                </p:submenu>
+                <p:submenu label="Количество потоков" style="width: 205px;" icon="pi pi-fw pi-cog">
+                    <c:forEach var="counter" items="#{console.counters}">
+                        <p:menuitem value="#{counter} (#{console.initCounterForUpdate(counter)})"
+                                    action="#{console.initCounterForUpdate(counter)}"
+                                    oncomplete="PF('threadConfigWidget').show();"
+                                    update="threadConfigDialogHeader threadConfigForm"/>
+                    </c:forEach>
+                </p:submenu>
+            </p:submenu>
+
+            <f:facet name="options">
+                <p:outputLabel value="Удаленный сервер:" styleClass="mr-1 font-bold"/>
+                <p:selectOneMenu value="#{console.remoteSelected}" styleClass="mr-3"
+                                 style="vertical-align: top; width: 150px;">
+                    <f:selectItems value="#{console.remotes}"/>
+                </p:selectOneMenu>
+                <p:outputLabel value="Пользователь:" styleClass="mr-1 font-bold"/>
+                <p:outputLabel value="#{console.principal}" styleClass="mr-2"/>
+                <p:button href="#{request.contextPath}/console/logout" value="Выход" icon="pi pi-fw pi-sign-out"
+                          styleClass="ui-button-info"/>
+            </f:facet>
+        </p:menubar>
+
+        <div class="flex flex-wrap justify-content-center column-gap-4 row-gap-4 align-items-center"
+             style="height: calc(100% - 51px);">
             <c:forEach var="item" varStatus="loop" items="#{console.allConsoleMap}">
-                <div class="border-round w-12rem h-6rem bg-primary font-bold flex
-                            align-items-center justify-content-center cursor-pointer flex-column">
-                    <a href="#{request.contextPath}/console#{item.value}" style="color: inherit; text-decoration: none;"
-                       class="flex align-items-center justify-content-center h-full w-full">
-                        #{item.key}
-                    </a>
+                <div class="w-13rem bg-primary font-bold flex align-items-center justify-content-center
+                            cursor-pointer flex-column das-button"
+                     style="height: 6.5rem; background: linear-gradient(#007ad9, #034980);
+                            border-radius: 10px; box-shadow: 0.3em 0.4em 5px 0 rgba(122, 122, 122, 0.5);">
+                    <a href="#{request.contextPath}/console#{item.key}"
+                       style="color: inherit; text-decoration: none; white-space: pre-line;"
+                       class="flex align-items-center justify-content-center h-full w-full">#{item.value}</a>
                 </div>
             </c:forEach>
         </div>
     </h:form>
+
+    <p:dialog widgetVar="threadConfigWidget" width="500" modal="true" rendered="#{console.admin}"
+              resizable="false" styleClass="tc-panel" showEffect="fade" hideEffect="fade">
+
+        <f:facet name="header">
+            <h:outputText id="threadConfigDialogHeader"
+                          value="Настройка количества потоков #{console.counterForUpdate}"/>
+        </f:facet>
+
+        <p:ajax event="close" update="threadConfigForm" resetValues="true"/>
+
+        <h:form id="threadConfigForm" style="margin: 3px;">
+            <div class="text-center" style="margin-bottom: 3px;">
+                <p:outputLabel for="@next" value="Количество потоков:" styleClass="mr-1 font-bold"/>
+                <p:inputNumber value="#{console.threadCount}" minValue="1" maxValue="20"/>
+            </div>
+            <div class="flex justify-content-end gap-1">
+                <p:commandButton value="Сохранить" styleClass="tc-no-loading"
+                                 update="statForm:menuBar" onstart="PF('threadConfigWidget').hide();"/>
+                <p:commandButton value="Отмена" styleClass="ui-button-secondary tc-no-loading"
+                                 onstart="PF('threadConfigWidget').hide();" process="@this"/>
+            </div>
+        </h:form>
+    </p:dialog>
 </h:body>
 </html>
