@@ -34,7 +34,7 @@ public class ListenerServiceBean implements ListenerServiceRemote {
     private Logger logger;
 
     @Inject
-    @ConfigProperty(name = "payara.instance.http.port")
+    @ConfigProperty(name = "payara.instance.https.port")
     private String port;
 
     @EJB
@@ -75,7 +75,7 @@ public class ListenerServiceBean implements ListenerServiceRemote {
             for (String counter: listener.getCounterNameSet()) {
                 checkStm.setString(1, counter);
 
-                String url = "http://" + InetAddress.getLocalHost().getHostName() + ":" + port + "/uploaderService/api/request?id=[id]&objectId=[objectId]";
+                String url = "https://" + InetAddress.getLocalHost().getHostName() + ":" + port + "/uploaderService/api/request?id=[id]&objectId=[objectId]";
 
                 ResultSet res = checkStm.executeQuery();
                 if (res.next()) {
