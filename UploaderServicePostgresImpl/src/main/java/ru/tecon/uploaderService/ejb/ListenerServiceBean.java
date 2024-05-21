@@ -12,10 +12,8 @@ import javax.inject.Inject;
 import javax.sql.DataSource;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
+import java.util.Set;
 
 /**
  * @author Maksim Shchelkonogov
@@ -28,7 +26,6 @@ public class ListenerServiceBean implements ListenerServiceRemote {
     private static final String SEL_CHECK_CONTAINS_LISTENER_URL = "select 1 from admin.opc_base where server_name = ?";
     private static final String INS_LISTENER_URL = "insert into admin.opc_base values ('', ?, ?)";
     private static final String UPD_LISTENER_URL = "update admin.opc_base set url = ? where server_name = ?";
-    private static final String DEL_LISTENER_URL = "delete from admin.opc_base where server_name = ?";
 
     @Resource(name = "jdbc/DataSource")
     private DataSource ds;
@@ -61,10 +58,11 @@ public class ListenerServiceBean implements ListenerServiceRemote {
     public void removeListener(String dasName, ListenerType type) {
         logger.info("Remove listener {}", dasName);
 
-        Listener listener = uploaderSingletonBean.removeListener(dasName, type);
+        Set<String> removeCounters = uploaderSingletonBean.removeListener(dasName, type);
 
-        if ((listener != null) && !uploaderSingletonBean.containsListener(dasName)) {
-            unregisterListenerInDb(listener);
+        if (!removeCounters.isEmpty()) {
+            logger.info("Remove counters {}", removeCounters);
+            unregisterListenerInDb(removeCounters);
         }
     }
 
@@ -98,13 +96,20 @@ public class ListenerServiceBean implements ListenerServiceRemote {
     }
 
     @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
-    private void unregisterListenerInDb(Listener listener) {
+    private void unregisterListenerInDb(Set<String> removeCounters) {
         try (Connection connect = ds.getConnection();
-             PreparedStatement stm = connect.prepareStatement(DEL_LISTENER_URL)) {
-            for (String counter: listener.getCounterNameSet()) {
-                stm.setString(1, counter);
+             PreparedStatement checkStm = connect.prepareStatement(SEL_CHECK_CONTAINS_LISTENER_URL);
+             PreparedStatement stm = connect.prepareStatement(UPD_LISTENER_URL)) {
+            for (String counter: removeCounters) {
+                checkStm.setString(1, counter);
 
-                stm.executeUpdate();
+                ResultSet res = checkStm.executeQuery();
+                if (res.next()) {
+                    stm.setNull(1, Types.VARCHAR);
+                    stm.setString(2, counter);
+
+                    stm.executeUpdate();
+                }
             }
         } catch (SQLException e) {
             logger.warn("Error unregister listener in database", e);

@@ -35,11 +35,12 @@
             <scope>provided</scope>
         </dependency>
 
-        <dependency>
-            <groupId>fish.payara.extras</groupId>
-            <artifactId>ejb-http-client</artifactId>
-            <version>5.2022.5</version>
-        </dependency>
+        <!-- remote ejb over http -->
+<!--        <dependency>-->
+<!--            <groupId>fish.payara.extras</groupId>-->
+<!--            <artifactId>ejb-http-client</artifactId>-->
+<!--            <version>5.2022.5</version>-->
+<!--        </dependency>-->
 
         <dependency>
             <groupId>com.google.code.gson</groupId>

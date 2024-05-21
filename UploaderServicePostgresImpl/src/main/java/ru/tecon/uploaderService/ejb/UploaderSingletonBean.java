@@ -96,10 +96,21 @@ public class UploaderSingletonBean {
      * Удаление слушателя
      *
      * @param dasName имя системы сбора данных
-     * @return предыдущее значение или null
+     * @return коллекцию удаленных счетчиков
      */
-    public Listener removeListener(String dasName, ListenerType type) {
-        return remoteListeners.remove(new ListenerKey(dasName, type));
+    public Set<String> removeListener(String dasName, ListenerType type) {
+        Listener remove = remoteListeners.remove(new ListenerKey(dasName, type));
+        if (remove != null) {
+            Set<String> collect = remoteListeners.entrySet().stream()
+                    .filter(entry -> entry.getKey().dasName.equals(dasName))
+                    .map(entry -> entry.getValue().getCounterNameSet())
+                    .flatMap(Collection::stream)
+                    .collect(Collectors.toSet());
+
+            remove.getCounterNameSet().removeAll(collect);
+            return remove.getCounterNameSet();
+        }
+        return Set.of();
     }
 
     /**
