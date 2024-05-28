@@ -197,11 +197,11 @@ public class EcoCounter extends FtpCounter {
             ftpClient.close();
         } catch (IOException e) {
             logger.warn("error load files list from ftp {}", objectName, e);
+        } finally {
+            params.removeIf(dataModel -> dataModel.getData().isEmpty());
+
+            logger.info("finish load data from ftpCounter for {}", objectName);
         }
-
-        params.removeIf(dataModel -> dataModel.getData().isEmpty());
-
-        logger.info("finish load data from ftpCounter for {}", objectName);
     }
 
     private <K, V> void addAggregateData(Map<K, List<V>> data, K key, V value) {

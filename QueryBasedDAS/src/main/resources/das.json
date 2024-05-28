@@ -1,0 +1,28 @@
+{
+  "dasName": "queryBasedDas",
+  "counters": [
+    "ru.tecon.queryBasedDAS.counter.asDTS.ASDTSCounter",
+    "ru.tecon.queryBasedDAS.counter.ftp.mct20.vist.VISTCounter",
+    "ru.tecon.queryBasedDAS.counter.ftp.mct20.teros.TEROSCounter",
+    "ru.tecon.queryBasedDAS.counter.ftp.mct20.sa94.SA94Counter",
+    "ru.tecon.queryBasedDAS.counter.ftp.mct20.slave.SLAVECounter",
+    "ru.tecon.queryBasedDAS.counter.ftp.mct20.plain.PlainCounter",
+    "ru.tecon.queryBasedDAS.counter.ftp.eco.EcoCounter"
+  ],
+  "remotes": {
+    "postgres": {
+      "url": "172.16.4.135",
+      "port": 3700,
+      "serviceName": "uploaderService",
+      "ejbName": "uploaderServiceBean",
+      "listenerEjbName": "listenerServiceBean"
+    },
+    "oracle": {
+      "url": "172.16.4.33",
+      "port": 3700,
+      "serviceName": "oracleUploaderService",
+      "ejbName": "oracleUploaderServiceBean",
+      "listenerEjbName": "oracleListenerServiceBean"
+    }
+  }
+}

@@ -48,9 +48,7 @@ public class ListenerServicesStatelessBean {
     public List<String> registerConfigRequestListener() throws DasException {
         List<String> result = new ArrayList<>();
 
-        String[] serverNames = dasSingletonBean.getProperty("uploadServerNames").split(" ");
-
-        for (String serverName: serverNames) {
+        for (String serverName: dasSingletonBean.getRemotes().keySet()) {
             try {
                 registerConfigRequestListener(serverName);
                 result.add(serverName);
@@ -70,11 +68,11 @@ public class ListenerServicesStatelessBean {
      */
     public void registerConfigRequestListener(String uploaderServerName) throws DasException {
         try {
-            String dasName = dasSingletonBean.getProperty("dasName");
+            String dasName = dasSingletonBean.getDasName();
 
             Listener listener = new Listener(dasName,
                     ListenerType.CONFIGURATION,
-                    remoteEJBFactory.getRemoteServiceProperties(InetAddress.getLocalHost().getHostName(), "3700"),
+                    remoteEJBFactory.getRemoteServiceProperties(InetAddress.getLocalHost().getHostName(), 3700),
                     "java:global/queryBasedDAS/configRequestBean!" + ConfigRequestRemote.class.getName(),
                     dasSingletonBean.counterNameSet());
 
@@ -97,9 +95,7 @@ public class ListenerServicesStatelessBean {
     public List<String> unregisterConfigRequestListener() throws DasException {
         List<String> result = new ArrayList<>();
 
-        String[] serverNames = dasSingletonBean.getProperty("uploadServerNames").split(" ");
-
-        for (String serverName: serverNames) {
+        for (String serverName: dasSingletonBean.getRemotes().keySet()) {
             try {
                 unregisterConfigRequestListener(serverName);
                 result.add(serverName);
@@ -121,7 +117,7 @@ public class ListenerServicesStatelessBean {
         try {
             ListenerServiceRemote postgres = remoteEJBFactory.getListenerServiceRemote(uploaderServerName);
 
-            postgres.removeListener(dasSingletonBean.getProperty("dasName"), ListenerType.CONFIGURATION);
+            postgres.removeListener(dasSingletonBean.getDasName(), ListenerType.CONFIGURATION);
         } catch (NamingException e) {
             throw new DasException("remote unregister service " + uploaderServerName + " unavailable", e);
         }
@@ -136,9 +132,7 @@ public class ListenerServicesStatelessBean {
     public List<String> registerAsyncRequestListener() throws DasException {
         List<String> result = new ArrayList<>();
 
-        String[] serverNames = dasSingletonBean.getProperty("uploadServerNames").split(" ");
-
-        for (String serverName: serverNames) {
+        for (String serverName: dasSingletonBean.getRemotes().keySet()) {
             try {
                 registerAsyncRequestListener(serverName);
                 result.add(serverName);
@@ -158,11 +152,11 @@ public class ListenerServicesStatelessBean {
      */
     public void registerAsyncRequestListener(String uploaderServerName) throws DasException {
         try {
-            String dasName = dasSingletonBean.getProperty("dasName");
+            String dasName = dasSingletonBean.getDasName();
 
             Listener listener = new Listener(dasName,
                     ListenerType.INSTANT_DATA,
-                    remoteEJBFactory.getRemoteServiceProperties(InetAddress.getLocalHost().getHostName(), "3700"),
+                    remoteEJBFactory.getRemoteServiceProperties(InetAddress.getLocalHost().getHostName(), 3700),
                     "java:global/queryBasedDAS/asyncRequestBean!" + InstantDataRequestRemote.class.getName(),
                     dasSingletonBean.counterSupportAsyncRequestNameSet());
 
@@ -185,9 +179,7 @@ public class ListenerServicesStatelessBean {
     public List<String> unregisterAsyncRequestListener() throws DasException {
         List<String> result = new ArrayList<>();
 
-        String[] serverNames = dasSingletonBean.getProperty("uploadServerNames").split(" ");
-
-        for (String serverName: serverNames) {
+        for (String serverName: dasSingletonBean.getRemotes().keySet()) {
             try {
                 unregisterAsyncRequestListener(serverName);
                 result.add(serverName);
@@ -209,7 +201,7 @@ public class ListenerServicesStatelessBean {
         try {
             ListenerServiceRemote postgres = remoteEJBFactory.getListenerServiceRemote(uploaderServerName);
 
-            postgres.removeListener(dasSingletonBean.getProperty("dasName"), ListenerType.INSTANT_DATA);
+            postgres.removeListener(dasSingletonBean.getDasName(), ListenerType.INSTANT_DATA);
         } catch (NamingException e) {
             throw new DasException("remote unregister service " + uploaderServerName + " unavailable", e);
         }

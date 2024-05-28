@@ -17,7 +17,6 @@ import ru.tecon.queryBasedDAS.counter.ftp.mct20.vist.VISTCounter;
 import ru.tecon.queryBasedDAS.counter.report.ExcelReport;
 import ru.tecon.queryBasedDAS.counter.report.PdfReport;
 import ru.tecon.queryBasedDAS.counter.statistic.StatData;
-import ru.tecon.queryBasedDAS.counter.statistic.WebConsole;
 import ru.tecon.queryBasedDAS.ejb.QueryBasedDASSingletonBean;
 import ru.tecon.queryBasedDAS.ejb.QueryBasedDASStatelessBean;
 import ru.tecon.uploaderService.model.DataModel;
@@ -163,7 +162,7 @@ public class MctConsoleController implements Serializable {
     }
 
     public void clearStatistic() {
-        getInfos().forEach(WebConsole::clearStatistic);
+        getInfos().forEach(info -> info.clearStatistic(statKey -> statKey.getServer().equals(remoteSelected)));
     }
 
     /**
@@ -187,7 +186,7 @@ public class MctConsoleController implements Serializable {
      */
     public void changePeriodicity(String counter, String period) {
         if (getInfo(counter) != null) {
-            singletonBean.setCounterProperty(counter, "periodicity", period);
+            singletonBean.getCounterProp(remoteSelected, counter).setPeriodicity(Periodicity.valueOf(period));
         }
     }
 
@@ -209,11 +208,11 @@ public class MctConsoleController implements Serializable {
      */
     public String getPeriodicityMenuIcon(String counter, String period) {
         if (getInfo(counter) != null) {
-            String periodicity = singletonBean.getCounterProperty(counter, "periodicity");
-            if (periodicity == null) {
-                periodicity = singletonBean.getProperty("periodicity");
+            if (singletonBean.getCounterProp(remoteSelected, counter).getPeriodicity() == Periodicity.valueOf(period)) {
+                return "pi pi-fw pi-circle-fill";
+            } else {
+                return "pi pi-fw pi-circle";
             }
-            return periodicity.equals(period) ? "pi pi-fw pi-circle-fill" : "pi pi-fw pi-circle";
         }
 
         return "pi pi-fw pi-circle";
@@ -323,11 +322,7 @@ public class MctConsoleController implements Serializable {
      */
     public int getThreadCount() {
         if (counterForUpdate != null) {
-            String depth = singletonBean.getCounterProperty(counterForUpdate.getCounterName(), "concurrencyDepth");
-            if (depth == null) {
-                depth = singletonBean.getProperty("concurrencyDepth");
-            }
-            return Integer.parseInt(depth);
+            return singletonBean.getCounterProp(remoteSelected, counterForUpdate.getCounterName()).getConcurrencyDepth();
         } else {
             return 0;
         }
@@ -340,7 +335,7 @@ public class MctConsoleController implements Serializable {
      */
     public void setThreadCount(int threadCount) {
         if (counterForUpdate != null) {
-            singletonBean.setCounterProperty(counterForUpdate.getCounterName(), "concurrencyDepth", String.valueOf(threadCount));
+            singletonBean.getCounterProp(remoteSelected, counterForUpdate.getCounterName()).setConcurrencyDepth(threadCount);
         }
     }
 
@@ -361,7 +356,11 @@ public class MctConsoleController implements Serializable {
     }
 
     public String[] getRemotes() {
-        return singletonBean.getProperty("uploadServerNames").split(" ");
+        return singletonBean.getRemotes().keySet().toArray(new String[0]);
+    }
+
+    public String isRemoteEnable(String remote) {
+        return singletonBean.getRemoteProp(remote).isEnable() ? "(вкл)" : "(выкл)";
     }
 
     public String getRemoteSelected() {

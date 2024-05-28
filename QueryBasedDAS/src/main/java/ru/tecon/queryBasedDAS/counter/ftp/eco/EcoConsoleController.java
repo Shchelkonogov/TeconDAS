@@ -97,7 +97,7 @@ public class EcoConsoleController implements Serializable {
     }
 
     public void clearStatistic() {
-        info.clearStatistic();
+        info.clearStatistic(statKey -> statKey.getServer().equals(remoteSelected));
     }
 
     /**
@@ -114,7 +114,7 @@ public class EcoConsoleController implements Serializable {
      * @param period частота опроса
      */
     public void changePeriodicity(String period) {
-        singletonBean.setCounterProperty(info.getCounterName(), "periodicity", period);
+        singletonBean.getCounterProp(remoteSelected, info.getCounterName()).setPeriodicity(Periodicity.valueOf(period));
     }
 
     /**
@@ -134,11 +134,11 @@ public class EcoConsoleController implements Serializable {
      * @return название иконки
      */
     public String getPeriodicityMenuIcon(String period) {
-        String periodicity = singletonBean.getCounterProperty(info.getCounterName(), "periodicity");
-        if (periodicity == null) {
-            periodicity = singletonBean.getProperty("periodicity");
+        if (singletonBean.getCounterProp(remoteSelected, info.getCounterName()).getPeriodicity() == Periodicity.valueOf(period)) {
+            return "pi pi-fw pi-circle-fill";
+        } else {
+            return "pi pi-fw pi-circle";
         }
-        return periodicity.equals(period) ? "pi pi-fw pi-circle-fill" : "pi pi-fw pi-circle";
     }
 
     /**
@@ -235,11 +235,7 @@ public class EcoConsoleController implements Serializable {
      * @return количество потоков
      */
     public int getThreadCount() {
-        String depth = singletonBean.getCounterProperty(info.getCounterName(), "concurrencyDepth");
-        if (depth == null) {
-            depth = singletonBean.getProperty("concurrencyDepth");
-        }
-        return Integer.parseInt(depth);
+        return singletonBean.getCounterProp(remoteSelected, info.getCounterName()).getConcurrencyDepth();
     }
 
     /**
@@ -248,7 +244,7 @@ public class EcoConsoleController implements Serializable {
      * @param threadCount количество потоков
      */
     public void setThreadCount(int threadCount) {
-        singletonBean.setCounterProperty(info.getCounterName(), "concurrencyDepth", String.valueOf(threadCount));
+        singletonBean.getCounterProp(remoteSelected, info.getCounterName()).setConcurrencyDepth(threadCount);
     }
 
     public String getPrincipal() {
@@ -260,7 +256,11 @@ public class EcoConsoleController implements Serializable {
     }
 
     public String[] getRemotes() {
-        return singletonBean.getProperty("uploadServerNames").split(" ");
+        return singletonBean.getRemotes().keySet().toArray(new String[0]);
+    }
+
+    public String isRemoteEnable(String remote) {
+        return singletonBean.getRemoteProp(remote).isEnable() ? "(вкл)" : "(выкл)";
     }
 
     public String getRemoteSelected() {

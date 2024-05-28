@@ -5,7 +5,6 @@ import org.slf4j.Logger;
 import ru.tecon.queryBasedDAS.DasException;
 import ru.tecon.queryBasedDAS.ejb.ListenerServicesStatelessBean;
 import ru.tecon.queryBasedDAS.ejb.QueryBasedDASSingletonBean;
-import ru.tecon.queryBasedDAS.ejb.QueryBasedDASStatelessBean;
 import ru.tecon.uploaderService.ejb.das.ListenerType;
 
 import javax.ejb.EJB;
@@ -35,17 +34,7 @@ public class QueryBasedDASService {
     private QueryBasedDASSingletonBean dasSingletonBean;
 
     @EJB
-    private QueryBasedDASStatelessBean dasStatelessBean;
-
-    @EJB
     private ListenerServicesStatelessBean listenerServicesBean;
-
-    // TODO remove method on product
-//    @GET
-//    @Path("/test")
-//    public String test() {
-//        return null;
-//    }
 
     /**
      * Echo запрос.
@@ -154,8 +143,7 @@ public class QueryBasedDASService {
     @Path("/getRemoteServers")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getServerNames() {
-        List<String> serverNames = Arrays.asList(dasSingletonBean.getProperty("uploadServerNames").split(" "));
-        return Response.ok(json.toJson(serverNames)).build();
+        return Response.ok(json.toJson(dasSingletonBean.getRemotes().keySet())).build();
     }
 
     /**
@@ -168,55 +156,5 @@ public class QueryBasedDASService {
     @Produces(MediaType.APPLICATION_JSON)
     public Response getCounterNames() {
         return Response.ok(json.toJson(dasSingletonBean.counterNameSet())).build();
-    }
-
-    /**
-     * Загрузка списка объектов заданных счетчиков и отправка их в базу данных.
-     *
-     * @param serverName имя сервера загрузки данных.
-     * @param counterName имя типа счетчика для поиска объектов, если имя не задано,
-     *                    то производится поиск по всем зарегистрированным счетчикам
-     *                    в системе сбора данных.
-     * @return список всех найденных объектов счетчиков.
-     */
-    @GET
-    @Path("/findObjects")
-    @Produces({MediaType.APPLICATION_JSON, MediaType.TEXT_PLAIN + "; charset=UTF-8"})
-    public Response findObjects(@QueryParam("server") String serverName, @QueryParam("counter") String counterName) {
-        if (serverName == null) {
-            return Response.status(Response.Status.BAD_REQUEST).entity("parameter \"server\" is required").build();
-        }
-
-        List<String> serverNames = Arrays.asList(dasSingletonBean.getProperty("uploadServerNames").split(" "));
-        if (!serverNames.contains(serverName)) {
-            return Response.status(Response.Status.BAD_REQUEST).entity("unknown server").build();
-        }
-
-        Map<String, List<String>> counterObjects;
-        if (counterName == null) {
-            logger.info("Find objects for server = {}", serverName);
-
-             counterObjects = dasStatelessBean.getCounterObjects();
-        } else {
-            if (!dasSingletonBean.containsCounter(counterName)) {
-                return Response.status(Response.Status.BAD_REQUEST).entity("unknown counter").build();
-            }
-
-            logger.info("Find objects for server = {} and counter = {}", serverName, counterName);
-
-            counterObjects = dasStatelessBean.getCounterObjects(counterName);
-        }
-
-        if (counterObjects.isEmpty()) {
-            return Response.ok("no counter objects").build();
-        } else {
-            boolean success = dasStatelessBean.uploadCounterObjects(serverName, counterObjects);
-
-            if (success) {
-                return Response.ok(json.toJson(counterObjects)).build();
-            } else {
-                return Response.ok("Remote service is unavailable").build();
-            }
-        }
     }
 }

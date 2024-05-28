@@ -61,7 +61,8 @@
                 <p:selectOneMenu value="#{asdtsController.remoteSelected}" styleClass="mr-3"
                                  style="vertical-align: top; width: 150px;">
                     <p:ajax listener="#{asdtsController.setSelectedStat(null)}" update="statTable menuBar"/>
-                    <f:selectItems value="#{asdtsController.remotes}"/>
+                    <f:selectItems value="#{asdtsController.remotes}" var="item" itemValue="#{item}"
+                                   itemLabel="#{item} #{asdtsController.isRemoteEnable(item)}"/>
                 </p:selectOneMenu>
                 <p:outputLabel value="Пользователь:" styleClass="mr-1 font-bold"/>
                 <p:outputLabel value="#{asdtsController.principal}" styleClass="mr-2"/>

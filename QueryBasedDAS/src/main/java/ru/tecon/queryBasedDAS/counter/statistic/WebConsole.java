@@ -4,6 +4,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Map;
 import java.util.function.BiFunction;
+import java.util.function.Predicate;
 
 /**
  * интерфейс описывающий поддержку web консоли
@@ -23,7 +24,9 @@ public interface WebConsole {
     /**
      * Очистка статистики
      */
-    void clearStatistic();
+    default void clearStatistic(Predicate<? super StatKey> filter) {
+        getStatistic().keySet().removeIf(filter);
+    }
 
     /**
      * Добавление значений в статистику (дефолтная функция объединения)

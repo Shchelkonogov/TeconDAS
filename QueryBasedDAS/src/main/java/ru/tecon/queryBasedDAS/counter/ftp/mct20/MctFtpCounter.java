@@ -130,11 +130,11 @@ public abstract class MctFtpCounter extends FtpCounter {
             ftpClient.close();
         } catch (IOException e) {
             logger.warn("error load files list from ftp {}", objectName, e);
+        } finally {
+            params.removeIf(dataModel -> dataModel.getData().isEmpty());
+
+            logger.info("finish load data from ftpCounter for {}", objectName);
         }
-
-        params.removeIf(dataModel -> dataModel.getData().isEmpty());
-
-        logger.info("finish load data from ftpCounter for {}", objectName);
     }
 
     @Override

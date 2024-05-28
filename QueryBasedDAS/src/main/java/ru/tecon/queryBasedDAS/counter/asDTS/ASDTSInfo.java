@@ -30,7 +30,7 @@ public class ASDTSInfo implements CounterInfo, WebConsole {
 
     private ASDTSInfo() throws NamingException {
         InitialContext ctx = new InitialContext();
-        bean = (ASDTSMsSqlBean) ctx.lookup("java:global/queryBasedDAS/ejb/asDTSMsSql");
+        bean = (ASDTSMsSqlBean) ctx.lookup("java:global/queryBasedDAS/asDTSMsSql");
     }
 
     public static ASDTSInfo getInstance() {
@@ -65,11 +65,6 @@ public class ASDTSInfo implements CounterInfo, WebConsole {
     @Override
     public String getConsoleUrl() {
         return "/asdts";
-    }
-
-    @Override
-    public void clearStatistic() {
-        statistic.clear();
     }
 
     @Override

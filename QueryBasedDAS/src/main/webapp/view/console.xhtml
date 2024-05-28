@@ -37,13 +37,23 @@
                                     update="threadConfigDialogHeader threadConfigForm"/>
                     </c:forEach>
                 </p:submenu>
+                <p:submenu label="Удаленный сервер" style="width: 205px;" icon="pi pi-fw pi-cog">
+                    <c:forEach var="remote" items="#{console.remotes}">
+                        <p:menuitem value="#{remote}"
+                                    icon="#{console.getRemoteEnableIcon(remote)}"
+                                    action="#{console.changeRemoteEnable(remote)}"
+                                    update="menuBar"/>
+                    </c:forEach>
+                </p:submenu>
             </p:submenu>
 
             <f:facet name="options">
                 <p:outputLabel value="Удаленный сервер:" styleClass="mr-1 font-bold"/>
                 <p:selectOneMenu value="#{console.remoteSelected}" styleClass="mr-3"
                                  style="vertical-align: top; width: 150px;">
-                    <f:selectItems value="#{console.remotes}"/>
+                    <p:ajax update="menuBar"/>
+                    <f:selectItems value="#{console.remotes}" var="item" itemValue="#{item}"
+                                   itemLabel="#{item} #{console.isRemoteEnable(item)}"/>
                 </p:selectOneMenu>
                 <p:outputLabel value="Пользователь:" styleClass="mr-1 font-bold"/>
                 <p:outputLabel value="#{console.principal}" styleClass="mr-2"/>

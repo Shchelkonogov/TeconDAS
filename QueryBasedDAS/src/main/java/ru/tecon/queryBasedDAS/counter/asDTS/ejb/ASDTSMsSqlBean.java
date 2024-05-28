@@ -20,7 +20,7 @@ import java.util.Set;
  * @author Maksim Shchelkonogov
  * 15.11.2023
  */
-@Stateless(name = "ejb/asDTSMsSql")
+@Stateless(name = "asDTSMsSql", mappedName = "ejb/asDTSMsSql")
 public class ASDTSMsSqlBean {
 
     private static final String PRE_OBJECT_NAME = "ИАСДТУ_";

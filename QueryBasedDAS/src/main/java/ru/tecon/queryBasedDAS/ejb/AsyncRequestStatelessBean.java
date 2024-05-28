@@ -105,7 +105,7 @@ public class AsyncRequestStatelessBean implements InstantDataRequestRemote {
                         "Error",
                         "Отсутствуют мгновенные параметры");
             }
-        } catch (NamingException e) {
+        } catch (NamingException | DasException e) {
             logger.warn("remote service {} unavailable", requestData.getServerName(), e);
         }
     }

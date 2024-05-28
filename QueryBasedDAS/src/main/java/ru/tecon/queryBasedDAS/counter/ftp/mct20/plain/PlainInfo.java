@@ -49,11 +49,6 @@ public class PlainInfo extends FtpCounterInfo {
     }
 
     @Override
-    public void clearStatistic() {
-        statistic.clear();
-    }
-
-    @Override
     public void merge(StatKey key, @NotNull StatData value, @NotNull BiFunction<? super StatData, ? super StatData, ? extends StatData> remappingFunction) {
         statistic.merge(key, value, remappingFunction);
     }

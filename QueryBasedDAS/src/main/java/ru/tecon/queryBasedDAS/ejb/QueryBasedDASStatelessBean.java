@@ -1,6 +1,7 @@
 package ru.tecon.queryBasedDAS.ejb;
 
 import org.slf4j.Logger;
+import ru.tecon.queryBasedDAS.DasException;
 import ru.tecon.queryBasedDAS.counter.*;
 import ru.tecon.queryBasedDAS.counter.ftp.FtpCounterAlarm;
 import ru.tecon.queryBasedDAS.counter.ftp.FtpCounterExtension;
@@ -90,7 +91,7 @@ public class QueryBasedDASStatelessBean {
             for (Map.Entry<String, List<String>> entry: counterObjects.entrySet()) {
                 WebConsole counterWebConsole = bean.getCounterWebConsole(entry.getKey());
                 if (counterWebConsole != null) {
-                    counterWebConsole.clearStatistic();
+                    counterWebConsole.clearStatistic(statKey -> statKey.getServer().equals(serverName));
 
                     for (String counterName: entry.getValue()) {
                         StatData build = StatData.builder(serverName, counterName, entry.getKey()).build();
@@ -99,8 +100,8 @@ public class QueryBasedDASStatelessBean {
                 }
             }
             return true;
-        } catch (NamingException e) {
-            logger.warn("Remote service {} is unavailable", serverName);
+        } catch (NamingException | DasException e) {
+            logger.warn("remote service {} unavailable", serverName, e);
             return false;
         }
     }
@@ -114,9 +115,7 @@ public class QueryBasedDASStatelessBean {
     public List<String> uploadCounterObjects(Map<String, List<String>> counterObjects) {
         List<String> result = new ArrayList<>();
 
-        String[] serverNames = bean.getProperty("uploadServerNames").split(" ");
-
-        for (String serverName: serverNames) {
+        for (String serverName: bean.getRemotes().keySet()) {
             boolean isUpload = uploadCounterObjects(serverName, counterObjects);
             if (isUpload) {
                 result.add(serverName);
@@ -154,7 +153,7 @@ public class QueryBasedDASStatelessBean {
                 remote.uploadConfig(config, counterObjectId, counterObjectName);
             }
 
-        } catch (NamingException e) {
+        } catch (NamingException | DasException e) {
             logger.warn("remote service {} unavailable", remoteServer, e);
         }
     }
@@ -194,10 +193,7 @@ public class QueryBasedDASStatelessBean {
         Set<String> counterNameSet = bean.counterSupportAlarmNameSet();
 
         if (!counterNameSet.isEmpty()) {
-            String[] uploadServerNames = bean.getProperty("uploadServerNames").split(" ");
-            int partCount = Integer.parseInt(bean.getProperty("concurrencyAlarmDepth"));
-
-            for (String uploadServerName: uploadServerNames) {
+            for (String uploadServerName: bean.getRemotes().keySet()) {
                 try {
                     UploaderServiceRemote uploadServiceRemote = remoteEJBFactory.getUploadServiceRemote(uploadServerName);
 
@@ -209,10 +205,7 @@ public class QueryBasedDASStatelessBean {
                                 .distinct()
                                 .collect(Collectors.toMap(
                                         k -> k,
-                                        v -> {
-                                            String concurrencyAlarmDepth = bean.getCounterProperty(v, "concurrencyAlarmDepth");
-                                            return concurrencyAlarmDepth == null ? Pair.of("Default", partCount) : Pair.of(v, Integer.parseInt(concurrencyAlarmDepth));
-                                        }));
+                                        v -> Pair.of(v, bean.getCounterProp(uploadServerName, v).getConcurrencyAlarmDepth())));
 
                         Map<Pair<String, Integer>, List<SubscribedObject>> collect = objects.stream().collect(Collectors.groupingBy(subscribedObject -> concurrencyAlarmDepthMap.get(subscribedObject.getServerName())));
 
@@ -235,8 +228,8 @@ public class QueryBasedDASStatelessBean {
                     } else {
                         logger.warn("no subscribed objects for {}", uploadServerName);
                     }
-                } catch (NamingException e) {
-                    logger.warn("remote service {} unavailable", uploadServerName);
+                } catch (NamingException | DasException e) {
+                    logger.warn("remote service {} unavailable", uploadServerName, e);
                 }
             }
         }
@@ -288,8 +281,8 @@ public class QueryBasedDASStatelessBean {
                     logger.warn("empty model for {}", object);
                 }
             }
-        } catch (NamingException e) {
-            logger.warn("remote service {} unavailable", uploadServerName);
+        } catch (NamingException | DasException e) {
+            logger.warn("remote service {} unavailable", uploadServerName, e);
         }
         logger.info("finished load alarm data started at {} in {} ms for {}",
                 startDateTime,
@@ -303,19 +296,21 @@ public class QueryBasedDASStatelessBean {
      * @param periodicity тип опроса счетчиков, если передать null, то будет загрузка по всем типам.
      */
     public void loadHistoricalData(Periodicity periodicity) {
-        String[] uploadServerNames = bean.getProperty("uploadServerNames").split(" ");
-        int partCount = Integer.parseInt(bean.getProperty("concurrencyDepth"));
-
-        Set<String> counterNameSet;
-        if (periodicity == null) {
-            counterNameSet = bean.counterNameSet();
-        } else {
-            counterNameSet = bean.counterNameSet(periodicity);
-        }
-
-        for (String uploadServerName: uploadServerNames) {
+        for (String uploadServerName: bean.getRemotes().keySet()) {
             try {
                 UploaderServiceRemote uploadServiceRemote = remoteEJBFactory.getUploadServiceRemote(uploadServerName);
+
+                Set<String> counterNameSet;
+                if (periodicity == null) {
+                    counterNameSet = bean.counterNameSet();
+                } else {
+                    counterNameSet = bean.counterNameSet(uploadServerName, periodicity);
+                }
+
+                if (counterNameSet.isEmpty()) {
+                    logger.warn("no counters for remote {} and periodicity {}", uploadServerName, periodicity);
+                    continue;
+                }
 
                 List<SubscribedObject> objects = uploadServiceRemote.getSubscribedObjects(counterNameSet);
 
@@ -325,10 +320,7 @@ public class QueryBasedDASStatelessBean {
                             .distinct()
                             .collect(Collectors.toMap(
                                     k -> k,
-                                    v -> {
-                                        String concurrencyDepth = bean.getCounterProperty(v, "concurrencyDepth");
-                                        return concurrencyDepth == null ? Pair.of("Default", partCount) : Pair.of(v, Integer.parseInt(concurrencyDepth));
-                                    }));
+                                    v -> Pair.of(v, bean.getCounterProp(uploadServerName, v).getConcurrencyDepth())));
 
                     Map<Pair<String, Integer>, List<SubscribedObject>> collect = objects.stream().collect(Collectors.groupingBy(subscribedObject -> concurrencyDepthMap.get(subscribedObject.getServerName())));
 
@@ -351,8 +343,8 @@ public class QueryBasedDASStatelessBean {
                 } else {
                     logger.warn("no subscribed objects for {}", uploadServerName);
                 }
-            } catch (NamingException e) {
-                logger.warn("remote service {} unavailable", uploadServerName);
+            } catch (NamingException | DasException e) {
+                logger.warn("remote service {} unavailable", uploadServerName, e);
             }
         }
     }
@@ -432,8 +424,8 @@ public class QueryBasedDASStatelessBean {
                     counterWebConsole.merge(new StatKey(uploadServerName, object.getObjectName()), builder.build());
                 }
             }
-        } catch (NamingException e) {
-            logger.warn("remote service {} unavailable", uploadServerName);
+        } catch (NamingException | DasException e) {
+            logger.warn("remote service {} unavailable", uploadServerName, e);
         }
         logger.info("finished load historical data started at {} in {} ms for {}",
                 startDateTime,

@@ -1,6 +1,7 @@
 package ru.tecon.queryBasedDAS.ejb;
 
 import org.slf4j.Logger;
+import ru.tecon.queryBasedDAS.DasException;
 import ru.tecon.queryBasedDAS.counter.Counter;
 import ru.tecon.uploaderService.ejb.das.ConfigRequestRemote;
 import ru.tecon.uploaderService.ejb.UploaderServiceRemote;
@@ -73,7 +74,7 @@ public class ConfigRequestStatelessBean implements ConfigRequestRemote {
             }
         } catch (ReflectiveOperationException e) {
             logger.warn("error load counter = {}", requestData.getCounter(), e);
-        } catch (NamingException e) {
+        } catch (NamingException | DasException e) {
             logger.warn("remote service {} unavailable", requestData.getServerName(), e);
         }
     }

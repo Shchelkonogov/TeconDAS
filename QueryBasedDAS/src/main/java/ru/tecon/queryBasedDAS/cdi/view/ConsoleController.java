@@ -1,7 +1,10 @@
 package ru.tecon.queryBasedDAS.cdi.view;
 
 import fish.payara.security.openid.api.OpenIdContext;
+import org.slf4j.Logger;
+import ru.tecon.queryBasedDAS.DasException;
 import ru.tecon.queryBasedDAS.counter.Periodicity;
+import ru.tecon.queryBasedDAS.ejb.ListenerServicesStatelessBean;
 import ru.tecon.queryBasedDAS.ejb.QueryBasedDASSingletonBean;
 
 import javax.annotation.PostConstruct;
@@ -30,8 +33,14 @@ public class ConsoleController implements Serializable {
     @Inject
     private OpenIdContext openIdContext;
 
+    @Inject
+    private Logger logger;
+
     @EJB
     private QueryBasedDASSingletonBean bean;
+
+    @EJB
+    private ListenerServicesStatelessBean listenerBean;
 
     private String remoteSelected;
     private String counterForUpdate;
@@ -53,6 +62,7 @@ public class ConsoleController implements Serializable {
     }
 
     public Set<String> getCounters() {
+        // TODO поправить сортировку
         return bean.getAllConsole().keySet();
     }
 
@@ -62,18 +72,18 @@ public class ConsoleController implements Serializable {
 
     public String getPeriodicityMenuIcon(String counter, String period) {
         if (bean.getCounterWebConsole(counter) != null) {
-            String periodicity = bean.getCounterProperty(counter, "periodicity");
-            if (periodicity == null) {
-                periodicity = bean.getProperty("periodicity");
+            if (bean.getCounterProp(remoteSelected, counter).getPeriodicity() == Periodicity.valueOf(period)) {
+                return "pi pi-fw pi-circle-fill";
+            } else {
+                return "pi pi-fw pi-circle";
             }
-            return periodicity.equals(period) ? "pi pi-fw pi-circle-fill" : "pi pi-fw pi-circle";
         }
 
         return "pi pi-fw pi-circle";
     }
 
     public void changePeriodicity(String counter, String period) {
-        bean.setCounterProperty(counter, "periodicity", period);
+        bean.getCounterProp(remoteSelected, counter).setPeriodicity(Periodicity.valueOf(period));
     }
 
     public int initCounterForUpdate(String counter) {
@@ -83,11 +93,7 @@ public class ConsoleController implements Serializable {
 
     public int getThreadCount() {
         if (counterForUpdate != null) {
-            String depth = bean.getCounterProperty(counterForUpdate, "concurrencyDepth");
-            if (depth == null) {
-                depth = bean.getProperty("concurrencyDepth");
-            }
-            return Integer.parseInt(depth);
+            return bean.getCounterProp(remoteSelected, counterForUpdate).getConcurrencyDepth();
         } else {
             return 0;
         }
@@ -95,7 +101,35 @@ public class ConsoleController implements Serializable {
 
     public void setThreadCount(int threadCount) {
         if (counterForUpdate != null) {
-            bean.setCounterProperty(counterForUpdate, "concurrencyDepth", String.valueOf(threadCount));
+            bean.getCounterProp(remoteSelected, counterForUpdate).setConcurrencyDepth(threadCount);
+        }
+    }
+
+    public String getRemoteEnableIcon(String remote) {
+        return bean.getRemoteProp(remote).isEnable() ? "pi pi-fw pi-circle-fill" : "pi pi-fw pi-circle";
+    }
+
+    public void changeRemoteEnable(String remote) {
+        boolean newValue = !bean.getRemoteProp(remote).isEnable();
+
+        if (!newValue) {
+            try {
+                listenerBean.unregisterConfigRequestListener(remote);
+                listenerBean.unregisterAsyncRequestListener(remote);
+            } catch (DasException e) {
+                logger.warn("error register listeners", e);
+            }
+        }
+
+        bean.getRemoteProp(remote).setEnable(!bean.getRemoteProp(remote).isEnable());
+
+        if (newValue) {
+            try {
+                listenerBean.registerConfigRequestListener(remote);
+                listenerBean.registerAsyncRequestListener(remote);
+            } catch (DasException e) {
+                logger.warn("error register listeners", e);
+            }
         }
     }
 
@@ -104,7 +138,11 @@ public class ConsoleController implements Serializable {
     }
 
     public String[] getRemotes() {
-        return bean.getProperty("uploadServerNames").split(" ");
+        return bean.getRemotes().keySet().toArray(new String[0]);
+    }
+
+    public String isRemoteEnable(String remote) {
+        return bean.getRemoteProp(remote).isEnable() ? "(вкл)" : "(выкл)";
     }
 
     public boolean isAdmin() {

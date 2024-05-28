@@ -65,7 +65,8 @@
                 <p:selectOneMenu value="#{ecoController.remoteSelected}" styleClass="mr-3"
                                  style="vertical-align: top; width: 150px;">
                     <p:ajax listener="#{ecoController.setSelectedStat(null)}" update="statTable menuBar"/>
-                    <f:selectItems value="#{ecoController.remotes}"/>
+                    <f:selectItems value="#{ecoController.remotes}" var="item" itemValue="#{item}"
+                                   itemLabel="#{item} #{ecoController.isRemoteEnable(item)}"/>
                 </p:selectOneMenu>
                 <p:outputLabel value="Пользователь:" styleClass="mr-1 font-bold"/>
                 <p:outputLabel value="#{ecoController.principal}" styleClass="mr-2"/>
