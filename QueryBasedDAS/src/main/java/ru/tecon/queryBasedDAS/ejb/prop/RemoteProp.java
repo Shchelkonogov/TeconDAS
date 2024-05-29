@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 public class RemoteProp {
 
     private boolean enable;
+    private boolean enableAlarm;
     private final Map<String, CounterProp> counters = new HashMap<>();
 
     public boolean isEnable() {
@@ -23,6 +24,14 @@ public class RemoteProp {
 
     public void setEnable(boolean enable) {
         this.enable = enable;
+    }
+
+    public boolean isEnableAlarm() {
+        return enableAlarm;
+    }
+
+    public void setEnableAlarm(boolean enableAlarm) {
+        this.enableAlarm = enableAlarm;
     }
 
     public void addCounter(String key) {

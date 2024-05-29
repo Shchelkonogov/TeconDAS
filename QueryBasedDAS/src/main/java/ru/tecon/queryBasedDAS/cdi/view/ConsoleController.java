@@ -133,6 +133,14 @@ public class ConsoleController implements Serializable {
         }
     }
 
+    public String getRemoteAlarmEnableIcon(String remote) {
+        return bean.getRemoteProp(remote).isEnableAlarm() ? "pi pi-fw pi-circle-fill" : "pi pi-fw pi-circle";
+    }
+
+    public void changeRemoteAlarmEnable(String remote) {
+        bean.getRemoteProp(remote).setEnableAlarm(!bean.getRemoteProp(remote).isEnableAlarm());
+    }
+
     public String getCounterForUpdate() {
         return counterForUpdate;
     }

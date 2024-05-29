@@ -87,7 +87,7 @@
             <p:outputLabel value="Удаленный сервер:" styleClass="mr-1 font-bold"/>
             <p:selectOneMenu value="#{mctController.remoteSelected}" styleClass="mr-3"
                              style="vertical-align: top; width: 150px;">
-               <p:ajax listener="#{mctController.setSelectedStat(null)}" update="statTable menuBar"/>
+               <p:ajax listener="#{mctController.setSelectedStat(null)}" update="statTable menuBar threadConfigForm"/>
                <f:selectItems value="#{mctController.remotes}" var="item" itemValue="#{item}"
                               itemLabel="#{item} #{mctController.isRemoteEnable(item)}"/>
             </p:selectOneMenu>

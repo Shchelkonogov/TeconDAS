@@ -39,10 +39,16 @@
                 </p:submenu>
                 <p:submenu label="Удаленный сервер" style="width: 205px;" icon="pi pi-fw pi-cog">
                     <c:forEach var="remote" items="#{console.remotes}">
-                        <p:menuitem value="#{remote}"
-                                    icon="#{console.getRemoteEnableIcon(remote)}"
-                                    action="#{console.changeRemoteEnable(remote)}"
-                                    update="menuBar"/>
+                        <p:submenu label="#{remote}" style="width: 100px;">
+                            <p:menuitem value="Вкл/Выкл"
+                                        icon="#{console.getRemoteEnableIcon(remote)}"
+                                        action="#{console.changeRemoteEnable(remote)}"
+                                        update="menuBar"/>
+                            <p:menuitem value="Вкл/Выкл (тревоги)"
+                                        icon="#{console.getRemoteAlarmEnableIcon(remote)}"
+                                        action="#{console.changeRemoteAlarmEnable(remote)}"
+                                        update="menuBar"/>
+                        </p:submenu>
                     </c:forEach>
                 </p:submenu>
             </p:submenu>
@@ -51,7 +57,7 @@
                 <p:outputLabel value="Удаленный сервер:" styleClass="mr-1 font-bold"/>
                 <p:selectOneMenu value="#{console.remoteSelected}" styleClass="mr-3"
                                  style="vertical-align: top; width: 150px;">
-                    <p:ajax update="menuBar"/>
+                    <p:ajax update="menuBar threadConfigForm"/>
                     <f:selectItems value="#{console.remotes}" var="item" itemValue="#{item}"
                                    itemLabel="#{item} #{console.isRemoteEnable(item)}"/>
                 </p:selectOneMenu>

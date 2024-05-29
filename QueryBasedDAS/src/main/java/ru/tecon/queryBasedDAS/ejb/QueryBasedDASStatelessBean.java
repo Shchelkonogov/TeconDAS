@@ -194,6 +194,11 @@ public class QueryBasedDASStatelessBean {
 
         if (!counterNameSet.isEmpty()) {
             for (String uploadServerName: bean.getRemotes().keySet()) {
+                if (!bean.getRemoteProp(uploadServerName).isEnableAlarm()) {
+                    logger.info("alarms disabled for {}", uploadServerName);
+                    continue;
+                }
+
                 try {
                     UploaderServiceRemote uploadServiceRemote = remoteEJBFactory.getUploadServiceRemote(uploadServerName);
 
