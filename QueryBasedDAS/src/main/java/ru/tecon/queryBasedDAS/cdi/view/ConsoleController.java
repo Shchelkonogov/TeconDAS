@@ -105,40 +105,40 @@ public class ConsoleController implements Serializable {
         }
     }
 
-    public String getRemoteEnableIcon(String remote) {
-        return bean.getRemoteProp(remote).isEnable() ? "pi pi-fw pi-circle-fill" : "pi pi-fw pi-circle";
+    public String getRemoteEnableIcon() {
+        return bean.getRemoteProp(remoteSelected).isEnable() ? "pi pi-fw pi-circle-fill" : "pi pi-fw pi-circle";
     }
 
-    public void changeRemoteEnable(String remote) {
-        boolean newValue = !bean.getRemoteProp(remote).isEnable();
+    public void changeRemoteEnable() {
+        boolean newValue = !bean.getRemoteProp(remoteSelected).isEnable();
 
         if (!newValue) {
             try {
-                listenerBean.unregisterConfigRequestListener(remote);
-                listenerBean.unregisterAsyncRequestListener(remote);
+                listenerBean.unregisterConfigRequestListener(remoteSelected);
+                listenerBean.unregisterAsyncRequestListener(remoteSelected);
             } catch (DasException e) {
                 logger.warn("error register listeners", e);
             }
         }
 
-        bean.getRemoteProp(remote).setEnable(!bean.getRemoteProp(remote).isEnable());
+        bean.getRemoteProp(remoteSelected).setEnable(!bean.getRemoteProp(remoteSelected).isEnable());
 
         if (newValue) {
             try {
-                listenerBean.registerConfigRequestListener(remote);
-                listenerBean.registerAsyncRequestListener(remote);
+                listenerBean.registerConfigRequestListener(remoteSelected);
+                listenerBean.registerAsyncRequestListener(remoteSelected);
             } catch (DasException e) {
                 logger.warn("error register listeners", e);
             }
         }
     }
 
-    public String getRemoteAlarmEnableIcon(String remote) {
-        return bean.getRemoteProp(remote).isEnableAlarm() ? "pi pi-fw pi-circle-fill" : "pi pi-fw pi-circle";
+    public String getRemoteAlarmEnableIcon() {
+        return bean.getRemoteProp(remoteSelected).isEnableAlarm() ? "pi pi-fw pi-circle-fill" : "pi pi-fw pi-circle";
     }
 
-    public void changeRemoteAlarmEnable(String remote) {
-        bean.getRemoteProp(remote).setEnableAlarm(!bean.getRemoteProp(remote).isEnableAlarm());
+    public void changeRemoteAlarmEnable() {
+        bean.getRemoteProp(remoteSelected).setEnableAlarm(!bean.getRemoteProp(remoteSelected).isEnableAlarm());
     }
 
     public String getCounterForUpdate() {

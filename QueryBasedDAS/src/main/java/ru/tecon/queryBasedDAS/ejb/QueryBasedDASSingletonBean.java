@@ -75,6 +75,7 @@ public class QueryBasedDASSingletonBean {
                 REMOTE_PROP_MAP.put(remoteName, new RemoteProp());
                 if (customRemoteProp.containsKey(remoteName)) {
                     REMOTE_PROP_MAP.get(remoteName).setEnable(customRemoteProp.get(remoteName).isEnable());
+                    REMOTE_PROP_MAP.get(remoteName).setEnableAlarm(customRemoteProp.get(remoteName).isEnableAlarm());
                 }
             }
 
@@ -118,16 +119,6 @@ public class QueryBasedDASSingletonBean {
         } catch (IOException e) {
             logger.warn("Error write property", e);
         }
-    }
-
-    /**
-     * Проверка, существует ли данный счетчик в системе
-     *
-     * @param key имя счетчика
-     * @return true, если существует
-     */
-    public boolean containsCounter(String key) {
-        return COUNTER_PROP_MAP.containsKey(key);
     }
 
     /**
