@@ -84,7 +84,7 @@ public abstract class MctFtpCounter extends FtpCounter {
         String counterNumber = objectName.substring(objectName.length() - 4);
         String filePath = "/" + counterNumber.substring(0, 2) + "/" + counterNumber;
 
-        LocalDateTime date = params.get(0).getStartDateTime() == null ? null : params.get(0).getStartDateTime();
+        LocalDateTime date = params.get(0).getStartDateTime() == null ? null : params.get(0).getStartDateTime().minusHours(1);
 
         FtpClient ftpClient = new MctFtpClient();
         try {
@@ -112,7 +112,7 @@ public abstract class MctFtpCounter extends FtpCounter {
                         }
                     }
 
-                    parseResults(params, fData.getDateTime());
+                    parseResults(params, fData.getDateTime().plusHours(1));
                 } catch (DasException e) {
                     logger.warn("error load data from ftpCounter for {} file path {} error message {}", objectName, fData.getPath(), e.getMessage());
                     try {
