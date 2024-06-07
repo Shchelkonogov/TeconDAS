@@ -63,6 +63,7 @@ public class PlainCounter extends FtpCounterWithAsyncRequest implements FtpCount
     @Override
     public void loadData(List<DataModel> params, String objectName) {
         params.removeIf(dataModel -> !Stream.of(PlainConfig.values())
+                .filter(plainConfig -> !plainConfig.isAlarm())
                 .map(PlainConfig::getProperty)
                 .collect(Collectors.toSet())
                 .contains(dataModel.getParamName()));
