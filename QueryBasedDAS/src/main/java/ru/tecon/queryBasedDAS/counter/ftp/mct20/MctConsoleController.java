@@ -1,6 +1,7 @@
 package ru.tecon.queryBasedDAS.counter.ftp.mct20;
 
 import fish.payara.security.openid.api.OpenIdContext;
+import org.primefaces.PrimeFaces;
 import org.slf4j.Logger;
 import ru.tecon.queryBasedDAS.AlphaNumComparator;
 import ru.tecon.queryBasedDAS.DasException;
@@ -23,6 +24,7 @@ import ru.tecon.uploaderService.model.DataModel;
 
 import javax.annotation.PostConstruct;
 import javax.ejb.EJB;
+import javax.faces.application.FacesMessage;
 import javax.faces.context.ExternalContext;
 import javax.faces.context.FacesContext;
 import javax.faces.view.ViewScoped;
@@ -136,7 +138,6 @@ public class MctConsoleController implements Serializable {
     }
 
     public void requestAsync() {
-        // TODO проверить работоспособность на production
         MctFtpCounter counter = counters.get(selectedStat.getCounter());
         if (Objects.nonNull(counter) && (counter instanceof FtpCounterAsyncRequest)) {
             try {
@@ -151,8 +152,13 @@ public class MctConsoleController implements Serializable {
                         asyncData.add(new AsyncModel(dataModel.getParamName(), valueModel.getValue()));
                     }
                 }
+
+                PrimeFaces.current().executeScript("PF('asyncDataWidget').show();");
+                PrimeFaces.current().ajax().update("asyncDataTable", "asyncDialogHeader");
             } catch (DasException e) {
-                logger.warn("Error load async data", e);
+                FacesContext.getCurrentInstance()
+                        .addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR, "Ошибка", e.getMessage()));
+                PrimeFaces.current().ajax().update("growl");
             }
         }
     }

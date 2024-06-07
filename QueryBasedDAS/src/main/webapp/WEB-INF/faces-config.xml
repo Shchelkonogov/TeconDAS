@@ -13,5 +13,15 @@
             <supported-locale>en</supported-locale>
             <supported-locale>ru</supported-locale>
         </locale-config>
+
+        <el-resolver>
+            org.primefaces.application.exceptionhandler.PrimeExceptionHandlerELResolver
+        </el-resolver>
     </application>
+
+    <factory>
+        <exception-handler-factory>
+            org.primefaces.application.exceptionhandler.PrimeExceptionHandlerFactory
+        </exception-handler-factory>
+    </factory>
 </faces-config>

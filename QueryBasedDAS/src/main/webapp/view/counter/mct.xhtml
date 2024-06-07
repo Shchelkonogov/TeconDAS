@@ -5,7 +5,8 @@
       xmlns:h="http://xmlns.jcp.org/jsf/html"
       xmlns:f="http://xmlns.jcp.org/jsf/core"
       xmlns:p="http://primefaces.org/ui"
-      xmlns:c="http://xmlns.jcp.org/jsp/jstl/core">
+      xmlns:c="http://xmlns.jcp.org/jsp/jstl/core"
+      xmlns:error="http://xmlns.jcp.org/jsf/composite/component/error">
 <h:head>
    <h:outputStylesheet name="webjars/primeflex/3.3.1/primeflex.min.css"/>
    <h:outputStylesheet name="system/style.css" library="css"/>
@@ -14,6 +15,9 @@
    <link rel="shortcut icon" type="image/x-icon" href="#{resource['images/logo.png']}"/>
 </h:head>
 <h:body>
+   <p:growl id="growl" showDetail="true"/>
+   <error:other/>
+
    <h:form id="statForm" style="height: 100%;">
       <p:menubar id="menuBar" style="margin: 3px; background: #f8f9fa; padding: 0.1rem;">
          <p:submenu label="Действия">
@@ -43,8 +47,7 @@
                         disabled="#{(mctController.selectedStat == null) or !mctController.asyncRequest}"
                         onstart="PF('statusDialog').show()"
                         action="#{mctController.requestAsync()}"
-                        oncomplete="PF('asyncDataWidget').show(); PF('statusDialog').hide();"
-                        update="asyncDataTable asyncDialogHeader"
+                        oncomplete="PF('statusDialog').hide();"
                         icon="pi pi-fw pi-file-import"/>
             <p:divider/>
             <p:menuitem value="Запрашиваемые данные" disabled="#{mctController.selectedStat == null}"
@@ -161,8 +164,7 @@
             <p:menuitem value="Мгновенные данные" icon="pi pi-fw pi-file-import"
                         disabled="#{!mctController.asyncRequest}"
                         onstart="PF('statusDialog').show();" action="#{mctController.requestAsync()}"
-                        oncomplete="PF('asyncDataWidget').show(); PF('statusDialog').hide();"
-                        update="asyncDataTable asyncDialogHeader"/>
+                        oncomplete="PF('statusDialog').hide();"/>
             <p:divider/>
             <p:menuitem value="Запрашиваемые данные" oncomplete="PF('requestDataWidget').show();"
                         icon="pi pi-fw pi-book" update="requestDataTable requestDialogHeader"/>
