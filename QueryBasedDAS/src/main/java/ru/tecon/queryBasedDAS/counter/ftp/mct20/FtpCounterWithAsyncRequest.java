@@ -23,9 +23,7 @@ import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.time.LocalDateTime;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -121,18 +119,6 @@ public abstract class FtpCounterWithAsyncRequest extends MctFtpCounter implement
             throw new DasException("Ошибка чтения файла ip.txt");
         }
 
-        // Составляю список регистров для modbus
-        Set<String> registers = new HashSet<>();
-        for (DataModel model: params) {
-            String propRegister = getPropRegister(model.getParamName().replace(":Текущие данные", ""));
-            String[] split = propRegister.split("/");
-            registers.add(split[0] + "/" + split[1]);
-        }
-
-        if (registers.isEmpty()) {
-            throw new DasException("Мгновенные значения отсутствуют в приборе");
-        }
-
         // Читаю данные из modbus
         try {
             TcpParameters tcpParameter = new TcpParameters();
@@ -151,26 +137,25 @@ public abstract class FtpCounterWithAsyncRequest extends MctFtpCounter implement
             master.setResponseTimeout(30000);
             master.connect();
 
-            for (String register: registers) {
-                int offset = Integer.parseInt(register.split("/")[0]);
-                int quantity = Integer.parseInt(register.split("/")[1]);
+            for (DataModel model: params) {
+                String propRegister = getPropRegister(model.getParamName().replace(":Текущие данные", ""));
+                String[] split = propRegister.split("/");
+
+                int offset = Integer.parseInt(split[0]);
+                int quantity = Integer.parseInt(split[1]);
 
                 int[] registerValues = master.readHoldingRegisters(slaveID, offset, quantity);
 
-                for (DataModel model: params) {
-                    String propRegister = getPropRegister(model.getParamName().replace(":Текущие данные", ""));
+                int index = Integer.parseInt(split[2]);
 
-                    int index = Integer.parseInt(propRegister.split("/")[2]);
+                if ("float".equals(split[3])) {
+                    ByteBuffer buffer = ByteBuffer.allocate(4)
+                            .putShort((short) registerValues[index + 1])
+                            .putShort((short) registerValues[index]);
 
-                    if ("float".equals(propRegister.split("/")[3])) {
-                        ByteBuffer buffer = ByteBuffer.allocate(4)
-                                .putShort((short) registerValues[index + 1])
-                                .putShort((short) registerValues[index]);
+                    String value = String.valueOf(buffer.order(ByteOrder.BIG_ENDIAN).getFloat(0));
 
-                        String value = String.valueOf(buffer.order(ByteOrder.BIG_ENDIAN).getFloat(0));
-
-                        model.addData(value, LocalDateTime.now());
-                    }
+                    model.addData(value, LocalDateTime.now());
                 }
             }
 
