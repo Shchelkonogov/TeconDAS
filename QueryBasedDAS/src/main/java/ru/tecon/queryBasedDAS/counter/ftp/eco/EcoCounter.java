@@ -179,7 +179,7 @@ public class EcoCounter extends FtpCounter {
                     ftpClient.close();
                     return;
                 } catch (XMLStreamException e) {
-                    logger.warn("Error load data", e);
+                    logger.warn("Error load data {}", fData.getPath(), e);
                 } finally {
                     if (ftpClient.getConnection().isConnected()) {
                         ftpClient.getConnection().completePendingCommand();
