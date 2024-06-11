@@ -75,7 +75,7 @@ public class ListenerServiceBean implements ListenerServiceRemote {
             for (String counter: listener.getCounterNameSet()) {
                 checkStm.setString(1, counter);
 
-                String url = "https://" + InetAddress.getLocalHost().getHostName() + ":" + port + "/uploaderService/api/request?id=[id]&objectId=[objectId]";
+                String url = "https://" + InetAddress.getLocalHost().getCanonicalHostName() + ":" + port + "/uploaderService/api/request?id=[id]&objectId=[objectId]";
 
                 ResultSet res = checkStm.executeQuery();
                 if (res.next()) {
