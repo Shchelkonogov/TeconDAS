@@ -2,6 +2,7 @@ package ru.tecon.queryBasedDAS.counter.statistic;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.io.Serializable;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -12,7 +13,7 @@ import java.util.*;
  * @author Maksim Shchelkonogov
  * 18.04.2024
  */
-public class StatData {
+public class StatData implements Serializable {
 
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss");
 
@@ -118,9 +119,11 @@ public class StatData {
         return new StringJoiner(", ", StatData.class.getSimpleName() + "[", "]")
                 .add("remoteName='" + remoteName + "'")
                 .add("counterName='" + counterName + "'")
+                .add("counter='" + counter + "'")
                 .add("objectName='" + objectName + "'")
                 .add("startRequestTime=" + startRequestTime)
                 .add("endRequestTime=" + endRequestTime)
+                .add("lastValuesUploadTime=" + lastValuesUploadTime)
                 .add("requestedValues=" + requestedValues)
                 .add("lastValues=" + lastValues)
                 .toString();
@@ -197,7 +200,7 @@ public class StatData {
         }
     }
 
-    public static final class LastValue {
+    public static final class LastValue implements Serializable {
 
         private final String paramName;
         private final String value;
@@ -237,7 +240,7 @@ public class StatData {
         }
     }
 
-    public static final class RequestedValue implements Comparable<RequestedValue> {
+    public static final class RequestedValue implements Comparable<RequestedValue>, Serializable {
 
         private final String paramName;
         private final LocalDateTime requestedDateTime;

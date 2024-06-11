@@ -1,5 +1,6 @@
 package ru.tecon.queryBasedDAS.counter.statistic;
 
+import java.io.Serializable;
 import java.util.Objects;
 import java.util.StringJoiner;
 
@@ -9,7 +10,7 @@ import java.util.StringJoiner;
  * @author Maksim Shchelkonogov
  * 23.04.2024
  */
-public class StatKey {
+public class StatKey implements Serializable {
 
     private final String server;
     private final String counter;

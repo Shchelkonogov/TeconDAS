@@ -3,12 +3,16 @@ package ru.tecon.queryBasedDAS.ejb;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import org.slf4j.Logger;
+import ru.tecon.queryBasedDAS.DasException;
 import ru.tecon.queryBasedDAS.counter.Counter;
 import ru.tecon.queryBasedDAS.counter.CounterInfo;
 import ru.tecon.queryBasedDAS.counter.Periodicity;
 import ru.tecon.queryBasedDAS.counter.ftp.FtpCounterAlarm;
 import ru.tecon.queryBasedDAS.counter.ftp.FtpCounterAsyncRequest;
 import ru.tecon.queryBasedDAS.counter.ftp.FtpCounterExtension;
+import ru.tecon.queryBasedDAS.counter.statistic.StatData;
+import ru.tecon.queryBasedDAS.counter.statistic.StatKey;
+import ru.tecon.queryBasedDAS.counter.statistic.StatisticSerializer;
 import ru.tecon.queryBasedDAS.counter.statistic.WebConsole;
 import ru.tecon.queryBasedDAS.ejb.prop.AppProp;
 import ru.tecon.queryBasedDAS.ejb.prop.RemoteProp;
@@ -57,16 +61,18 @@ public class QueryBasedDASSingletonBean {
                 }
             }
         } catch (IOException e) {
-            throw new  RuntimeException("error init project", e);
+            throw new RuntimeException("error init project", e);
         }
         if (appProp != null) {
+            Path root = Paths.get("").toAbsolutePath();
             Map<String, RemoteProp> customRemoteProp = new HashMap<>();
-            Path path = Paths.get(Paths.get("").toAbsolutePath() + "/" + appProp.getDasName() + "/remote.json");
+            Path path = Paths.get(root + "/" + appProp.getDasName() + "/remote.json");
             if (Files.exists(path)) {
                 try (InputStream inputStream = Files.newInputStream(path);
                      InputStreamReader inputStreamReader = new InputStreamReader(inputStream)) {
                     customRemoteProp = json.fromJson(inputStreamReader,
-                            new TypeToken<Map<String, RemoteProp>>() {}.getType());
+                            new TypeToken<Map<String, RemoteProp>>() {
+                            }.getType());
                 } catch (IOException ignore) {
                 }
             }
@@ -102,14 +108,28 @@ public class QueryBasedDASSingletonBean {
                     throw new RuntimeException("error load counter " + counter, e);
                 }
             }
+
+            // Де сериализация статистики
+            COUNTER_PROP_MAP.forEach((counter, counterProp) -> {
+                Path serPath = Paths.get(root + "/" + getDasName() + "/" + counter + ".ser");
+                if (Files.exists(serPath) && (counterProp.info instanceof WebConsole)) {
+                    try {
+                        Map<StatKey, StatData> deserialize = StatisticSerializer.deserialize(serPath);
+                        deserialize.forEach((key, value) -> ((WebConsole) COUNTER_PROP_MAP.get(counter).info).merge(key, value, (old, young) -> young));
+                    } catch (DasException e) {
+                        logger.warn("deserialize error", e);
+                    }
+                }
+            });
         } else {
-            throw new  RuntimeException("error init project");
+            throw new RuntimeException("error init project");
         }
     }
 
     @PreDestroy
     private void destroy() {
-        Path path = Paths.get(Paths.get("").toAbsolutePath() + "/" + getDasName() + "/remote.json");
+        Path root = Paths.get("").toAbsolutePath();
+        Path path = Paths.get(root + "/" + getDasName() + "/remote.json");
         try {
             Files.createDirectories(path.getParent());
             try (OutputStream outputStream = Files.newOutputStream(path);
@@ -119,6 +139,18 @@ public class QueryBasedDASSingletonBean {
         } catch (IOException e) {
             logger.warn("Error write property", e);
         }
+
+        // Сериализация статистики
+        COUNTER_PROP_MAP.forEach((key, value) -> {
+            Path serPath = Paths.get(root + "/" + getDasName() + "/" + key + ".ser");
+            if (value.info instanceof WebConsole) {
+                try {
+                    StatisticSerializer.serialize(((WebConsole) value.info).getStatistic(), serPath);
+                } catch (DasException e) {
+                    logger.warn("serialize error", e);
+                }
+            }
+        });
     }
 
     /**
@@ -143,7 +175,7 @@ public class QueryBasedDASSingletonBean {
     /**
      * Получение коллекции имен доступных счетчиков системы
      *
-     * @param remote имя удаленного сервера загрузки
+     * @param remote      имя удаленного сервера загрузки
      * @param periodicity частота опроса исторических данных счетчика
      * @return имена доступных счетчиков системы
      */
