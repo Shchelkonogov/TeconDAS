@@ -134,7 +134,7 @@ public abstract class FtpCounterWithAsyncRequest extends MctFtpCounter implement
 
             SerialUtils.setSerialPortFactory(new SerialPortFactoryTcpClient(tcpParameter));
             ModbusMaster master = ModbusMasterFactory.createModbusMasterRTU(serialParameter);
-            master.setResponseTimeout(30000);
+            master.setResponseTimeout(60000);
             master.connect();
 
             for (DataModel model: params) {
