@@ -1,7 +1,6 @@
 package ru.tecon.queryBasedDAS.ejb;
 
 import org.slf4j.Logger;
-import ru.tecon.queryBasedDAS.DasException;
 import ru.tecon.queryBasedDAS.counter.Periodicity;
 import ru.tecon.queryBasedDAS.ejb.observers.TimerEvent;
 
@@ -38,17 +37,10 @@ public class QueryBasedDASTimersBean {
     @Schedule(minute = "*/20", hour = "*", info = "00, 20, 40 minute every hour", persistent = false)
     private void registerListeners(Timer timer) {
         event.fire(new TimerEvent(timer.getInfo().toString()));
-        try {
-            listenerBean.registerConfigRequestListener();
-        } catch (DasException e) {
-            logger.warn("Error register listener ", e);
-        }
 
-        try {
-            listenerBean.registerAsyncRequestListener();
-        } catch (DasException e) {
-            logger.warn("Error register listener ", e);
-        }
+        listenerBean.registerConfigRequestListener();
+
+        listenerBean.registerAsyncRequestListener();
     }
 
     /**

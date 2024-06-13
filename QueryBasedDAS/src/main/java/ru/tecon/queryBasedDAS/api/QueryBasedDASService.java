@@ -62,17 +62,9 @@ public class QueryBasedDASService {
     public Response registerListeners(@QueryParam("server") String serverName) {
         Map<String, List<String>> result = new HashMap<>();
         if (serverName == null) {
-            try {
-                result.put(ListenerType.CONFIGURATION.toString(), listenerServicesBean.registerConfigRequestListener());
-            } catch (DasException e) {
-                logger.warn("Error register config listener", e);
-            }
+            result.put(ListenerType.CONFIGURATION.toString(), listenerServicesBean.registerConfigRequestListener());
 
-            try {
-                result.put(ListenerType.INSTANT_DATA.toString(), listenerServicesBean.registerAsyncRequestListener());
-            } catch (DasException e) {
-                logger.warn("Error register instant data listener", e);
-            }
+            result.put(ListenerType.INSTANT_DATA.toString(), listenerServicesBean.registerAsyncRequestListener());
         } else {
             try {
                 listenerServicesBean.registerConfigRequestListener(serverName);
@@ -105,17 +97,9 @@ public class QueryBasedDASService {
     public Response unregisterListeners(@QueryParam("server") String serverName) {
         Map<String, List<String>> result = new HashMap<>();
         if (serverName == null) {
-            try {
-                result.put(ListenerType.CONFIGURATION.toString(), listenerServicesBean.unregisterConfigRequestListener());
-            } catch (DasException e) {
-                logger.warn("Error register config listener", e);
-            }
+            result.put(ListenerType.CONFIGURATION.toString(), listenerServicesBean.unregisterConfigRequestListener());
 
-            try {
-                result.put(ListenerType.INSTANT_DATA.toString(), listenerServicesBean.unregisterAsyncRequestListener());
-            } catch (DasException e) {
-                logger.warn("Error register instant data listener", e);
-            }
+            result.put(ListenerType.INSTANT_DATA.toString(), listenerServicesBean.unregisterAsyncRequestListener());
         } else {
             try {
                 listenerServicesBean.unregisterConfigRequestListener(serverName);

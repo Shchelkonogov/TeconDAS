@@ -34,18 +34,12 @@ public class ListenerServicesStatelessBean {
     @EJB
     private RemoteEJBFactory remoteEJBFactory;
 
-    // remote ejb over http
-//    @Inject
-//    @ConfigProperty(name = "payara.instance.http.port")
-//    private String port;
-
     /**
      * Регистрация слушателя запросов на конфигурацию на серверах загрузки данных
      *
      * @return список серверов, где успешно удалось зарегистрировать слушателя
-     * @throws DasException в случае ошибки регистрации слушателя
      */
-    public List<String> registerConfigRequestListener() throws DasException {
+    public List<String> registerConfigRequestListener() {
         List<String> result = new ArrayList<>();
 
         for (String serverName: dasSingletonBean.getRemotes().keySet()) {
@@ -90,9 +84,8 @@ public class ListenerServicesStatelessBean {
      * Отмена регистрации слушателя на конфигурацию на серверах загрузки данных
      *
      * @return список серверов, где регистрация успешно отменена
-     * @throws DasException в случае ошибки отмены регистрации
      */
-    public List<String> unregisterConfigRequestListener() throws DasException {
+    public List<String> unregisterConfigRequestListener() {
         List<String> result = new ArrayList<>();
 
         for (String serverName: dasSingletonBean.getRemotes().keySet()) {
@@ -100,7 +93,7 @@ public class ListenerServicesStatelessBean {
                 unregisterConfigRequestListener(serverName);
                 result.add(serverName);
             } catch (DasException e) {
-                logger.warn("Error unregister listener for remote server {} ", serverName, e);
+                logger.warn("Error unregister listener for remote server {} {}", serverName, e.getMessage());
             }
         }
 
@@ -127,9 +120,8 @@ public class ListenerServicesStatelessBean {
      * Регистрация слушателя запросов на конфигурацию на серверах загрузки данных
      *
      * @return список серверов, где успешно удалось зарегистрировать слушателя
-     * @throws DasException в случае ошибки регистрации слушателя
      */
-    public List<String> registerAsyncRequestListener() throws DasException {
+    public List<String> registerAsyncRequestListener() {
         List<String> result = new ArrayList<>();
 
         for (String serverName: dasSingletonBean.getRemotes().keySet()) {
@@ -174,9 +166,8 @@ public class ListenerServicesStatelessBean {
      * Отмена регистрации слушателя на мгновенные данные на серверах загрузки данных
      *
      * @return список серверов, где регистрация успешно отменена
-     * @throws DasException в случае ошибки отмены регистрации
      */
-    public List<String> unregisterAsyncRequestListener() throws DasException {
+    public List<String> unregisterAsyncRequestListener() {
         List<String> result = new ArrayList<>();
 
         for (String serverName: dasSingletonBean.getRemotes().keySet()) {
@@ -184,7 +175,7 @@ public class ListenerServicesStatelessBean {
                 unregisterAsyncRequestListener(serverName);
                 result.add(serverName);
             } catch (DasException e) {
-                logger.warn("Error unregister listener for remote server {} ", serverName, e);
+                logger.warn("Error unregister listener for remote server {} {}", serverName, e.getMessage());
             }
         }
 
