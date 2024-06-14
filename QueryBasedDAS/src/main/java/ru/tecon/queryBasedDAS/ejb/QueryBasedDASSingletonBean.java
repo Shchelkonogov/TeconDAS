@@ -92,9 +92,9 @@ public class QueryBasedDASSingletonBean {
                     COUNTER_PROP_MAP.put(counterName, new CounterProp(counter, instance.getCounterInfo()));
 
                     for (String remoteName: appProp.getRemotes().keySet()) {
-                        REMOTE_PROP_MAP.get(remoteName).addCounter(counterName);
                         if (customRemoteProp.containsKey(remoteName) &&
                                 (customRemoteProp.get(remoteName).getCounterProp(counterName) != null)) {
+                            REMOTE_PROP_MAP.get(remoteName).addCounter(counterName);
                             RemoteProp.CounterProp customProp = customRemoteProp.get(remoteName).getCounterProp(counterName);
                             RemoteProp.CounterProp prop = REMOTE_PROP_MAP.get(remoteName).getCounterProp(counterName);
 
@@ -164,12 +164,16 @@ public class QueryBasedDASSingletonBean {
     }
 
     /**
-     * Получение коллекции имен доступных счетчиков системы
+     * Получение коллекции имен доступных счетчиков системы для удаленного сервера
      *
      * @return имена доступных счетчиков системы
      */
-    public Set<String> counterNameSet() {
-        return new HashSet<>(COUNTER_PROP_MAP.keySet());
+    public Set<String> counterNameSet(String remote) {
+        Set<String> result = new HashSet<>();
+        if (REMOTE_PROP_MAP.containsKey(remote)) {
+            result.addAll(REMOTE_PROP_MAP.get(remote).getCounters());
+        }
+        return result;
     }
 
     /**

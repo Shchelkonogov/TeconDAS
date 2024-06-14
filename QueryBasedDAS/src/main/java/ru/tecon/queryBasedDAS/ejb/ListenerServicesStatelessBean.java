@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 /**
  * @author Maksim Shchelkonogov
@@ -68,7 +69,7 @@ public class ListenerServicesStatelessBean {
                     ListenerType.CONFIGURATION,
                     remoteEJBFactory.getRemoteServiceProperties(InetAddress.getLocalHost().getHostName(), 3700),
                     "java:global/queryBasedDAS/configRequestBean!" + ConfigRequestRemote.class.getName(),
-                    dasSingletonBean.counterNameSet());
+                    dasSingletonBean.counterNameSet(uploaderServerName));
 
             ListenerServiceRemote listenerServiceRemote = remoteEJBFactory.getListenerServiceRemote(uploaderServerName);
 
@@ -143,22 +144,28 @@ public class ListenerServicesStatelessBean {
      * @throws DasException в случае ошибки регистрации слушателя
      */
     public void registerAsyncRequestListener(String uploaderServerName) throws DasException {
-        try {
-            String dasName = dasSingletonBean.getDasName();
+        String dasName = dasSingletonBean.getDasName();
 
-            Listener listener = new Listener(dasName,
-                    ListenerType.INSTANT_DATA,
-                    remoteEJBFactory.getRemoteServiceProperties(InetAddress.getLocalHost().getHostName(), 3700),
-                    "java:global/queryBasedDAS/asyncRequestBean!" + InstantDataRequestRemote.class.getName(),
-                    dasSingletonBean.counterSupportAsyncRequestNameSet());
+        Set<String> counters = dasSingletonBean.counterNameSet(uploaderServerName);
+        Set<String> asyncRequestCounters = dasSingletonBean.counterSupportAsyncRequestNameSet();
+        asyncRequestCounters.removeIf(counterName -> !counters.contains(counterName));
 
-            ListenerServiceRemote listenerServiceRemote = remoteEJBFactory.getListenerServiceRemote(uploaderServerName);
+        if (!asyncRequestCounters.isEmpty()) {
+            try {
+                Listener listener = new Listener(dasName,
+                        ListenerType.INSTANT_DATA,
+                        remoteEJBFactory.getRemoteServiceProperties(InetAddress.getLocalHost().getHostName(), 3700),
+                        "java:global/queryBasedDAS/asyncRequestBean!" + InstantDataRequestRemote.class.getName(),
+                        asyncRequestCounters);
 
-            if (!listenerServiceRemote.containsListener(dasName, ListenerType.INSTANT_DATA)) {
-                listenerServiceRemote.addListener(listener);
+                ListenerServiceRemote listenerServiceRemote = remoteEJBFactory.getListenerServiceRemote(uploaderServerName);
+
+                if (!listenerServiceRemote.containsListener(dasName, ListenerType.INSTANT_DATA)) {
+                    listenerServiceRemote.addListener(listener);
+                }
+            } catch (IOException | NamingException e) {
+                throw new DasException("remote register service " + uploaderServerName + " unavailable", e);
             }
-        } catch (IOException | NamingException e) {
-            throw new DasException("remote register service " + uploaderServerName + " unavailable", e);
         }
     }
 

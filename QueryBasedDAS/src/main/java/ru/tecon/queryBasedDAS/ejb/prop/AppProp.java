@@ -43,6 +43,7 @@ public class AppProp {
         private String serviceName;
         private String ejbName;
         private String listenerEjbName;
+        private int priority;
 
         private Remote() {
         }
@@ -67,6 +68,10 @@ public class AppProp {
             return ejbName;
         }
 
+        public int getPriority() {
+            return priority;
+        }
+
         @Override
         public String toString() {
             return new StringJoiner(", ", Remote.class.getSimpleName() + "[", "]")
@@ -75,6 +80,7 @@ public class AppProp {
                     .add("serviceName='" + serviceName + "'")
                     .add("ejbName='" + ejbName + "'")
                     .add("listenerEjbName='" + listenerEjbName + "'")
+                    .add("priority=" + priority)
                     .toString();
         }
     }

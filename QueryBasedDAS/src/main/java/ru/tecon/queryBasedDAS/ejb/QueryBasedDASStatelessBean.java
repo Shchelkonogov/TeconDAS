@@ -64,19 +64,6 @@ public class QueryBasedDASStatelessBean {
     }
 
     /**
-     * Получение всех объектов счетчиков
-     *
-     * @return объекты счетчика
-     */
-    public Map<String, List<String>> getCounterObjects() {
-        Map<String, List<String>> result = new HashMap<>();
-        for (String counter: bean.counterNameSet()) {
-            result.putAll(getCounterObjects(counter));
-        }
-        return result;
-    }
-
-    /**
      * Выгрузка объектов счетчиков на сервер загрузки данных
      *
      * @param serverName имя сервера загрузки данных
@@ -108,29 +95,18 @@ public class QueryBasedDASStatelessBean {
 
     /**
      * Выгрузка объектов счетчиков на все сервера загрузки данных
-     *
-     * @param counterObjects объекты счетчиков
-     * @return список серверов, куда успешно загрузились данные
-     */
-    public List<String> uploadCounterObjects(Map<String, List<String>> counterObjects) {
-        List<String> result = new ArrayList<>();
-
-        for (String serverName: bean.getRemotes().keySet()) {
-            boolean isUpload = uploadCounterObjects(serverName, counterObjects);
-            if (isUpload) {
-                result.add(serverName);
-            }
-        }
-
-        return result;
-    }
-
-    /**
-     * Выгрузка объектов счетчиков на все сервера загрузки данных
      */
     @Asynchronous
     public void uploadCounterObjects() {
-        uploadCounterObjects(getCounterObjects());
+        Map<String, List<String>> counterObjects = new HashMap<>();
+        for (String serverName: bean.getRemotes().keySet()) {
+            for (String counter: bean.counterNameSet(serverName)) {
+                if (!counterObjects.containsKey(counter)) {
+                    counterObjects.putAll(getCounterObjects(counter));
+                }
+                uploadCounterObjects(serverName, Map.of(counter, counterObjects.get(counter)));
+            }
+        }
         logger.info("finish upload counter objects");
     }
 
@@ -233,8 +209,10 @@ public class QueryBasedDASStatelessBean {
                     } else {
                         logger.warn("no subscribed objects for {}", uploadServerName);
                     }
-                } catch (NamingException | DasException e) {
+                } catch (NamingException e) {
                     logger.warn("remote service {} unavailable", uploadServerName, e);
+                } catch (DasException e) {
+                    logger.warn("loadAlarms error {}", e.getMessage());
                 }
             }
         }
@@ -307,7 +285,7 @@ public class QueryBasedDASStatelessBean {
 
                 Set<String> counterNameSet;
                 if (periodicity == null) {
-                    counterNameSet = bean.counterNameSet();
+                    counterNameSet = bean.counterNameSet(uploadServerName);
                 } else {
                     counterNameSet = bean.counterNameSet(uploadServerName, periodicity);
                 }
@@ -348,8 +326,10 @@ public class QueryBasedDASStatelessBean {
                 } else {
                     logger.warn("no subscribed objects for {}", uploadServerName);
                 }
-            } catch (NamingException | DasException e) {
+            } catch (NamingException e) {
                 logger.warn("remote service {} unavailable", uploadServerName, e);
+            } catch (DasException e) {
+                logger.warn("loadHistoricalData error {}", e.getMessage());
             }
         }
     }

@@ -15,8 +15,7 @@ import javax.inject.Inject;
 import javax.inject.Named;
 import javax.security.enterprise.SecurityContext;
 import java.io.Serializable;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -47,13 +46,15 @@ public class ConsoleController implements Serializable {
 
     @PostConstruct
     private void init() {
-        remoteSelected = getRemotes()[0];
+        remoteSelected = getRemotes().get(0);
     }
 
     public Map<String, String> getAllConsoleMap() {
+        Set<String> counters = bean.counterNameSet(remoteSelected);
         return bean.getAllConsole()
                 .entrySet()
                 .stream()
+                .filter(entry -> counters.contains(entry.getKey()))
                 .collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey, (s, s2) -> s + "\n" + s2));
     }
 
@@ -62,8 +63,10 @@ public class ConsoleController implements Serializable {
     }
 
     public Set<String> getCounters() {
-        // TODO поправить сортировку
-        return bean.getAllConsole().keySet();
+        Set<String> counters = bean.counterNameSet(remoteSelected);
+        Set<String> consoleCounters = bean.getAllConsole().keySet();
+        consoleCounters.removeIf(counter -> !counters.contains(counter));
+        return consoleCounters;
     }
 
     public Periodicity[] getPeriodicityMenu() {
@@ -145,8 +148,10 @@ public class ConsoleController implements Serializable {
         return counterForUpdate;
     }
 
-    public String[] getRemotes() {
-        return bean.getRemotes().keySet().toArray(new String[0]);
+    public List<String> getRemotes() {
+        List<String> result = new ArrayList<>(bean.getRemotes().keySet());
+        result.sort(Comparator.comparing(remote -> bean.getRemote(remote).getPriority()));
+        return result;
     }
 
     public String isRemoteEnable(String remote) {

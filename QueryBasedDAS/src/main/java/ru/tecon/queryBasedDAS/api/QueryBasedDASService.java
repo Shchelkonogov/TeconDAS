@@ -139,6 +139,10 @@ public class QueryBasedDASService {
     @Path("/getCounterNames")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getCounterNames() {
-        return Response.ok(json.toJson(dasSingletonBean.counterNameSet())).build();
+        Map<String, Set<String>> result = new HashMap<>();
+        for (String remote: dasSingletonBean.getRemotes().keySet()) {
+            result.put(remote, dasSingletonBean.counterNameSet(remote));
+        }
+        return Response.ok(json.toJson(result)).build();
     }
 }

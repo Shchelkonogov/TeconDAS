@@ -15,21 +15,24 @@
       "port": 3700,
       "serviceName": "uploaderService",
       "ejbName": "uploaderServiceBean",
-      "listenerEjbName": "listenerServiceBean"
+      "listenerEjbName": "listenerServiceBean",
+      "priority": 2
     },
     "oracle": {
       "url": "172.16.4.135",
       "port": 3700,
       "serviceName": "oracleUploaderService",
       "ejbName": "oracleUploaderServiceBean",
-      "listenerEjbName": "oracleListenerServiceBean"
+      "listenerEjbName": "oracleListenerServiceBean",
+      "priority": 1
     },
     "oracleFil5": {
       "url": "172.16.4.135",
       "port": 3700,
       "serviceName": "oracleFil5UploaderService",
       "ejbName": "oracleFil5UploaderServiceBean",
-      "listenerEjbName": "oracleFil5ListenerServiceBean"
+      "listenerEjbName": "oracleFil5ListenerServiceBean",
+      "priority": 3
     }
   }
 }

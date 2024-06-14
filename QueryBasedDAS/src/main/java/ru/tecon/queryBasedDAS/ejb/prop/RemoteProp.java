@@ -2,10 +2,7 @@ package ru.tecon.queryBasedDAS.ejb.prop;
 
 import ru.tecon.queryBasedDAS.counter.Periodicity;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.StringJoiner;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -43,6 +40,10 @@ public class RemoteProp {
                 .filter(entry -> entry.getValue().periodicity == periodicity)
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toList());
+    }
+
+    public List<String> getCounters() {
+        return new ArrayList<>(counters.keySet());
     }
 
     public CounterProp getCounterProp(String counterName) {

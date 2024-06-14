@@ -58,7 +58,7 @@ public class ASDTSConsoleController implements Serializable {
 
     @PostConstruct
     private void init() {
-        remoteSelected = getRemotes()[0];
+        remoteSelected = getRemotes().get(0);
     }
 
     /**
@@ -208,8 +208,11 @@ public class ASDTSConsoleController implements Serializable {
         return securityContext.isCallerInRole("admin");
     }
 
-    public String[] getRemotes() {
-        return singletonBean.getRemotes().keySet().toArray(new String[0]);
+    public List<String> getRemotes() {
+        List<String> result = new ArrayList<>(singletonBean.getRemotes().keySet());
+        result.removeIf(remote -> !singletonBean.counterNameSet(remote).contains(info.getCounterName()));
+        result.sort(Comparator.comparing(remote -> singletonBean.getRemote(remote).getPriority()));
+        return result;
     }
 
     public String isRemoteEnable(String remote) {

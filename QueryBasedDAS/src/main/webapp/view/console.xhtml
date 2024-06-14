@@ -5,12 +5,14 @@
       xmlns:h="http://xmlns.jcp.org/jsf/html"
       xmlns:f="http://xmlns.jcp.org/jsf/core"
       xmlns:p="http://primefaces.org/ui"
+      xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
       xmlns:c="http://java.sun.com/jsp/jstl/core"
       xmlns:error="http://xmlns.jcp.org/jsf/composite/component/error">
 <h:head>
     <h:outputStylesheet name="webjars/primeflex/3.3.1/primeflex.min.css"/>
     <h:outputStylesheet name="system/style.css" library="css"/>
     <h:outputStylesheet name="console.css" library="css"/>
+    <h:outputScript name="console.js" library="js"/>
     <link rel="shortcut icon" type="image/x-icon" href="#{resource['images/logo.png']}"/>
 </h:head>
 <h:body>
@@ -55,7 +57,7 @@
                 <p:outputLabel value="Удаленный сервер:" styleClass="mr-1 font-bold"/>
                 <p:selectOneMenu value="#{console.remoteSelected}" styleClass="mr-3"
                                  style="vertical-align: top; width: 150px;">
-                    <p:ajax update="menuBar threadConfigForm"/>
+                    <p:ajax update="menuBar threadConfigForm consoleBlock"/>
                     <f:selectItems value="#{console.remotes}" var="item" itemValue="#{item}"
                                    itemLabel="#{item} #{console.isRemoteEnable(item)}"/>
                 </p:selectOneMenu>
@@ -66,9 +68,10 @@
             </f:facet>
         </p:menubar>
 
-        <div class="flex flex-wrap justify-content-center column-gap-4 row-gap-4 align-items-center"
-             style="height: calc(100% - 51px);">
-            <c:forEach var="item" varStatus="loop" items="#{console.allConsoleMap}">
+        <h:panelGroup id="consoleBlock" layout="block"
+                      class="flex flex-wrap justify-content-center column-gap-4 row-gap-4 align-items-center"
+                      style="height: calc(100% - 51px);">
+            <ui:repeat var="item" varStatus="loop" value="#{console.allConsoleMap}">
                 <div class="w-13rem bg-primary font-bold flex align-items-center justify-content-center
                             cursor-pointer flex-column das-button"
                      style="height: 6.5rem; background: linear-gradient(#007ad9, #034980);
@@ -77,8 +80,8 @@
                        style="color: inherit; text-decoration: none; white-space: pre-line;"
                        class="flex align-items-center justify-content-center h-full w-full">#{item.value}</a>
                 </div>
-            </c:forEach>
-        </div>
+            </ui:repeat>
+        </h:panelGroup>
     </h:form>
 
     <p:dialog widgetVar="threadConfigWidget" width="500" modal="true" rendered="#{console.admin}"

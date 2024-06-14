@@ -24,3 +24,9 @@ PrimeFaces.locales ['ru'] = {
     day: 'День',
     allDayText: 'Весь день'
 };
+
+window.addEventListener('pageshow', (event) => {
+    if (String(window.performance.getEntriesByType("navigation")[0].type) === "back_forward") {
+        window.location.reload()
+    }
+})
