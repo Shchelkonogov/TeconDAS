@@ -367,7 +367,7 @@ public class PlainCounter extends FtpCounterWithAsyncRequest implements FtpCount
                     .filter(ftpFile -> {
                         if (ftpFile.getName().matches("\\d{4}a(20\\d{2})(0[1-9]|1[0-2])(0[1-9]|[12][0-9]|3[01])-\\d{6}")) {
                             return LocalDateTime.ofInstant(ftpFile.getTimestampInstant(), ftpFile.getTimestamp().getTimeZone().toZoneId())
-                                    .isBefore(LocalDateTime.now().minusDays(45));
+                                    .isBefore(LocalDateTime.now().minusDays(10));
                         }
                         return false;
                     })
