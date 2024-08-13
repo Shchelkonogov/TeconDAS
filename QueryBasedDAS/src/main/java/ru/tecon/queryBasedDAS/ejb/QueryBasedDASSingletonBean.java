@@ -177,6 +177,16 @@ public class QueryBasedDASSingletonBean {
     }
 
     /**
+     * Получение имени счетчика для отображения
+     *
+     * @param counterName имя счетчика
+     * @return имя счетчика для отображения
+     */
+    public String getUserCounterName(String counterName) {
+        return COUNTER_PROP_MAP.get(counterName).info.getCounterUserName();
+    }
+
+    /**
      * Получение коллекции имен доступных счетчиков системы
      *
      * @param remote      имя удаленного сервера загрузки

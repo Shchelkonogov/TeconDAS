@@ -23,6 +23,7 @@ public class ASDTSInfo implements CounterInfo, WebConsole {
     private static volatile ASDTSInfo instance;
 
     private static final String COUNTER_NAME = "IASDTU";
+    private static final String COUNTER_USER_NAME = "АС \"ДТС\"";
 
     private final Map<StatKey, StatData> statistic = new ConcurrentHashMap<>();
 
@@ -51,6 +52,11 @@ public class ASDTSInfo implements CounterInfo, WebConsole {
     @Override
     public String getCounterName() {
         return COUNTER_NAME;
+    }
+
+    @Override
+    public String getCounterUserName() {
+        return COUNTER_USER_NAME;
     }
 
     @Override

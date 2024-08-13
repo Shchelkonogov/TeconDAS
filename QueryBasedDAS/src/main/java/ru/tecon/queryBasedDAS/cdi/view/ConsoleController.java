@@ -55,7 +55,7 @@ public class ConsoleController implements Serializable {
                 .entrySet()
                 .stream()
                 .filter(entry -> counters.contains(entry.getKey()))
-                .collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey, (s, s2) -> s + "\n" + s2));
+                .collect(Collectors.toMap(Map.Entry::getValue, v -> bean.getUserCounterName(v.getKey()), (s, s2) -> s + "\n" + s2));
     }
 
     @PreDestroy

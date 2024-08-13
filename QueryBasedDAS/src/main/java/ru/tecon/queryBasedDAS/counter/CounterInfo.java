@@ -16,6 +16,13 @@ public interface CounterInfo {
     String getCounterName();
 
     /**
+     * Получение имени счетчика для отображения
+     *
+     * @return имя счетчика
+     */
+    String getCounterUserName();
+
+    /**
      * Получение списка объектов данного счетчика
      *
      * @return список объектов

@@ -48,6 +48,11 @@ public class VISTInfo extends FtpCounterInfo {
     }
 
     @Override
+    public String getCounterUserName() {
+        return COUNTER_NAME;
+    }
+
+    @Override
     public void merge(StatKey key, @NotNull StatData value, @NotNull BiFunction<? super StatData, ? super StatData, ? extends StatData> remappingFunction) {
         statistic.merge(key, value, remappingFunction);
     }

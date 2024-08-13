@@ -30,6 +30,7 @@ public class EcoInfo implements CounterInfo, WebConsole {
     private static final Logger logger = LoggerFactory.getLogger(EcoInfo.class);
 
     private static final String COUNTER_NAME = "Ecomonitoring";
+    private static final String COUNTER_USER_NAME = "Экомониторинг";
 
     private final Map<StatKey, StatData> statistic = new ConcurrentHashMap<>();
 
@@ -50,6 +51,11 @@ public class EcoInfo implements CounterInfo, WebConsole {
     @Override
     public String getCounterName() {
         return COUNTER_NAME;
+    }
+
+    @Override
+    public String getCounterUserName() {
+        return COUNTER_USER_NAME;
     }
 
     @Override
