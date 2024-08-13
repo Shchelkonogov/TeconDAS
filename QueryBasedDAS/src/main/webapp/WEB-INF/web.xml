@@ -18,6 +18,7 @@
             <web-resource-name>user console resource</web-resource-name>
             <url-pattern>/view/*</url-pattern>
             <url-pattern>/console/*</url-pattern>
+            <url-pattern>/help/*</url-pattern>
         </web-resource-collection>
         <auth-constraint>
             <role-name>user</role-name>
