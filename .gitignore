@@ -39,3 +39,5 @@ build/
 
 /QueryBasedDAS/custom.java.security
 /QueryBasedDAS/src/test/
+/logs/
+/.idea/
