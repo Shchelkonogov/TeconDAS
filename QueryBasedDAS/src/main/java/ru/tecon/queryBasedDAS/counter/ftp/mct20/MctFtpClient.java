@@ -8,7 +8,7 @@ import ru.tecon.queryBasedDAS.counter.ftp.FtpClient;
  */
 public class MctFtpClient extends FtpClient {
 
-    // TODO adjust on production mode (moek 10.98.254.10, moek vpn 172.16.4.47)
+    // TODO adjust on production mode (moek 10.98.254.10, moek vpn 172.16.4.134)
     private static final String server = "10.98.254.10";
     private static final int port = 21;
     private static final String user = "ftp_device";

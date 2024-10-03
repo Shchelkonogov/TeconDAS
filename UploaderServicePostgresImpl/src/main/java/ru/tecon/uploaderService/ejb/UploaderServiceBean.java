@@ -225,7 +225,7 @@ public class UploaderServiceBean implements UploaderServiceRemote {
                 }
 
                 if ((resLinked.getString("measure_unit_transformer") != null)
-                        && !resLinked.getString("measure_unit_transformer").equals("")) {
+                        && !resLinked.getString("measure_unit_transformer").isEmpty()) {
                     builder.incrementValue(resLinked.getString("measure_unit_transformer").substring(2));
                 }
 
