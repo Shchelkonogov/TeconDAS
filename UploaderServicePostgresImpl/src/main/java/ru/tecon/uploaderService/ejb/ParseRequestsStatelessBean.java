@@ -1,9 +1,8 @@
 package ru.tecon.uploaderService.ejb;
 
 import org.slf4j.Logger;
-import ru.tecon.uploaderService.ejb.das.ConfigRequestRemote;
-import ru.tecon.uploaderService.ejb.das.InstantDataRequestRemote;
 import ru.tecon.uploaderService.ejb.das.ListenerType;
+import ru.tecon.uploaderService.ejb.das.RemoteRequest;
 import ru.tecon.uploaderService.model.Listener;
 import ru.tecon.uploaderService.model.RequestData;
 
@@ -17,6 +16,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Properties;
 import java.util.Set;
 
 /**
@@ -65,11 +65,11 @@ public class ParseRequestsStatelessBean {
 
                 switch (res.getString("kind")) {
                     case "AsyncRefresh":
-                        acceptAsyncRefresh(bean.getRemoteListeners(ListenerType.INSTANT_DATA, res.getString("server_name")),
+                        acceptRequest(bean.getRemoteListeners(ListenerType.INSTANT_DATA, res.getString("server_name")),
                                 requestData);
                         break;
                     case "ForceBrowse":
-                        acceptForceBrowse(bean.getRemoteListeners(ListenerType.CONFIGURATION, res.getString("server_name")),
+                        acceptRequest(bean.getRemoteListeners(ListenerType.CONFIGURATION, res.getString("server_name")),
                                 requestData);
                         break;
                     default:
@@ -81,38 +81,31 @@ public class ParseRequestsStatelessBean {
         }
     }
 
-    /**
-     * Обработка запроса на конфигурацию
-     *
-     * @param listeners список слушателей
-     * @param requestData данные запроса
-     */
-    private void acceptForceBrowse(Set<Listener> listeners, RequestData requestData) {
+    private void acceptRequest(Set<Listener> listeners, RequestData requestData) {
         for (Listener listener: listeners) {
-            try {
-                InitialContext context = new InitialContext(listener.getJndiProperties());
-                ConfigRequestRemote lookup = (ConfigRequestRemote) context.lookup(listener.getLookupName());
+            switch (listener.getAccessType()) {
+                case REMOTE_EJB:
+                    if (listener.getProperties().containsKey("jndiProperties") &&
+                            (listener.getProperties().get("jndiProperties") instanceof Properties) &&
+                            listener.getProperties().containsKey("lookupName")) {
+                        try {
+                            InitialContext context = new InitialContext(
+                                    (Properties) listener.getProperties().get("jndiProperties"));
+                            RemoteRequest lookup = (RemoteRequest) context.lookup(
+                                    listener.getProperties().getProperty("lookupName"));
 
-                lookup.acceptAsync(requestData);
+                            lookup.acceptAsync(requestData);
 
-                logger.info("async notify send");
-            } catch (NamingException e) {
-                logger.warn("error send request", e);
-            }
-        }
-    }
-
-    private void acceptAsyncRefresh(Set<Listener> listeners, RequestData requestData) {
-        for (Listener listener: listeners) {
-            try {
-                InitialContext context = new InitialContext(listener.getJndiProperties());
-                InstantDataRequestRemote lookup = (InstantDataRequestRemote) context.lookup(listener.getLookupName());
-
-                lookup.acceptAsync(requestData);
-
-                logger.info("async notify send");
-            } catch (NamingException e) {
-                logger.warn("error send request", e);
+                            logger.info("async notify send");
+                        } catch (NamingException e) {
+                            logger.warn("error send request", e);
+                        }
+                    } else {
+                        logger.warn("error send request. Important properties are lost");
+                    }
+                    break;
+                case CUSTOM_COMMAND:
+                    break;
             }
         }
     }

@@ -2,10 +2,10 @@ package ru.tecon.queryBasedDAS.ejb;
 
 import org.slf4j.Logger;
 import ru.tecon.queryBasedDAS.DasException;
-import ru.tecon.uploaderService.ejb.das.ConfigRequestRemote;
-import ru.tecon.uploaderService.ejb.das.InstantDataRequestRemote;
 import ru.tecon.uploaderService.ejb.das.ListenerServiceRemote;
 import ru.tecon.uploaderService.ejb.das.ListenerType;
+import ru.tecon.uploaderService.ejb.das.RemoteRequest;
+import ru.tecon.uploaderService.model.AccessType;
 import ru.tecon.uploaderService.model.Listener;
 
 import javax.ejb.*;
@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 import java.util.Set;
 
 /**
@@ -65,10 +66,14 @@ public class ListenerServicesStatelessBean {
         try {
             String dasName = dasSingletonBean.getDasName();
 
+            Properties properties = new Properties();
+            properties.put("jndiProperties", remoteEJBFactory.getRemoteServiceProperties(InetAddress.getLocalHost().getHostName(), 3700));
+            properties.put("lookupName", "java:global/queryBasedDAS/configRequestBean!" + RemoteRequest.class.getName());
+
             Listener listener = new Listener(dasName,
                     ListenerType.CONFIGURATION,
-                    remoteEJBFactory.getRemoteServiceProperties(InetAddress.getLocalHost().getHostName(), 3700),
-                    "java:global/queryBasedDAS/configRequestBean!" + ConfigRequestRemote.class.getName(),
+                    properties,
+                    AccessType.REMOTE_EJB,
                     dasSingletonBean.counterNameSet(uploaderServerName));
 
             ListenerServiceRemote listenerServiceRemote = remoteEJBFactory.getListenerServiceRemote(uploaderServerName);
@@ -152,10 +157,14 @@ public class ListenerServicesStatelessBean {
 
         if (!asyncRequestCounters.isEmpty()) {
             try {
+                Properties properties = new Properties();
+                properties.put("jndiProperties", remoteEJBFactory.getRemoteServiceProperties(InetAddress.getLocalHost().getHostName(), 3700));
+                properties.put("lookupName", "java:global/queryBasedDAS/asyncRequestBean!" + RemoteRequest.class.getName());
+
                 Listener listener = new Listener(dasName,
                         ListenerType.INSTANT_DATA,
-                        remoteEJBFactory.getRemoteServiceProperties(InetAddress.getLocalHost().getHostName(), 3700),
-                        "java:global/queryBasedDAS/asyncRequestBean!" + InstantDataRequestRemote.class.getName(),
+                        properties,
+                        AccessType.REMOTE_EJB,
                         asyncRequestCounters);
 
                 ListenerServiceRemote listenerServiceRemote = remoteEJBFactory.getListenerServiceRemote(uploaderServerName);

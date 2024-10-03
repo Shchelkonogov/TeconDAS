@@ -12,6 +12,6 @@ import java.util.Properties
  */
 data class Listener(val dasName: String,
                     val type: ListenerType,
-                    val jndiProperties: Properties,
-                    val lookupName: String,
+                    val properties: Properties,
+                    val accessType: AccessType,
                     val counterNameSet: Set<String>) : Serializable

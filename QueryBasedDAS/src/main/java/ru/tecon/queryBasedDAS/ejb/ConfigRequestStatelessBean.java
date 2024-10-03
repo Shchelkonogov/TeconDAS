@@ -3,7 +3,7 @@ package ru.tecon.queryBasedDAS.ejb;
 import org.slf4j.Logger;
 import ru.tecon.queryBasedDAS.DasException;
 import ru.tecon.queryBasedDAS.counter.Counter;
-import ru.tecon.uploaderService.ejb.das.ConfigRequestRemote;
+import ru.tecon.uploaderService.ejb.das.RemoteRequest;
 import ru.tecon.uploaderService.ejb.UploaderServiceRemote;
 import ru.tecon.uploaderService.model.RequestData;
 
@@ -17,9 +17,9 @@ import java.util.Set;
  * 17.01.2024
  */
 @Stateless(name = "configRequestBean", mappedName = "ejb/configRequestBean")
-@Remote(ConfigRequestRemote.class)
+@Remote(RemoteRequest.class)
 @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
-public class ConfigRequestStatelessBean implements ConfigRequestRemote {
+public class ConfigRequestStatelessBean implements RemoteRequest {
 
     @Inject
     private Logger logger;

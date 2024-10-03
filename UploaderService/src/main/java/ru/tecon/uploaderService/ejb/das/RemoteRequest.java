@@ -12,7 +12,7 @@ import javax.ejb.Remote;
  * 16.01.2024
  */
 @Remote
-public interface ConfigRequestRemote {
+public interface RemoteRequest {
 
     /**
      * Принять запрос.

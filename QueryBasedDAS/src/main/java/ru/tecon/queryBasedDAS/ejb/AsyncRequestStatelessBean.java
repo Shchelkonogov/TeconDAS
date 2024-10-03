@@ -4,7 +4,7 @@ import org.slf4j.Logger;
 import ru.tecon.queryBasedDAS.DasException;
 import ru.tecon.queryBasedDAS.counter.ftp.FtpCounterAsyncRequest;
 import ru.tecon.uploaderService.ejb.UploaderServiceRemote;
-import ru.tecon.uploaderService.ejb.das.InstantDataRequestRemote;
+import ru.tecon.uploaderService.ejb.das.RemoteRequest;
 import ru.tecon.uploaderService.model.DataModel;
 import ru.tecon.uploaderService.model.RequestData;
 
@@ -19,9 +19,9 @@ import java.util.stream.Collectors;
  * 27.02.2024
  */
 @Stateless(name = "asyncRequestBean", mappedName = "ejb/asyncRequestBean")
-@Remote(InstantDataRequestRemote.class)
+@Remote(RemoteRequest.class)
 @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
-public class AsyncRequestStatelessBean implements InstantDataRequestRemote {
+public class AsyncRequestStatelessBean implements RemoteRequest {
 
     @Inject
     private Logger logger;
@@ -41,7 +41,7 @@ public class AsyncRequestStatelessBean implements InstantDataRequestRemote {
     @Override
     @Asynchronous
     public void acceptAsync(RequestData requestData) {
-        logger.info("accept instant data load request for {}", requestData);
+        logger.info("accept async instant data load request for {}", requestData);
         loadInstantData(requestData);
     }
 
