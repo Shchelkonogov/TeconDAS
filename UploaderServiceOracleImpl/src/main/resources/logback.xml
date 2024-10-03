@@ -6,10 +6,10 @@
         </encoder>
     </appender>
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${com.sun.aas.instanceRoot}/logs/oracleUploaderService.log</file>
+        <file>${com.sun.aas.instanceRoot:-./}/logs/oracleUploaderService.log</file>
 
         <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
-            <fileNamePattern>${com.sun.aas.instanceRoot}/logs/oracleUploaderService.%i.log.zip</fileNamePattern>
+            <fileNamePattern>${com.sun.aas.instanceRoot:-./}/logs/oracleUploaderService.%i.log.zip</fileNamePattern>
             <minIndex>1</minIndex>
             <maxIndex>3</maxIndex>
         </rollingPolicy>
@@ -24,7 +24,7 @@
     </appender>
 
     <appender name="REQUEST_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${com.sun.aas.instanceRoot}/logs/oracleUploaderServiceRequest.log</file>
+        <file>${com.sun.aas.instanceRoot:-./}/logs/oracleUploaderServiceRequest.log</file>
 
         <filter class="ch.qos.logback.core.filter.EvaluatorFilter">
             <evaluator> <!-- defaults to type ch.qos.logback.classic.boolex.JaninoEventEvaluator -->
@@ -35,7 +35,7 @@
         </filter>
 
         <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
-            <fileNamePattern>${com.sun.aas.instanceRoot}/logs/oracleUploaderServiceRequest.%i.log.zip</fileNamePattern>
+            <fileNamePattern>${com.sun.aas.instanceRoot:-./}/logs/oracleUploaderServiceRequest.%i.log.zip</fileNamePattern>
             <minIndex>1</minIndex>
             <maxIndex>3</maxIndex>
         </rollingPolicy>
