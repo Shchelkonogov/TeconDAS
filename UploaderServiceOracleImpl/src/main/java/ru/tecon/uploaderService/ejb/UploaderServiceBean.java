@@ -10,6 +10,7 @@ import javax.annotation.Resource;
 import javax.ejb.*;
 import javax.inject.Inject;
 import javax.sql.DataSource;
+import java.math.BigDecimal;
 import java.sql.*;
 import java.util.*;
 
@@ -80,6 +81,9 @@ public class UploaderServiceBean implements UploaderServiceRemote {
     private static final String SELECT_COUNTER_OBJECT_ID = "select ID from ADMIN.TSA_OPC_OBJECT " +
             "where extractValue(XMLType('<Group>' || OPC_PATH || '</Group>'), '/Group/Server') = ? " +
                 "and extractValue(XMLType('<Group>' || OPC_PATH || '</Group>'), '/Group/ItemName')= ?";
+
+    private static final String SELECT_LAST_VALUE = "select par_value from ADMIN.DZ_INPUT_START " +
+            "where obj_id = ? and par_id = ? and stat_aggr = ?";
 
     @Inject
     private Logger logger;
@@ -296,7 +300,8 @@ public class UploaderServiceBean implements UploaderServiceRemote {
             List<Object> dataList = new ArrayList<>();
             for (DataModel item: dataModels) {
                 for (DataModel.ValueModel value: item.getData()) {
-                    Object[] row = {item.getObjectId(), item.getParamId(), item.getAggregateId(), value.getValue(),
+                    Object[] row = {item.getObjectId(), item.getParamId(), item.getAggregateId(),
+                                    value.isModified() ? value.getModifyValue() : value.getValue(),
                                     value.getQuality(), Timestamp.valueOf(value.getDateTime()), null};
                     Struct str = connect.createStruct("T_DZ_UTIL_INPUT_DATA_ROW", row);
                     dataList.add(str);
@@ -324,6 +329,75 @@ public class UploaderServiceBean implements UploaderServiceRemote {
     @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
     public void uploadDataAsync(List<DataModel> dataModels) {
         uploadData(dataModels);
+    }
+
+    @Override
+    @Asynchronous
+    @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
+    public void uploadDataWithModifyAsync(List<DataModel> dataModels) {
+        for (DataModel dataModel: dataModels) {
+            BigDecimal addValue;
+            BigDecimal newValue;
+            switch (dataModel.getParamSysInfo()) {
+                case "5":
+                    addValue = getLastValue(dataModel);
+                    for (DataModel.ValueModel valueModel: dataModel.getData()) {
+                        newValue = new BigDecimal(valueModel.getValue())
+                                .add(addValue);
+                        valueModel.setModifyValue(newValue.toString());
+                        addValue = newValue;
+                    }
+                    break;
+                case "6":
+                    addValue = getLastValue(dataModel);
+                    for (DataModel.ValueModel valueModel: dataModel.getData()) {
+                        newValue = new BigDecimal(valueModel.getValue())
+                                .multiply(new BigDecimal("60"))
+                                .add(addValue);
+                        valueModel.setModifyValue(newValue.toString());
+                        addValue = newValue;
+                    }
+                    break;
+                case "7":
+                    addValue = getLastValue(dataModel);
+                    for (DataModel.ValueModel valueModel: dataModel.getData()) {
+                        newValue = new BigDecimal(valueModel.getValue())
+                                .multiply(new BigDecimal("3600"))
+                                .add(addValue);
+                        valueModel.setModifyValue(newValue.toString());
+                        addValue = newValue;
+                    }
+                    break;
+            }
+        }
+
+        uploadData(dataModels);
+    }
+
+    /**
+     * Метод получает последнее известно значения параметра
+     *
+     * @param model данные по параметру
+     * @return последнее известное значение
+     */
+    private BigDecimal getLastValue(DataModel model) {
+        BigDecimal result = new BigDecimal("0");
+        try (Connection connect = ds.getConnection();
+             PreparedStatement stm = connect.prepareStatement(SELECT_LAST_VALUE)) {
+            stm.setInt(1, model.getObjectId());
+            stm.setInt(2, model.getParamId());
+            stm.setInt(3, model.getAggregateId());
+
+            ResultSet res = stm.executeQuery();
+            if (res.next()) {
+                if (res.getString(1) != null) {
+                    result = new BigDecimal(res.getString(1));
+                }
+            }
+        } catch (SQLException e) {
+            logger.warn("Error when load last value of parameter", e);
+        }
+        return result;
     }
 
     @Override

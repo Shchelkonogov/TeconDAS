@@ -114,6 +114,7 @@ public final class DataModel implements Comparable<DataModel>, Serializable {
     public final static class ValueModel implements Comparable<ValueModel>, Serializable {
 
         private final String value;
+        private String modifyValue;
         private final LocalDateTime dateTime;
         private int quality = 192;
 
@@ -138,6 +139,18 @@ public final class DataModel implements Comparable<DataModel>, Serializable {
 
         public int getQuality() {
             return quality;
+        }
+
+        public boolean isModified() {
+            return (modifyValue != null) && !modifyValue.isEmpty();
+        }
+
+        public String getModifyValue() {
+            return modifyValue;
+        }
+
+        public void setModifyValue(String modifyValue) {
+            this.modifyValue = modifyValue;
         }
 
         @Override

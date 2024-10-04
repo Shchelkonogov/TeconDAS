@@ -77,6 +77,13 @@ public interface UploaderServiceRemote {
     void uploadDataAsync(List<DataModel> dataModels);
 
     /**
+     * Асинхронная загрузка измерений в базу с модификацией на основе sysInfo параметров
+     *
+     * @param dataModels модель с измерениями
+     */
+    void uploadDataWithModifyAsync(List<DataModel> dataModels);
+
+    /**
      * Загрузка мгновенных измерений в базу
      *
      * @param requestId id запроса
