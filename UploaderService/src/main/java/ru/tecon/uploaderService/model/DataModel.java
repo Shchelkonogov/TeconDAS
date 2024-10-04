@@ -15,7 +15,7 @@ import java.util.*;
  */
 public final class DataModel implements Comparable<DataModel>, Serializable {
 
-    private final String paramName;
+    private final Config param;
     private final int objectId;
     private final int paramId;
     private final int aggregateId;
@@ -26,8 +26,8 @@ public final class DataModel implements Comparable<DataModel>, Serializable {
 
     private final Set<ValueModel> data = new TreeSet<>();
 
-    private DataModel(String paramName, int objectId, int paramId, int aggregateId) {
-        this.paramName = paramName;
+    private DataModel(Config param, int objectId, int paramId, int aggregateId) {
+        this.param = param;
         this.objectId = objectId;
         this.paramId = paramId;
         this.aggregateId = aggregateId;
@@ -47,12 +47,16 @@ public final class DataModel implements Comparable<DataModel>, Serializable {
         data.add(new ValueModel(value, time, quality));
     }
 
-    public static Builder builder(String paramName, int objectId, int paramId, int aggregateId) {
-        return new Builder(paramName, objectId, paramId, aggregateId);
+    public static Builder builder(Config param, int objectId, int paramId, int aggregateId) {
+        return new Builder(param, objectId, paramId, aggregateId);
     }
 
     public String getParamName() {
-        return paramName;
+        return param.getName();
+    }
+
+    public String getParamSysInfo() {
+        return param.getSysInfo();
     }
 
     public int getObjectId() {
@@ -86,7 +90,7 @@ public final class DataModel implements Comparable<DataModel>, Serializable {
     @Override
     public String toString() {
         return new StringJoiner(", ", DataModel.class.getSimpleName() + "[", "]")
-                .add("paramName='" + paramName + "'")
+                .add("param='" + param + "'")
                 .add("objectId=" + objectId)
                 .add("paramId=" + paramId)
                 .add("aggregateId=" + aggregateId)
@@ -167,7 +171,7 @@ public final class DataModel implements Comparable<DataModel>, Serializable {
 
     public static final class Builder {
 
-        private final String paramName;
+        private final Config param;
         private final int objectId;
         private final int paramId;
         private final int aggregateId;
@@ -176,8 +180,8 @@ public final class DataModel implements Comparable<DataModel>, Serializable {
         private String incrementValue;
         private LocalDateTime startDateTime;
 
-        private Builder(String paramName, int objectId, int paramId, int aggregateId) {
-            this.paramName = paramName;
+        private Builder(Config param, int objectId, int paramId, int aggregateId) {
+            this.param = param;
             this.objectId = objectId;
             this.paramId = paramId;
             this.aggregateId = aggregateId;
@@ -199,7 +203,7 @@ public final class DataModel implements Comparable<DataModel>, Serializable {
         }
 
         public DataModel build() {
-            DataModel dataModel = new DataModel(paramName, objectId, paramId, aggregateId);
+            DataModel dataModel = new DataModel(param, objectId, paramId, aggregateId);
             dataModel.incrementValue = incrementValue;
             dataModel.startDateTime = startDateTime;
             dataModel.objectName = objectName;

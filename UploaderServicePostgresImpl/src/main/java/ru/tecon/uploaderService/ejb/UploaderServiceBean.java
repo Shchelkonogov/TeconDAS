@@ -40,25 +40,27 @@ public class UploaderServiceBean implements UploaderServiceRemote {
             "end_time = current_timestamp where id = ? and (is_success_execution = -1 or is_success_execution is null)";
 
     private static final String SELECT_LINKED_PARAMETERS =
-            "select c.display_name || sys.nvl2(" +
-                                        "cast((xpath('/root/SysInfo/text()', xmlelement(name root, opc_path::xml)))[1] as text), " +
-                                        "'::' || cast((xpath('/root/SysInfo/text()', xmlelement(name root, opc_path::xml)))[1] as text), " +
-                                        "'')  as display_name, " +
-                "b.aspid_object_id, d.obj_name, b.aspid_param_id, b.aspid_agr_id, b.measure_unit_transformer " +
+            "select c.display_name, " +
+                    "cast((xpath('/root/SysInfo/text()', xmlelement(name root, opc_path::xml)))[1] as text) as sys_info, " +
+                    "b.aspid_object_id, " +
+                    "d.obj_name, " +
+                    "b.aspid_param_id, " +
+                    "b.aspid_agr_id, " +
+                    "b.measure_unit_transformer " +
             "from admin.tsa_linked_element b, admin.tsa_opc_element c, admin.obj_object d " +
             "where b.opc_element_id in (select id from admin.tsa_opc_element where opc_object_id = ?) " +
-                "and b.opc_element_id = c.id " +
-                "and exists(select a.obj_id, a.par_id from admin.dz_par_dev_link a " +
+                    "and b.opc_element_id = c.id " +
+                    "and exists(select a.obj_id, a.par_id from admin.dz_par_dev_link a " +
                                 "where a.par_id = b.aspid_param_id and a.obj_id = b.aspid_object_id) " +
-                "and d.obj_id = b.aspid_object_id " +
-                "and b.aspid_agr_id is not null";
+                    "and d.obj_id = b.aspid_object_id " +
+                    "and b.aspid_agr_id is not null";
 
     private static final String SELECT_LINKED_INSTANT_PARAMETERS =
-            "select c.display_name || sys.nvl2(" +
-                                        "cast((xpath('/root/SysInfo/text()', xmlelement(name root, opc_path::xml)))[1] as text), " +
-                                        "'::' || cast((xpath('/root/SysInfo/text()', xmlelement(name root, opc_path::xml)))[1] as text), " +
-                                        "'')  as display_name, " +
-                "b.aspid_object_id, b.aspid_param_id, 4 as aspid_agr_id " +
+            "select c.display_name, " +
+                    "cast((xpath('/root/SysInfo/text()', xmlelement(name root, opc_path::xml)))[1] as text) as sys_info, " +
+                    "b.aspid_object_id, " +
+                    "b.aspid_param_id, " +
+                    "4 as aspid_agr_id " +
             "from admin.tsa_linked_element b, admin.tsa_opc_element c " +
             "where b.opc_element_id in (select id from admin.tsa_opc_element where opc_object_id = ?) " +
                     "and b.opc_element_id = c.id " +
@@ -216,7 +218,14 @@ public class UploaderServiceBean implements UploaderServiceRemote {
 
             ResultSet resLinked = stmGetLinkedParameters.executeQuery();
             while (resLinked.next()) {
-                DataModel.Builder builder = DataModel.builder(resLinked.getString("display_name"),
+                Config config;
+                if (resLinked.getString("sys_info") != null) {
+                    config = new Config(resLinked.getString("display_name"), resLinked.getString("sys_info"));
+                } else {
+                    config = new Config(resLinked.getString("display_name"));
+                }
+
+                DataModel.Builder builder = DataModel.builder(config,
                                                 resLinked.getInt("aspid_object_id"), resLinked.getInt("aspid_param_id"),
                                                 resLinked.getInt("aspid_agr_id"))
                                             .objectName(resLinked.getString("obj_name"));
@@ -255,8 +264,15 @@ public class UploaderServiceBean implements UploaderServiceRemote {
 
             ResultSet resLinked = stmGetLinkedParameters.executeQuery();
             while (resLinked.next()) {
+                Config config;
+                if (resLinked.getString("sys_info") != null) {
+                    config = new Config(resLinked.getString("display_name"), resLinked.getString("sys_info"));
+                } else {
+                    config = new Config(resLinked.getString("display_name"));
+                }
+
                 result.add(
-                        DataModel.builder(resLinked.getString("display_name"), resLinked.getInt("aspid_object_id"),
+                        DataModel.builder(config, resLinked.getInt("aspid_object_id"),
                                             resLinked.getInt("aspid_param_id"), resLinked.getInt("aspid_agr_id"))
                                 .build()
                 );

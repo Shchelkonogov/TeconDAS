@@ -144,7 +144,7 @@ public class MctConsoleController implements Serializable {
             try {
                 List<DataModel> dataModels = new ArrayList<>();
                 for (Config configItem: counter.getConfig(selectedStat.getCounterName())) {
-                    dataModels.add(DataModel.builder(configItem.getName(), 0, 0, 0).build());
+                    dataModels.add(DataModel.builder(configItem, 0, 0, 0).build());
                 }
                 ((FtpCounterAsyncRequest) counter).loadInstantData(dataModels, selectedStat.getCounterName());
 

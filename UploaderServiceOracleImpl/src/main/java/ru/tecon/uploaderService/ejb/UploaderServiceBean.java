@@ -40,11 +40,14 @@ public class UploaderServiceBean implements UploaderServiceRemote {
                     "END_TIME = sys_extract_utc(current_timestamp) " +
             "where ID = ? and (IS_SUCCESS_EXECUTION = -1 or IS_SUCCESS_EXECUTION is null)";
 
-    private static final String SELECT_LINKED_PARAMETERS = "select c.DISPLAY_NAME || " +
-                    "nvl2(extractValue(XMLType('<Group>' || opc_path || '</Group>'), '/Group/SysInfo'), " +
-                    "'::' || extractValue(XMLType('<Group>' || opc_path || '</Group>'), '/Group/SysInfo'), '') " +
-                    "as display_name, " +
-                "b.ASPID_OBJECT_ID, d.OBJ_NAME, b.ASPID_PARAM_ID, b.ASPID_AGR_ID, b.MEASURE_UNIT_TRANSFORMER " +
+    private static final String SELECT_LINKED_PARAMETERS =
+            "select c.DISPLAY_NAME, " +
+                    "extractValue(XMLType('<Group>' || opc_path || '</Group>'), '/Group/SysInfo') as sys_info, " +
+                    "b.ASPID_OBJECT_ID, " +
+                    "d.OBJ_NAME, " +
+                    "b.ASPID_PARAM_ID, " +
+                    "b.ASPID_AGR_ID, " +
+                    "b.MEASURE_UNIT_TRANSFORMER " +
             "from ADMIN.TSA_LINKED_ELEMENT b, ADMIN.TSA_OPC_ELEMENT c, ADMIN.OBJ_OBJECT d " +
             "where b.OPC_ELEMENT_ID in (select id from ADMIN.TSA_OPC_ELEMENT where OPC_OBJECT_ID = ?) " +
                     "and b.OPC_ELEMENT_ID = c.ID " +
@@ -53,11 +56,12 @@ public class UploaderServiceBean implements UploaderServiceRemote {
                     "and d.OBJ_ID = b.ASPID_OBJECT_ID " +
                     "and b.ASPID_AGR_ID is not null";
 
-    private static final String SELECT_LINKED_INSTANT_PARAMETERS = "select c.DISPLAY_NAME || " +
-                    "nvl2(extractValue(XMLType('<Group>' || opc_path || '</Group>'), '/Group/SysInfo'), " +
-                    "'::' || extractValue(XMLType('<Group>' || opc_path || '</Group>'), '/Group/SysInfo'), '') " +
-                    "as display_name, " +
-                "b.ASPID_OBJECT_ID, b.ASPID_PARAM_ID, 4 as aspid_agr_id " +
+    private static final String SELECT_LINKED_INSTANT_PARAMETERS =
+            "select c.DISPLAY_NAME, " +
+                    "extractValue(XMLType('<Group>' || opc_path || '</Group>'), '/Group/SysInfo') as sys_info, " +
+                    "b.ASPID_OBJECT_ID, " +
+                    "b.ASPID_PARAM_ID, " +
+                    "4 as aspid_agr_id " +
             "from ADMIN.TSA_LINKED_ELEMENT b, ADMIN.TSA_OPC_ELEMENT c " +
             "where b.OPC_ELEMENT_ID in (select id from ADMIN.TSA_OPC_ELEMENT where OPC_OBJECT_ID = ?) " +
                     "and b.OPC_ELEMENT_ID = c.ID " +
@@ -215,7 +219,14 @@ public class UploaderServiceBean implements UploaderServiceRemote {
 
             ResultSet resLinked = stmGetLinkedParameters.executeQuery();
             while (resLinked.next()) {
-                DataModel.Builder builder = DataModel.builder(resLinked.getString("display_name"),
+                Config config;
+                if (resLinked.getString("sys_info") != null) {
+                    config = new Config(resLinked.getString("display_name"), resLinked.getString("sys_info"));
+                } else {
+                    config = new Config(resLinked.getString("display_name"));
+                }
+
+                DataModel.Builder builder = DataModel.builder(config,
                                 resLinked.getInt("aspid_object_id"), resLinked.getInt("aspid_param_id"),
                                 resLinked.getInt("aspid_agr_id"))
                         .objectName(resLinked.getString("obj_name"));
@@ -254,8 +265,15 @@ public class UploaderServiceBean implements UploaderServiceRemote {
 
             ResultSet resLinked = stmGetLinkedParameters.executeQuery();
             while (resLinked.next()) {
+                Config config;
+                if (resLinked.getString("sys_info") != null) {
+                    config = new Config(resLinked.getString("display_name"), resLinked.getString("sys_info"));
+                } else {
+                    config = new Config(resLinked.getString("display_name"));
+                }
+
                 result.add(
-                        DataModel.builder(resLinked.getString("display_name"), resLinked.getInt("aspid_object_id"),
+                        DataModel.builder(config, resLinked.getInt("aspid_object_id"),
                                         resLinked.getInt("aspid_param_id"), resLinked.getInt("aspid_agr_id"))
                                 .build()
                 );
