@@ -10,6 +10,7 @@ import ru.tecon.queryBasedDAS.counter.ftp.FtpClient;
 import ru.tecon.queryBasedDAS.counter.ftp.FtpCounter;
 import ru.tecon.queryBasedDAS.counter.ftp.model.CounterData;
 import ru.tecon.queryBasedDAS.counter.ftp.model.FileData;
+import ru.tecon.uploaderService.model.Config;
 import ru.tecon.uploaderService.model.DataModel;
 
 import javax.xml.stream.XMLEventReader;
@@ -44,8 +45,8 @@ public class EcoCounter extends FtpCounter {
     }
 
     @Override
-    public Set<String> getConfig(String object) {
-        Set<String> result = new HashSet<>();
+    public Set<Config> getConfig(String object) {
+        Set<Config> result = new HashSet<>();
 
         FtpClient ftpClient = new EcoFtpClient();
 
@@ -110,13 +111,13 @@ public class EcoCounter extends FtpCounter {
                         EndElement endElement = xmlEvent.asEndElement();
                         switch (endElement.getName().getLocalPart()) {
                             case "VAL_AVG":
-                                result.add("Суммарные:" + pipe + param + paramType);
-                                result.add("Суммарные" + param + paramType);
+                                result.add(new Config("Суммарные:" + pipe + param + paramType));
+                                result.add(new Config("Суммарные" + param + paramType));
                             case "VAL_MIN":
                             case "VAL_MAX":
                             case "DT_MIN":
                             case "DT_MAX":
-                                result.add(pipe + boiler + param + paramType);
+                                result.add(new Config(pipe + boiler + param + paramType));
                                 break;
                         }
                     }

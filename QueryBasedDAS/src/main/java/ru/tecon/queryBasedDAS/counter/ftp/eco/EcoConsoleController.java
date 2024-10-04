@@ -10,6 +10,7 @@ import ru.tecon.queryBasedDAS.counter.report.PdfReport;
 import ru.tecon.queryBasedDAS.counter.statistic.StatData;
 import ru.tecon.queryBasedDAS.ejb.QueryBasedDASSingletonBean;
 import ru.tecon.queryBasedDAS.ejb.QueryBasedDASStatelessBean;
+import ru.tecon.uploaderService.model.Config;
 
 import javax.annotation.PostConstruct;
 import javax.ejb.EJB;
@@ -57,7 +58,7 @@ public class EcoConsoleController implements Serializable {
     private String remoteSelected;
     private StatData selectedStat;
     private LocalDateTime selectedDateTime;
-    private Set<String> config = new HashSet<>();
+    private Set<Config> config = new HashSet<>();
     private final Map<String, String[]> archiveData = new HashMap<>();
     private final List<ColumnModel> archiveColumnHeader = new ArrayList<>();
 
@@ -302,7 +303,7 @@ public class EcoConsoleController implements Serializable {
         return archiveColumnHeader;
     }
 
-    public Set<String> getConfig() {
+    public Set<Config> getConfig() {
         return config;
     }
 

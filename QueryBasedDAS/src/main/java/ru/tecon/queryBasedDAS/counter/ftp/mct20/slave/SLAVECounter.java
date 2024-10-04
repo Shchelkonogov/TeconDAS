@@ -4,6 +4,7 @@ import ru.tecon.queryBasedDAS.DasException;
 import ru.tecon.queryBasedDAS.counter.CounterInfo;
 import ru.tecon.queryBasedDAS.counter.ftp.mct20.FtpCounterWithAsyncRequest;
 import ru.tecon.queryBasedDAS.counter.ftp.model.CounterData;
+import ru.tecon.uploaderService.model.Config;
 import ru.tecon.uploaderService.model.DataModel;
 
 import java.io.BufferedInputStream;
@@ -42,7 +43,7 @@ public class SLAVECounter extends FtpCounterWithAsyncRequest {
     }
 
     @Override
-    public Set<String> getConfig(String object) {
+    public Set<Config> getConfig(String object) {
         return Stream
                 .concat(
                         Stream.of(SLAVEConfig.values()).map(SLAVEConfig::getProperty),
@@ -50,6 +51,7 @@ public class SLAVECounter extends FtpCounterWithAsyncRequest {
                                 .filter(slaveConfig -> slaveConfig.getRegister() != null)
                                 .map(slaveConfig -> slaveConfig.getProperty() + ":Текущие данные")
                 )
+                .map(Config::new)
                 .collect(Collectors.toSet());
     }
 

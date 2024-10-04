@@ -9,6 +9,7 @@ import ru.tecon.queryBasedDAS.counter.statistic.StatData;
 import ru.tecon.queryBasedDAS.counter.statistic.StatKey;
 import ru.tecon.queryBasedDAS.counter.statistic.WebConsole;
 import ru.tecon.uploaderService.ejb.UploaderServiceRemote;
+import ru.tecon.uploaderService.model.Config;
 import ru.tecon.uploaderService.model.DataModel;
 import ru.tecon.uploaderService.model.SubscribedObject;
 
@@ -120,7 +121,7 @@ public class QueryBasedDASStatelessBean {
      * @param config конфигурация
      */
     public void tryUploadConfigByCounterName(String counterName, String counterObjectName,
-                                             String remoteServer, Set<String> config) {
+                                             String remoteServer, Set<Config> config) {
         try {
             UploaderServiceRemote remote = remoteEJBFactory.getUploadServiceRemote(remoteServer);
 

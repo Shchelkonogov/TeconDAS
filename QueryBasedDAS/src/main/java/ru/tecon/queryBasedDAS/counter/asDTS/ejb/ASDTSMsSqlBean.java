@@ -1,6 +1,7 @@
 package ru.tecon.queryBasedDAS.counter.asDTS.ejb;
 
 import org.slf4j.Logger;
+import ru.tecon.uploaderService.model.Config;
 import ru.tecon.uploaderService.model.DataModel;
 
 import javax.annotation.Resource;
@@ -52,16 +53,16 @@ public class ASDTSMsSqlBean {
         return result;
     }
 
-    public Set<String> getConfig(String object) {
+    public Set<Config> getConfig(String object) {
         logger.info("load config for {}", object);
-        Set<String> result = new HashSet<>();
+        Set<Config> result = new HashSet<>();
         try (Connection connect = ds.getConnection();
              PreparedStatement stm = connect.prepareStatement(SQL_CONFIG)) {
             stm.setString(1, object.replace(PRE_OBJECT_NAME, ""));
 
             ResultSet res = stm.executeQuery();
             while (res.next()) {
-                result.add(res.getString(1));
+                result.add(new Config(res.getString(1)));
             }
         } catch (SQLException e) {
             logger.warn("Error load config for {}", object, e);

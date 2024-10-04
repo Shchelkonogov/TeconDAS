@@ -1,5 +1,6 @@
 package ru.tecon.queryBasedDAS.counter;
 
+import ru.tecon.uploaderService.model.Config;
 import ru.tecon.uploaderService.model.DataModel;
 
 import java.util.List;
@@ -24,7 +25,7 @@ public interface Counter {
      * @param object идентификатор объекта
      * @return конфигурация объекта
      */
-    Set<String> getConfig(String object);
+    Set<Config> getConfig(String object);
 
     /**
      * Загрузка исторических данных по объекту

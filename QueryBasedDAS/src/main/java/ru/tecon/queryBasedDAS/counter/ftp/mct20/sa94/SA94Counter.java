@@ -4,6 +4,7 @@ import ru.tecon.queryBasedDAS.DasException;
 import ru.tecon.queryBasedDAS.counter.CounterInfo;
 import ru.tecon.queryBasedDAS.counter.ftp.mct20.MctFtpCounter;
 import ru.tecon.queryBasedDAS.counter.ftp.model.CounterData;
+import ru.tecon.uploaderService.model.Config;
 import ru.tecon.uploaderService.model.DataModel;
 
 import java.io.BufferedInputStream;
@@ -41,9 +42,10 @@ public class SA94Counter extends MctFtpCounter {
     }
 
     @Override
-    public Set<String> getConfig(String object) {
+    public Set<Config> getConfig(String object) {
         return Stream.of(SA94Config.values())
                 .map(SA94Config::getProperty)
+                .map(Config::new)
                 .collect(Collectors.toSet());
     }
 

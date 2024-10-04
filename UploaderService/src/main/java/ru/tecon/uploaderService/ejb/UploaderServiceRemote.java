@@ -1,5 +1,6 @@
 package ru.tecon.uploaderService.ejb;
 
+import ru.tecon.uploaderService.model.Config;
 import ru.tecon.uploaderService.model.SubscribedObject;
 import ru.tecon.uploaderService.model.DataModel;
 
@@ -38,7 +39,7 @@ public interface UploaderServiceRemote {
      * @param objectName имя объекта
      * @return количество новых записей конфигурации в базе данных
      */
-    int uploadConfig(Set<String> config, String objectId, String objectName);
+    int uploadConfig(Set<Config> config, String objectId, String objectName);
 
     /**
      * Обновление статуса команды в базе данных

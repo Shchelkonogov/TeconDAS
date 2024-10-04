@@ -2,6 +2,7 @@ package ru.tecon.uploaderService.ejb;
 
 import org.postgresql.util.PGobject;
 import org.slf4j.Logger;
+import ru.tecon.uploaderService.model.Config;
 import ru.tecon.uploaderService.model.DataModel;
 import ru.tecon.uploaderService.model.SubscribedObject;
 
@@ -142,7 +143,7 @@ public class UploaderServiceBean implements UploaderServiceRemote {
 
     @Override
     @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
-    public int uploadConfig(Set<String> config, String objectId, String objectName) {
+    public int uploadConfig(Set<Config> config, String objectId, String objectName) {
         if (config.isEmpty()) {
             return -1;
         }
@@ -150,9 +151,14 @@ public class UploaderServiceBean implements UploaderServiceRemote {
         int count = 0;
         try (Connection connect = ds.getConnection();
              PreparedStatement stm = connect.prepareStatement(INSERT_CONFIG)) {
-            for (String item: config) {
-                stm.setString(1, item);
-                stm.setString(2, "<ItemName>" + objectName + ":" + item + "</ItemName>");
+            for (Config item: config) {
+                String fullDescription = "<ItemName>" + objectName + ":" + item.getName() + "</ItemName>";
+                if (!item.getSysInfo().isEmpty()) {
+                    fullDescription += "<SysInfo>" + item.getSysInfo() + "</SysInfo>";
+                }
+
+                stm.setString(1, item.getName());
+                stm.setString(2, fullDescription);
                 stm.setString(3, objectId);
 
                 try {

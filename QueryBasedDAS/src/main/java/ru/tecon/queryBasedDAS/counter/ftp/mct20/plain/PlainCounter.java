@@ -11,6 +11,7 @@ import ru.tecon.queryBasedDAS.counter.ftp.mct20.FtpCounterWithAsyncRequest;
 import ru.tecon.queryBasedDAS.counter.ftp.mct20.MctFtpClient;
 import ru.tecon.queryBasedDAS.counter.ftp.model.CounterData;
 import ru.tecon.queryBasedDAS.counter.ftp.model.FileData;
+import ru.tecon.uploaderService.model.Config;
 import ru.tecon.uploaderService.model.DataModel;
 
 import java.io.*;
@@ -49,7 +50,7 @@ public class PlainCounter extends FtpCounterWithAsyncRequest implements FtpCount
     }
 
     @Override
-    public Set<String> getConfig(String object) {
+    public Set<Config> getConfig(String object) {
         return Stream
                 .concat(
                         Stream.of(PlainConfig.values()).map(PlainConfig::getProperty),
@@ -57,6 +58,7 @@ public class PlainCounter extends FtpCounterWithAsyncRequest implements FtpCount
                                 .filter(plainConfig -> plainConfig.getRegister() != null)
                                 .map(plainConfig -> plainConfig.getProperty() + ":Текущие данные")
                 )
+                .map(Config::new)
                 .collect(Collectors.toSet());
     }
 

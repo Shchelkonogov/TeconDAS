@@ -9,6 +9,7 @@ import ru.tecon.queryBasedDAS.counter.report.PdfReport;
 import ru.tecon.queryBasedDAS.counter.statistic.StatData;
 import ru.tecon.queryBasedDAS.ejb.QueryBasedDASSingletonBean;
 import ru.tecon.queryBasedDAS.ejb.QueryBasedDASStatelessBean;
+import ru.tecon.uploaderService.model.Config;
 
 import javax.annotation.PostConstruct;
 import javax.ejb.EJB;
@@ -51,7 +52,7 @@ public class ASDTSConsoleController implements Serializable {
 
     private String remoteSelected;
     private StatData selectedStat;
-    private Set<String> config = new HashSet<>();
+    private Set<Config> config = new HashSet<>();
 
     private final ASDTSCounter counter = new ASDTSCounter();
     private final ASDTSInfo info = ASDTSInfo.getInstance();
@@ -235,7 +236,7 @@ public class ASDTSConsoleController implements Serializable {
         this.selectedStat = selectedStat;
     }
 
-    public Set<String> getConfig() {
+    public Set<Config> getConfig() {
         return config;
     }
 }

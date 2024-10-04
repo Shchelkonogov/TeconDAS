@@ -20,6 +20,7 @@ import ru.tecon.queryBasedDAS.counter.report.PdfReport;
 import ru.tecon.queryBasedDAS.counter.statistic.StatData;
 import ru.tecon.queryBasedDAS.ejb.QueryBasedDASSingletonBean;
 import ru.tecon.queryBasedDAS.ejb.QueryBasedDASStatelessBean;
+import ru.tecon.uploaderService.model.Config;
 import ru.tecon.uploaderService.model.DataModel;
 
 import javax.annotation.PostConstruct;
@@ -71,7 +72,7 @@ public class MctConsoleController implements Serializable {
     private String remoteSelected;
     private StatData selectedStat;
     private LocalDateTime selectedDateTime;
-    private Set<String> config = new HashSet<>();
+    private Set<Config> config = new HashSet<>();
     private final Map<String, String[]> archiveData = new HashMap<>();
     private final List<MctConsoleController.ColumnModel> archiveColumnHeader = new ArrayList<>();
     private final List<AsyncModel> asyncData = new ArrayList<>();
@@ -142,8 +143,8 @@ public class MctConsoleController implements Serializable {
         if (Objects.nonNull(counter) && (counter instanceof FtpCounterAsyncRequest)) {
             try {
                 List<DataModel> dataModels = new ArrayList<>();
-                for (String configItem: counter.getConfig(selectedStat.getCounterName())) {
-                    dataModels.add(DataModel.builder(configItem, 0, 0, 0).build());
+                for (Config configItem: counter.getConfig(selectedStat.getCounterName())) {
+                    dataModels.add(DataModel.builder(configItem.getName(), 0, 0, 0).build());
                 }
                 ((FtpCounterAsyncRequest) counter).loadInstantData(dataModels, selectedStat.getCounterName());
 
@@ -408,7 +409,7 @@ public class MctConsoleController implements Serializable {
         return archiveColumnHeader;
     }
 
-    public Set<String> getConfig() {
+    public Set<Config> getConfig() {
         return config;
     }
 

@@ -2,6 +2,7 @@ package ru.tecon.queryBasedDAS.counter.asDTS;
 
 import ru.tecon.queryBasedDAS.counter.Counter;
 import ru.tecon.queryBasedDAS.counter.CounterInfo;
+import ru.tecon.uploaderService.model.Config;
 import ru.tecon.uploaderService.model.DataModel;
 
 import javax.naming.NamingException;
@@ -22,7 +23,7 @@ public class ASDTSCounter implements Counter {
     }
 
     @Override
-    public Set<String> getConfig(String object) {
+    public Set<Config> getConfig(String object) {
         return info.getBean().getConfig(object);
     }
 

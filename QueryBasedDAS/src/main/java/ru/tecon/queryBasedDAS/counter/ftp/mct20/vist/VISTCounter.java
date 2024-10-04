@@ -4,6 +4,7 @@ import ru.tecon.queryBasedDAS.DasException;
 import ru.tecon.queryBasedDAS.counter.CounterInfo;
 import ru.tecon.queryBasedDAS.counter.ftp.mct20.MctFtpCounter;
 import ru.tecon.queryBasedDAS.counter.ftp.model.CounterData;
+import ru.tecon.uploaderService.model.Config;
 import ru.tecon.uploaderService.model.DataModel;
 
 import java.io.BufferedInputStream;
@@ -43,9 +44,10 @@ public class VISTCounter extends MctFtpCounter {
     }
 
     @Override
-    public Set<String> getConfig(String object) {
+    public Set<Config> getConfig(String object) {
         return Stream.of(VISTConfig.values())
                 .map(VISTConfig::getProperty)
+                .map(Config::new)
                 .collect(Collectors.toSet());
     }
 

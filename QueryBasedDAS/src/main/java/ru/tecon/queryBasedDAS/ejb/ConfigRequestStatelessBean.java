@@ -5,6 +5,7 @@ import ru.tecon.queryBasedDAS.DasException;
 import ru.tecon.queryBasedDAS.counter.Counter;
 import ru.tecon.uploaderService.ejb.das.RemoteRequest;
 import ru.tecon.uploaderService.ejb.UploaderServiceRemote;
+import ru.tecon.uploaderService.model.Config;
 import ru.tecon.uploaderService.model.RequestData;
 
 import javax.ejb.*;
@@ -51,7 +52,7 @@ public class ConfigRequestStatelessBean implements RemoteRequest {
     private void loadConfig(RequestData requestData) {
         try {
             Counter instance = (Counter) Class.forName(bean.getCounter(requestData.getCounter())).getDeclaredConstructor().newInstance();
-            Set<String> config = instance.getConfig(requestData.getObjectName());
+            Set<Config> config = instance.getConfig(requestData.getObjectName());
 
             logger.info("config for {} {} {}", requestData.getCounter(), requestData.getObjectName(), config);
 
