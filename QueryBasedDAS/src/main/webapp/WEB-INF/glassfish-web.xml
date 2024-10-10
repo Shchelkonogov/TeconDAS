@@ -6,4 +6,8 @@
         <res-ref-name>jdbc/asDTS</res-ref-name>
         <jndi-name>jdbc/MSSQLServer</jndi-name>
     </resource-ref>
+    <resource-ref>
+        <res-ref-name>jdbc/mfk</res-ref-name>
+        <jndi-name>jdbc/MFKDataSource</jndi-name>
+    </resource-ref>
 </glassfish-web-app>
