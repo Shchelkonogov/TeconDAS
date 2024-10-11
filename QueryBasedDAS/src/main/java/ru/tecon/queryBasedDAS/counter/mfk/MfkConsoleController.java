@@ -1,8 +1,11 @@
 package ru.tecon.queryBasedDAS.counter.mfk;
 
 import fish.payara.security.openid.api.OpenIdContext;
+import org.jetbrains.annotations.NotNull;
+import org.primefaces.PrimeFaces;
 import org.slf4j.Logger;
 import ru.tecon.queryBasedDAS.AlphaNumComparator;
+import ru.tecon.queryBasedDAS.DasException;
 import ru.tecon.queryBasedDAS.counter.Periodicity;
 import ru.tecon.queryBasedDAS.counter.report.ExcelReport;
 import ru.tecon.queryBasedDAS.counter.report.PdfReport;
@@ -10,9 +13,11 @@ import ru.tecon.queryBasedDAS.counter.statistic.StatData;
 import ru.tecon.queryBasedDAS.ejb.QueryBasedDASSingletonBean;
 import ru.tecon.queryBasedDAS.ejb.QueryBasedDASStatelessBean;
 import ru.tecon.uploaderService.model.Config;
+import ru.tecon.uploaderService.model.DataModel;
 
 import javax.annotation.PostConstruct;
 import javax.ejb.EJB;
+import javax.faces.application.FacesMessage;
 import javax.faces.context.ExternalContext;
 import javax.faces.context.FacesContext;
 import javax.faces.view.ViewScoped;
@@ -54,6 +59,9 @@ public class MfkConsoleController implements Serializable {
     private StatData selectedStat;
     private Set<Config> config = new HashSet<>();
 
+    private final List<AsyncModel> asyncData = new ArrayList<>();
+    private final List<DataModel> requestedDataModel = new ArrayList<>();
+
     private final MfkCounter counter = new MfkCounter();
     private final MfkInfo info = MfkInfo.getInstance();
 
@@ -86,6 +94,70 @@ public class MfkConsoleController implements Serializable {
 
     public void clearConfig() {
         config.clear();
+    }
+
+    public void requestAsync() {
+        for (Config configItem: counter.getConfig(selectedStat.getCounterName())) {
+            if (configItem.getName().contains(":Текущие данные")) {
+                requestedDataModel.add(DataModel.builder(configItem, 0, 0, 0).build());
+            }
+        }
+
+        List<DataModel> linkedDataModels = bean.tryGetAsyncModelByCounterName(
+                info.getCounterName(), selectedStat.getCounterName(), remoteSelected
+        );
+
+        for (DataModel dataModel: requestedDataModel) {
+            asyncData.add(new AsyncModel(
+                    dataModel.getParamName(),
+                    linkedDataModels.stream()
+                            .map(DataModel::getParamName)
+                            .anyMatch(name -> name.equals(dataModel.getParamName()))
+            ));
+        }
+
+        Collections.sort(asyncData);
+
+        PrimeFaces.current().executeScript("PF('asyncDataWidget').show();");
+        PrimeFaces.current().ajax().update("asyncDataForm", "asyncDialogHeader");
+    }
+
+    public void loadAsyncData() {
+        asyncData.forEach(model -> model.setValue(""));
+
+        List<DataModel> dataModels = new ArrayList<>();
+        for (DataModel dataModel: requestedDataModel) {
+            boolean match = asyncData.stream()
+                    .filter(AsyncModel::isSelect)
+                    .map(AsyncModel::getParam)
+                    .anyMatch(name -> name.equals(dataModel.getParamName()));
+            if (match) {
+                dataModels.add(dataModel);
+            }
+        }
+
+        if (!dataModels.isEmpty()) {
+            try {
+                counter.loadInstantData(dataModels, selectedStat.getCounterName());
+
+                for (DataModel dataModel: dataModels) {
+                    for (DataModel.ValueModel valueModel: dataModel.getData()) {
+                        asyncData.stream()
+                                .filter(model -> model.getParam().equals(dataModel.getParamName()))
+                                .forEach(model -> model.setValue(valueModel.getValue()));
+                    }
+                }
+            } catch (DasException e) {
+                FacesContext.getCurrentInstance()
+                        .addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR, "Ошибка", e.getMessage()));
+                PrimeFaces.current().ajax().update("growl");
+            }
+        }
+    }
+
+    public void clearAsyncData() {
+        asyncData.clear();
+        requestedDataModel.clear();
     }
 
     public void clearStatistic() {
@@ -236,5 +308,55 @@ public class MfkConsoleController implements Serializable {
 
     public Set<Config> getConfig() {
         return config;
+    }
+
+    public List<AsyncModel> getAsync() {
+        return asyncData;
+    }
+
+    public static class AsyncModel implements Comparable<AsyncModel> {
+
+        private final String param;
+        private boolean select;
+        private String value = "";
+
+        public AsyncModel(String param, boolean select) {
+            this.param = param;
+            this.select = select;
+        }
+
+        public boolean isSelect() {
+            return select;
+        }
+
+        public void setSelect(boolean select) {
+            this.select = select;
+        }
+
+        public String getParam() {
+            return param;
+        }
+
+        public void setValue(String value) {
+            this.value = value;
+        }
+
+        public String getValue() {
+            return value;
+        }
+
+        @Override
+        public int compareTo(@NotNull AsyncModel o) {
+            return Boolean.compare(o.select, select);
+        }
+
+        @Override
+        public String toString() {
+            return new StringJoiner(", ", AsyncModel.class.getSimpleName() + "[", "]")
+                    .add("param='" + param + "'")
+                    .add("select=" + select)
+                    .add("value='" + value + "'")
+                    .toString();
+        }
     }
 }

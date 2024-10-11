@@ -136,6 +136,29 @@ public class QueryBasedDASStatelessBean {
     }
 
     /**
+     * Получение мгновенной конфигурации.
+     * Данная операция рискованная, т.к. происходит поиск объекта по имени в базе
+     *
+     * @param counterName название счетчика
+     * @param counterObjectName название объекта счетчика
+     * @param remoteServer удаленный сервер
+     * @return список мгновенных параметров
+     */
+    public List<DataModel> tryGetAsyncModelByCounterName(String counterName, String counterObjectName,
+                                             String remoteServer) {
+        try {
+            UploaderServiceRemote remote = remoteEJBFactory.getUploadServiceRemote(remoteServer);
+
+            String counterObjectId = remote.getCounterObjectId(counterName, counterObjectName);
+
+            return remote.loadInstantObjectModel(counterObjectId);
+        } catch (NamingException | DasException e) {
+            logger.warn("remote service {} unavailable", remoteServer, e);
+        }
+        return new ArrayList<>();
+    }
+
+    /**
      * Очистка исторических файлов
      */
     @Asynchronous

@@ -16,6 +16,7 @@
    <title>АССД "Текон"</title>
 </h:head>
 <h:body>
+   <p:growl id="growl" showDetail="true"/>
    <error:other/>
 
    <h:form id="statForm" style="height: 100%;">
@@ -36,6 +37,13 @@
                         action="#{mfkController.clearStatistic()}" update="statTable"/>
          </p:submenu>
          <p:submenu label="Просмотр">
+            <p:menuitem value="Мгновенные данные"
+                        disabled="#{mfkController.selectedStat == null}"
+                        onstart="PF('statusDialog').show()"
+                        action="#{mfkController.requestAsync()}"
+                        oncomplete="PF('statusDialog').hide();"
+                        icon="pi pi-fw pi-file-import"/>
+            <p:divider/>
             <p:menuitem value="Запрашиваемые данные" disabled="#{mfkController.selectedStat == null}"
                         icon="pi pi-fw pi-book" oncomplete="PF('requestDataWidget').show();"
                         update="requestDataTable requestDialogHeader"/>
@@ -130,6 +138,10 @@
                         oncomplete="PF('configDataWidget').show(); PF('statusDialog').hide();"
                         update="configDataTable configDialogHeader"/>
             <p:divider/>
+            <p:menuitem value="Мгновенные данные" icon="pi pi-fw pi-file-import"
+                        onstart="PF('statusDialog').show();" action="#{mfkController.requestAsync()}"
+                        oncomplete="PF('statusDialog').hide();"/>
+            <p:divider/>
             <p:menuitem value="Запрашиваемые данные" oncomplete="PF('requestDataWidget').show();"
                         icon="pi pi-fw pi-book" update="requestDataTable requestDialogHeader"/>
             <p:menuitem value="Переданные данные" oncomplete="PF('lastDataWidget').show();"
@@ -139,7 +151,7 @@
 
       <p:blockUI widgetVar="bui" block="statTable"/>
 
-      <p:poll interval="30" update="statTable"/>
+      <p:poll interval="30" update="statTable" process="@this"/>
    </h:form>
 
    <p:dialog widgetVar="requestDataWidget" width="824" height="600" modal="true"
@@ -211,6 +223,48 @@
                <h:outputText value="#{configData.name}"/>
             </p:column>
          </p:dataTable>
+      </div>
+   </p:dialog>
+
+   <p:dialog widgetVar="asyncDataWidget" width="824" height="600" modal="true"
+             resizable="false" styleClass="tc-panel" showEffect="fade" hideEffect="fade">
+
+      <p:ajax event="close" update="asyncDataForm" listener="#{mfkController.clearAsyncData()}"/>
+
+      <f:facet name="header">
+         <h:outputText id="asyncDialogHeader"
+                       value="Мгновенные данные #{mfkController.selectedStat.counterName}"/>
+      </f:facet>
+
+      <div class="h-full">
+         <div style="padding-top: 3px;" class="flex">
+            <p:commandButton id="loadAsyncBtn" value="Загрузить" onclick="PF('asyncBui').show();"
+                             action="#{mfkController.loadAsyncData()}" oncomplete="PF('asyncBui').hide();"
+                             styleClass="tc-no-loading m-auto" update="asyncDataForm" process="@this"/>
+         </div>
+         <div style="padding: 3px 0 3px 3px; height: calc(100% - 40px);">
+            <div class="h-full">
+               <h:form id="asyncDataForm" styleClass="h-full">
+                  <p:dataTable id="asyncDataTable" value="#{mfkController.async}" var="asyncData"
+                               scrollable="true" scrollHeight="100%" emptyMessage="#{global['table.empty.value']}">
+
+                     <p:column headerText="" width="30" styleClass="text-center">
+                        <p:selectBooleanCheckbox value="#{asyncData.select}">
+                           <p:ajax/>
+                        </p:selectBooleanCheckbox>
+                     </p:column>
+                     <p:column headerText="Название" width="600">
+                           <h:outputText value="#{asyncData.param}"/>
+                     </p:column>
+                     <p:column headerText="Значение" width="200" styleClass="text-center">
+                           <h:outputText value="#{asyncData.value}"/>
+                     </p:column>
+                  </p:dataTable>
+
+                  <p:blockUI widgetVar="asyncBui" block="asyncDataTable"/>
+               </h:form>
+            </div>
+         </div>
       </div>
    </p:dialog>
 

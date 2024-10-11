@@ -1,4 +1,4 @@
-package ru.tecon.queryBasedDAS.counter.ftp;
+package ru.tecon.queryBasedDAS.counter;
 
 import ru.tecon.queryBasedDAS.DasException;
 import ru.tecon.uploaderService.model.DataModel;
@@ -12,7 +12,7 @@ import java.util.List;
  * @author Maksim Shchelkonogov
  * 27.02.2024
  */
-public interface FtpCounterAsyncRequest {
+public interface CounterAsyncRequest {
 
     /**
      * Загрузка мгновенных данных

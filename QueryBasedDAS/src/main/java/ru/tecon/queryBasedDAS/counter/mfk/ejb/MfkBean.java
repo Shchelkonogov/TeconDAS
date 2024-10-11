@@ -4,11 +4,14 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.utils.URIBuilder;
+import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
+import ru.tecon.queryBasedDAS.DasException;
 import ru.tecon.uploaderService.model.Config;
 import ru.tecon.uploaderService.model.DataModel;
 
@@ -21,10 +24,12 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.sql.*;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * @author Maksim Shchelkonogov
@@ -118,8 +123,6 @@ public class MfkBean {
 
                         HttpGet httpGet = new HttpGet(build);
 
-                        logger.info(build.toString());
-
                         try (CloseableHttpResponse response = httpClient.execute(httpGet)) {
                             if (response.getStatusLine().getStatusCode() == 200) {
                                 List<String> config = json.fromJson(
@@ -180,5 +183,80 @@ public class MfkBean {
         params.removeIf(dataModel -> dataModel.getData().isEmpty());
 
         logger.info("data from mfk loaded for {}", objectName);
+    }
+
+    public void loadInstantData(List<DataModel> params, String objectName) throws DasException {
+        logger.info("start load instant data from mfk for {}", objectName);
+        try (Connection connect = ds.getConnection();
+             PreparedStatement stm = connect.prepareStatement(SELECT_SERVER)) {
+            stm.setString(1, objectName.split("_")[0]);
+            ResultSet res = stm.executeQuery();
+            if (res.next()) {
+                Matcher m = PATTERN_IPV4.matcher(objectName);
+                if (m.find()) {
+                    String url = m.group("ip");
+
+                    try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
+                        ArrayList<String> path = new ArrayList<>(Arrays.asList(res.getString("path").split("/")));
+                        path.removeIf(String::isEmpty);
+                        path.add("api");
+                        path.add("instantData");
+
+                        URI build = new URIBuilder()
+                                .setScheme(res.getString("scheme"))
+                                .setHost(res.getString("host"))
+                                .setPort(res.getInt("port"))
+                                .setPathSegments(path)
+                                .addParameter("url", url)
+                                .build();
+
+                        HttpPost httpPost = new HttpPost(build);
+
+                        List<String> paramsList = params.stream()
+                                .map(dataModel -> dataModel.getParamName() + "::" + dataModel.getParamSysInfo())
+                                .collect(Collectors.toList());
+
+                        logger.info("request instant data for {}", paramsList);
+
+                        httpPost.setHeader("Content-type", "application/json");
+                        httpPost.setEntity(new StringEntity(json.toJson(paramsList)));
+
+                        try (CloseableHttpResponse response = httpClient.execute(httpPost)) {
+                            if (response.getStatusLine().getStatusCode() == 200) {
+                                Map<String, String> instantData = json.fromJson(
+                                        EntityUtils.toString(response.getEntity()),
+                                        new TypeToken<HashMap<String, String>>() {}.getType()
+                                );
+
+                                logger.info("Received instant data {}", instantData);
+                                for (Map.Entry<String, String> entry: instantData.entrySet()) {
+                                    for (DataModel model: params) {
+                                        if (model.getParamName().startsWith(entry.getKey() + ":Текущие данные")) {
+                                            model.addData(entry.getValue(), LocalDateTime.now(ZoneOffset.UTC));
+                                            break;
+                                        }
+                                    }
+                                }
+
+                                params.removeIf(dataModel -> dataModel.getData().isEmpty());
+                            } else {
+                                logger.warn("Error request instance data. Error code {}", response.getStatusLine().getStatusCode());
+                                throw new DasException(EntityUtils.toString(response.getEntity()));
+                            }
+                        }
+                    } catch (IOException | URISyntaxException e) {
+                        logger.warn("Error request instance data", e);
+                        throw new DasException("Ошибка обращения к контроллеру мфк " + objectName);
+                    }
+                } else {
+                    logger.warn("Error parse ip address {}", objectName);
+                    throw new DasException("Не разобран url прибора " + objectName);
+                }
+            }
+        } catch (SQLException e) {
+            logger.warn("Error load instant data for {}", objectName, e);
+            throw new DasException("База данных недоступна");
+        }
+        logger.info("instant data from mfk loaded for {}", objectName);
     }
 }

@@ -11,7 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.tecon.queryBasedDAS.DasException;
 import ru.tecon.queryBasedDAS.counter.ftp.FtpClient;
-import ru.tecon.queryBasedDAS.counter.ftp.FtpCounterAsyncRequest;
+import ru.tecon.queryBasedDAS.counter.CounterAsyncRequest;
 import ru.tecon.uploaderService.model.DataModel;
 
 import java.io.BufferedReader;
@@ -31,7 +31,7 @@ import java.util.regex.Pattern;
  * @author Maksim Shchelkonogov
  * 06.03.2024
  */
-public abstract class FtpCounterWithAsyncRequest extends MctFtpCounter implements FtpCounterAsyncRequest {
+public abstract class FtpCounterWithAsyncRequest extends MctFtpCounter implements CounterAsyncRequest {
 
     private static final Logger logger = LoggerFactory.getLogger(FtpCounterWithAsyncRequest.class);
 

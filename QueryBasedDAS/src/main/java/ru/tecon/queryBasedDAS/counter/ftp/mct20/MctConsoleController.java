@@ -8,7 +8,7 @@ import ru.tecon.queryBasedDAS.DasException;
 import ru.tecon.queryBasedDAS.counter.Counter;
 import ru.tecon.queryBasedDAS.counter.CounterInfo;
 import ru.tecon.queryBasedDAS.counter.Periodicity;
-import ru.tecon.queryBasedDAS.counter.ftp.FtpCounterAsyncRequest;
+import ru.tecon.queryBasedDAS.counter.CounterAsyncRequest;
 import ru.tecon.queryBasedDAS.counter.ftp.FtpCounterExtension;
 import ru.tecon.queryBasedDAS.counter.ftp.mct20.plain.PlainCounter;
 import ru.tecon.queryBasedDAS.counter.ftp.mct20.sa94.SA94Counter;
@@ -140,13 +140,13 @@ public class MctConsoleController implements Serializable {
 
     public void requestAsync() {
         MctFtpCounter counter = counters.get(selectedStat.getCounter());
-        if (Objects.nonNull(counter) && (counter instanceof FtpCounterAsyncRequest)) {
+        if (Objects.nonNull(counter) && (counter instanceof CounterAsyncRequest)) {
             try {
                 List<DataModel> dataModels = new ArrayList<>();
                 for (Config configItem: counter.getConfig(selectedStat.getCounterName())) {
                     dataModels.add(DataModel.builder(configItem, 0, 0, 0).build());
                 }
-                ((FtpCounterAsyncRequest) counter).loadInstantData(dataModels, selectedStat.getCounterName());
+                ((CounterAsyncRequest) counter).loadInstantData(dataModels, selectedStat.getCounterName());
 
                 for (DataModel dataModel: dataModels) {
                     for (DataModel.ValueModel valueModel: dataModel.getData()) {
@@ -349,7 +349,7 @@ public class MctConsoleController implements Serializable {
     public boolean isAsyncRequest() {
         if (selectedStat != null) {
             MctFtpCounter counter = counters.get(selectedStat.getCounter());
-            return Objects.nonNull(counter) && (counter instanceof FtpCounterAsyncRequest);
+            return Objects.nonNull(counter) && (counter instanceof CounterAsyncRequest);
         }
         return false;
     }

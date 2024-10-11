@@ -2,7 +2,7 @@ package ru.tecon.queryBasedDAS.ejb;
 
 import org.slf4j.Logger;
 import ru.tecon.queryBasedDAS.DasException;
-import ru.tecon.queryBasedDAS.counter.ftp.FtpCounterAsyncRequest;
+import ru.tecon.queryBasedDAS.counter.CounterAsyncRequest;
 import ru.tecon.uploaderService.ejb.UploaderServiceRemote;
 import ru.tecon.uploaderService.ejb.das.RemoteRequest;
 import ru.tecon.uploaderService.model.DataModel;
@@ -60,7 +60,7 @@ public class AsyncRequestStatelessBean implements RemoteRequest {
 
             if ((objectModel != null) && !objectModel.isEmpty()) {
                 try {
-                    FtpCounterAsyncRequest counter = (FtpCounterAsyncRequest) Class.forName(bean.getCounter(requestData.getCounter())).getDeclaredConstructor().newInstance();
+                    CounterAsyncRequest counter = (CounterAsyncRequest) Class.forName(bean.getCounter(requestData.getCounter())).getDeclaredConstructor().newInstance();
 
                     counter.loadInstantData(objectModel, requestData.getObjectName());
                 } catch (ReflectiveOperationException e) {

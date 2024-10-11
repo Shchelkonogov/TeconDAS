@@ -8,7 +8,7 @@ import ru.tecon.queryBasedDAS.counter.Counter;
 import ru.tecon.queryBasedDAS.counter.CounterInfo;
 import ru.tecon.queryBasedDAS.counter.Periodicity;
 import ru.tecon.queryBasedDAS.counter.ftp.FtpCounterAlarm;
-import ru.tecon.queryBasedDAS.counter.ftp.FtpCounterAsyncRequest;
+import ru.tecon.queryBasedDAS.counter.CounterAsyncRequest;
 import ru.tecon.queryBasedDAS.counter.ftp.FtpCounterExtension;
 import ru.tecon.queryBasedDAS.counter.statistic.StatData;
 import ru.tecon.queryBasedDAS.counter.statistic.StatKey;
@@ -225,7 +225,7 @@ public class QueryBasedDASSingletonBean {
      * @return имена доступных счетчиков системы
      */
     public Set<String> counterSupportAsyncRequestNameSet() {
-        return counterIsSupportClass(FtpCounterAsyncRequest.class);
+        return counterIsSupportClass(CounterAsyncRequest.class);
     }
 
     /**
