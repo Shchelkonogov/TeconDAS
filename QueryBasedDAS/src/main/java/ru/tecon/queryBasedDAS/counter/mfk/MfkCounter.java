@@ -37,4 +37,8 @@ public class MfkCounter implements Counter, CounterAsyncRequest {
     public void loadInstantData(List<DataModel> params, String objectName) throws DasException {
         info.getBean().loadInstantData(params, objectName);
     }
+
+    public void resetTraffic(String objectName) {
+        info.getBean().resetTraffic(objectName);
+    }
 }

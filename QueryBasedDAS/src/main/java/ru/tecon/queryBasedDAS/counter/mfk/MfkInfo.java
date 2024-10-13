@@ -9,6 +9,7 @@ import ru.tecon.queryBasedDAS.counter.statistic.WebConsole;
 
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -26,6 +27,7 @@ public class MfkInfo implements CounterInfo, WebConsole {
     private static final String COUNTER_USER_NAME = "MFK-1500";
 
     private final Map<StatKey, StatData> statistic = new ConcurrentHashMap<>();
+    private List<String> locked = new ArrayList<>();
 
     private final MfkBean bean;
 
@@ -81,5 +83,13 @@ public class MfkInfo implements CounterInfo, WebConsole {
 
     public MfkBean getBean() {
         return bean;
+    }
+
+    public List<String> getLocked() {
+        return locked;
+    }
+
+    public void setLocked(List<String> locked) {
+        this.locked = locked;
     }
 }

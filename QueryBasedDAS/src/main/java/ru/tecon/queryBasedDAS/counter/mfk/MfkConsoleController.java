@@ -84,6 +84,19 @@ public class MfkConsoleController implements Serializable {
                 .collect(Collectors.toCollection(ArrayList::new));
     }
 
+    public String checkLocked(String name) {
+        for (String lockName: info.getLocked()) {
+            if (name.startsWith(lockName)) {
+                return "color: salmon;";
+            }
+        }
+        return "";
+    }
+
+    public void resetTraffic() {
+        counter.resetTraffic(selectedStat.getCounterName());
+    }
+
     /**
      * Запрос на конфигурацию счетчика
      */

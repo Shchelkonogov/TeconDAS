@@ -37,6 +37,12 @@
                         action="#{mfkController.clearStatistic()}" update="statTable"/>
          </p:submenu>
          <p:submenu label="Просмотр">
+            <p:menuitem value="Сбросить трафик"
+                        disabled="#{mfkController.selectedStat == null}"
+                        onstart="PF('statusDialog').show()"
+                        action="#{mfkController.resetTraffic()}"
+                        oncomplete="PF('statusDialog').hide();"
+                        icon="pi pi-fw pi-eraser"/>
             <p:menuitem value="Мгновенные данные"
                         disabled="#{mfkController.selectedStat == null}"
                         onstart="PF('statusDialog').show()"
@@ -108,7 +114,7 @@
                <h:outputText value="#{stat.objectName}"/>
             </p:column>
             <p:column headerText="Имя прибора" filterBy="#{stat.counterName}" filterMatchMode="contains"
-                      styleClass="text-center">
+                      styleClass="text-center" style="#{mfkController.checkLocked(stat.counterName)}">
                <h:outputText value="#{stat.counterName}"/>
             </p:column>
             <p:column headerText="Начало опроса" rendered="#{mfkController.admin}" styleClass="text-center">
@@ -138,6 +144,9 @@
                         oncomplete="PF('configDataWidget').show(); PF('statusDialog').hide();"
                         update="configDataTable configDialogHeader"/>
             <p:divider/>
+            <p:menuitem value="Сбросить трафик" icon="pi pi-fw pi-eraser"
+                        onstart="PF('statusDialog').show();" action="#{mfkController.resetTraffic()}"
+                        oncomplete="PF('statusDialog').hide();"/>
             <p:menuitem value="Мгновенные данные" icon="pi pi-fw pi-file-import"
                         onstart="PF('statusDialog').show();" action="#{mfkController.requestAsync()}"
                         oncomplete="PF('statusDialog').hide();"/>

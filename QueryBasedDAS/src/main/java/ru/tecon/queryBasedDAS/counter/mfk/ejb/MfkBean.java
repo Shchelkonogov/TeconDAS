@@ -56,6 +56,7 @@ public class MfkBean {
                                                             "and date > ? " +
                                                         "order by date";
     private static final String SELECT_SERVER = "select id, scheme, host, port, path from mfk_server where name = ?";
+    private static final String SELECT_ALL_SERVER = "select id, name, scheme, host, port, path from mfk_server";
 
     @Inject
     private Logger logger;
@@ -258,5 +259,93 @@ public class MfkBean {
             throw new DasException("База данных недоступна");
         }
         logger.info("instant data from mfk loaded for {}", objectName);
+    }
+
+    public List<String> getLocked() {
+        List<String> result = new ArrayList<>();
+        try (Connection connect = ds.getConnection();
+             PreparedStatement stm = connect.prepareStatement(SELECT_ALL_SERVER)) {
+            ResultSet res = stm.executeQuery();
+            while (res.next()) {
+                String controller = res.getString("name");
+                try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
+                    ArrayList<String> path = new ArrayList<>(Arrays.asList(res.getString("path").split("/")));
+                    path.removeIf(String::isEmpty);
+                    path.add("api");
+                    path.add("locked");
+
+                    URI build = new URIBuilder()
+                            .setScheme(res.getString("scheme"))
+                            .setHost(res.getString("host"))
+                            .setPort(res.getInt("port"))
+                            .setPathSegments(path)
+                            .build();
+
+                    HttpGet httpGet = new HttpGet(build);
+
+                    try (CloseableHttpResponse response = httpClient.execute(httpGet)) {
+                        if (response.getStatusLine().getStatusCode() == 200) {
+                            List<String> locked = json.fromJson(
+                                    EntityUtils.toString(response.getEntity()),
+                                    new TypeToken<List<String>>() {}.getType()
+                            );
+
+                            locked.forEach(s -> result.add(controller + "_" + s + "_"));
+                        } else {
+                            logger.warn("Error request locked. Error code {}", response.getStatusLine().getStatusCode());
+                        }
+                    }
+                } catch (IOException | URISyntaxException e) {
+                    logger.warn("Error request locked", e);
+                }
+            }
+        } catch (SQLException e) {
+            logger.warn("Error request locked", e);
+        }
+        return result;
+    }
+
+    public void resetTraffic(String objectName) {
+        logger.info("reset traffic for {}", objectName);
+        try (Connection connect = ds.getConnection();
+             PreparedStatement stm = connect.prepareStatement(SELECT_SERVER)) {
+            stm.setString(1, objectName.split("_")[0]);
+            ResultSet res = stm.executeQuery();
+            if (res.next()) {
+                Matcher m = PATTERN_IPV4.matcher(objectName);
+                if (m.find()) {
+                    String url = m.group("ip");
+
+                    try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
+                        ArrayList<String> path = new ArrayList<>(Arrays.asList(res.getString("path").split("/")));
+                        path.removeIf(String::isEmpty);
+                        path.add("api");
+                        path.add("reset");
+
+                        URI build = new URIBuilder()
+                                .setScheme(res.getString("scheme"))
+                                .setHost(res.getString("host"))
+                                .setPort(res.getInt("port"))
+                                .setPathSegments(path)
+                                .addParameter("url", url)
+                                .build();
+
+                        HttpPost httpPost = new HttpPost(build);
+
+                        try (CloseableHttpResponse response = httpClient.execute(httpPost)) {
+                            if (response.getStatusLine().getStatusCode() != 200) {
+                                logger.warn("Error reset traffic. Error code {}", response.getStatusLine().getStatusCode());
+                            }
+                        }
+                    } catch (IOException | URISyntaxException e) {
+                        logger.warn("Error reset traffic", e);
+                    }
+                } else {
+                    logger.warn("Error reset traffic ip address {}", objectName);
+                }
+            }
+        } catch (SQLException e) {
+            logger.warn("Error reset traffic for {}", objectName, e);
+        }
     }
 }
