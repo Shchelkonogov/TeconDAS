@@ -51,8 +51,11 @@ public class MfkBean {
                                                     "on mc.id = md.param_id " +
                                                 "join public.mfk_server ms " +
                                                     "on ms.id = mc.server_id " +
+                                                "join public.mfk_object mo " +
+                                                    "on md.object_id = mo.id " +
                                                         "where ms.name = ? " +
                                                             "and mc.name = ? " +
+                                                            "and mo.name = ?" +
                                                             "and date > ? " +
                                                         "order by date";
     private static final String SELECT_SERVER = "select id, scheme, host, port, path from mfk_server where name = ?";
@@ -163,14 +166,19 @@ public class MfkBean {
              PreparedStatement stm = connect.prepareStatement(SELECT_DATA)) {
             stm.setFetchSize(1000);
 
+            String[] split = objectName.split("_");
+            String controllerName = split[0];
+            String controllerObjectName = split[1] + "_" + split[2];
+
             for (DataModel item: params) {
                 if (item.getStartDateTime() == null) {
                     item.setStartDateTime(LocalDateTime.now().minusDays(40).truncatedTo(ChronoUnit.HOURS));
                 }
 
-                stm.setString(1, objectName.split("_")[0]);
+                stm.setString(1, controllerName);
                 stm.setString(2, item.getParamName() + "::" + item.getParamSysInfo());
-                stm.setTimestamp(3, Timestamp.valueOf(item.getStartDateTime()));
+                stm.setString(3, controllerObjectName);
+                stm.setTimestamp(4, Timestamp.valueOf(item.getStartDateTime()));
 
                 ResultSet res = stm.executeQuery();
                 while (res.next()) {
