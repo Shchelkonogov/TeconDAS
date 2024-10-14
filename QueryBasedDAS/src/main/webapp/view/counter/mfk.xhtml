@@ -43,6 +43,13 @@
                         action="#{mfkController.resetTraffic()}"
                         oncomplete="PF('statusDialog').hide();"
                         icon="pi pi-fw pi-eraser"/>
+            <p:menuitem value="Архивные данные"
+                        disabled="#{mfkController.selectedStat == null}"
+                        icon="pi pi-fw pi-file-import"
+                        onstart="PF('statusDialog').show()"
+                        action="#{mfkController.loadLastControllerData()}"
+                        oncomplete="PF('controllerLastDataWidget').show(); PF('statusDialog').hide();"
+                        update="controllerLastDialogHeader controllerLastDataTable"/>
             <p:menuitem value="Мгновенные данные"
                         disabled="#{mfkController.selectedStat == null}"
                         onstart="PF('statusDialog').show()"
@@ -147,6 +154,11 @@
             <p:menuitem value="Сбросить трафик" icon="pi pi-fw pi-eraser"
                         onstart="PF('statusDialog').show();" action="#{mfkController.resetTraffic()}"
                         oncomplete="PF('statusDialog').hide();"/>
+            <p:menuitem value="Архивные данные" icon="pi pi-fw pi-file-import"
+                        onstart="PF('statusDialog').show()"
+                        action="#{mfkController.loadLastControllerData()}"
+                        oncomplete="PF('controllerLastDataWidget').show(); PF('statusDialog').hide();"
+                        update="controllerLastDialogHeader controllerLastDataTable"/>
             <p:menuitem value="Мгновенные данные" icon="pi pi-fw pi-file-import"
                         onstart="PF('statusDialog').show();" action="#{mfkController.requestAsync()}"
                         oncomplete="PF('statusDialog').hide();"/>
@@ -207,6 +219,35 @@
             </p:column>
             <p:column headerText="Дата" width="200" styleClass="text-center">
                <h:outputText value="#{lastData.dateTime}">
+                  <f:convertDateTime type="localDateTime" pattern="dd.MM.yyyy HH:mm:ss"/>
+               </h:outputText>
+            </p:column>
+         </p:dataTable>
+      </div>
+   </p:dialog>
+
+   <p:dialog widgetVar="controllerLastDataWidget" width="1024" height="600" modal="true"
+             resizable="false" styleClass="tc-panel" showEffect="fade" hideEffect="fade">
+
+      <p:ajax event="close" update="controllerLastDataTable" listener="#{mfkController.clearLastControllerData()}"/>
+
+      <f:facet name="header">
+         <h:outputText id="controllerLastDialogHeader"
+                       value="Архивные данные #{mfkController.selectedStat.counterName}"/>
+      </f:facet>
+
+      <div style="padding: 3px 0 3px 3px; height: calc(100% - 6px);">
+         <p:dataTable id="controllerLastDataTable" value="#{mfkController.lastControllerData}" var="controllerLastData"
+                      scrollable="true" scrollHeight="100%" emptyMessage="#{global['table.empty.value']}">
+
+            <p:column headerText="Название" width="600">
+               <h:outputText value="#{controllerLastData.paramName}"/>
+            </p:column>
+            <p:column headerText="Значение" width="200" styleClass="text-center">
+               <h:outputText value="#{controllerLastData.value}"/>
+            </p:column>
+            <p:column headerText="Дата" width="200" styleClass="text-center">
+               <h:outputText value="#{controllerLastData.dateTime}">
                   <f:convertDateTime type="localDateTime" pattern="dd.MM.yyyy HH:mm:ss"/>
                </h:outputText>
             </p:column>

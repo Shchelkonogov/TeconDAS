@@ -12,6 +12,7 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import ru.tecon.queryBasedDAS.DasException;
+import ru.tecon.queryBasedDAS.counter.statistic.StatData;
 import ru.tecon.uploaderService.model.Config;
 import ru.tecon.uploaderService.model.DataModel;
 
@@ -60,6 +61,28 @@ public class MfkBean {
                                                         "order by date";
     private static final String SELECT_SERVER = "select id, scheme, host, port, path from mfk_server where name = ?";
     private static final String SELECT_ALL_SERVER = "select id, name, scheme, host, port, path from mfk_server";
+    private static final String SELECT_MAX_DATE = "select mc.name as param_name, max(date) as date from mfk_data md " +
+                                                    "join mfk_config mc " +
+                                                        "on mc.id = md.param_id " +
+                                                    "join public.mfk_server ms " +
+                                                        "on ms.id = mc.server_id " +
+                                                    "join public.mfk_object mo " +
+                                                        "on md.object_id = mo.id " +
+                                                            "where ms.name = ? " +
+                                                                "and mo.name = ?" +
+                                                            "group by mc.name";
+    private static final String SELECT_LAST_DATA = "select value from mfk_data md " +
+                                                        "join mfk_config mc " +
+                                                            "on mc.id = md.param_id " +
+                                                        "join public.mfk_server ms " +
+                                                            "on ms.id = mc.server_id " +
+                                                        "join public.mfk_object mo " +
+                                                            "on md.object_id = mo.id " +
+                                                                "where ms.name = ? " +
+                                                                    "and mc.name = ? " +
+                                                                    "and mo.name = ?" +
+                                                                    "and date = ?";
+
 
     @Inject
     private Logger logger;
@@ -355,5 +378,42 @@ public class MfkBean {
         } catch (SQLException e) {
             logger.warn("Error reset traffic for {}", objectName, e);
         }
+    }
+
+    public List<StatData.LastValue> getLastValues(String objectName) {
+        logger.info("start load last values from mfk for {}", objectName);
+        List<StatData.LastValue> result = new ArrayList<>();
+        try (Connection connect = ds.getConnection();
+             PreparedStatement stmMaxDate = connect.prepareStatement(SELECT_MAX_DATE);
+             PreparedStatement stmLastData = connect.prepareStatement(SELECT_LAST_DATA)) {
+            String[] split = objectName.split("_");
+            String controllerName = split[0];
+            String controllerObjectName = split[1] + "_" + split[2];
+
+            stmMaxDate.setString(1, controllerName);
+            stmMaxDate.setString(2, controllerObjectName);
+
+            ResultSet resMaxDate = stmMaxDate.executeQuery();
+            while (resMaxDate.next()) {
+                logger.info(resMaxDate.getString("param_name") + " " + resMaxDate.getTimestamp("date"));
+                stmLastData.setString(1, controllerName);
+                stmLastData.setString(2, resMaxDate.getString("param_name"));
+                stmLastData.setString(3, controllerObjectName);
+                stmLastData.setTimestamp(4, resMaxDate.getTimestamp("date"));
+
+                ResultSet resLastData = stmLastData.executeQuery();
+                if (resLastData.next()) {
+                    logger.info(resLastData.getString("value"));
+                    result.add(StatData.LastValue.of(
+                            resMaxDate.getString("param_name"),
+                            resLastData.getString("value"),
+                            resMaxDate.getTimestamp("date").toLocalDateTime()
+                    ));
+                }
+            }
+        } catch (SQLException e) {
+            logger.warn("error load last values from mfk for {}", objectName, e);
+        }
+        return result;
     }
 }

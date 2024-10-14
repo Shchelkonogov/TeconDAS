@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import ru.tecon.queryBasedDAS.AlphaNumComparator;
 import ru.tecon.queryBasedDAS.DasException;
 import ru.tecon.queryBasedDAS.counter.Periodicity;
+import ru.tecon.queryBasedDAS.counter.mfk.ejb.MfkBean;
 import ru.tecon.queryBasedDAS.counter.report.ExcelReport;
 import ru.tecon.queryBasedDAS.counter.report.PdfReport;
 import ru.tecon.queryBasedDAS.counter.statistic.StatData;
@@ -50,6 +51,9 @@ public class MfkConsoleController implements Serializable {
     private Logger logger;
 
     @EJB
+    private MfkBean mfkBean;
+
+    @EJB
     private QueryBasedDASStatelessBean bean;
 
     @EJB
@@ -61,6 +65,7 @@ public class MfkConsoleController implements Serializable {
 
     private final List<AsyncModel> asyncData = new ArrayList<>();
     private final List<DataModel> requestedDataModel = new ArrayList<>();
+    private final List<StatData.LastValue> lastControllerData = new ArrayList<>();
 
     private final MfkCounter counter = new MfkCounter();
     private final MfkInfo info = MfkInfo.getInstance();
@@ -94,7 +99,7 @@ public class MfkConsoleController implements Serializable {
     }
 
     public void resetTraffic() {
-        counter.resetTraffic(selectedStat.getCounterName());
+        mfkBean.resetTraffic(selectedStat.getCounterName());
     }
 
     /**
@@ -171,6 +176,14 @@ public class MfkConsoleController implements Serializable {
     public void clearAsyncData() {
         asyncData.clear();
         requestedDataModel.clear();
+    }
+
+    public void loadLastControllerData() {
+        lastControllerData.addAll(mfkBean.getLastValues(selectedStat.getCounterName()));
+    }
+
+    public void clearLastControllerData() {
+        lastControllerData.clear();
     }
 
     public void clearStatistic() {
@@ -325,6 +338,10 @@ public class MfkConsoleController implements Serializable {
 
     public List<AsyncModel> getAsync() {
         return asyncData;
+    }
+
+    public List<StatData.LastValue> getLastControllerData() {
+        return lastControllerData;
     }
 
     public static class AsyncModel implements Comparable<AsyncModel> {

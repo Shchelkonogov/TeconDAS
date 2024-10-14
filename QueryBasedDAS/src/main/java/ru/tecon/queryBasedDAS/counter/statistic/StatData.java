@@ -218,6 +218,10 @@ public class StatData implements Serializable {
             }
         }
 
+        public static LastValue of(String paramName, String value, LocalDateTime dateTime) {
+            return new LastValue(paramName, value, dateTime);
+        }
+
         public String getParamName() {
             return paramName;
         }
