@@ -26,8 +26,8 @@ public class ExcelReport {
 
     private static final Logger logger = LoggerFactory.getLogger(ExcelReport.class);
 
-    private static final String[] HEAD = {"№", "Имя объекта", "Имя прибора", "Дата последних данных",
-            "Загрузка последних данных", "Диапазон запрашиваемых измерений"};
+    private static final String[] HEAD = {"№", "Имя объекта", "Имя прибора", "Загрузка последних данных",
+            "Дата последних данных", "Диапазон запрашиваемых измерений"};
 
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss");
 

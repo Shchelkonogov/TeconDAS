@@ -19,8 +19,8 @@ import java.util.List;
  */
 public class PdfReport {
 
-    private static final String[] HEAD = {"№", "Имя объекта", "Имя прибора", "Дата последних данных",
-            "Загрузка последних данных", "Диапазон запрашиваемых измерений"};
+    private static final String[] HEAD = {"№", "Имя объекта", "Имя прибора", "Загрузка последних данных",
+            "Дата последних данных", "Диапазон запрашиваемых измерений"};
 
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss");
 
