@@ -79,11 +79,11 @@ public class QueryBasedDASStatelessBean {
             for (Map.Entry<String, List<String>> entry: counterObjects.entrySet()) {
                 WebConsole counterWebConsole = bean.getCounterWebConsole(entry.getKey());
                 if (counterWebConsole != null) {
-                    counterWebConsole.clearStatistic(statKey -> statKey.getServer().equals(serverName));
-
                     for (String counterName: entry.getValue()) {
-                        StatData build = StatData.builder(serverName, counterName, entry.getKey()).build();
-                        counterWebConsole.merge(new StatKey(serverName, counterName), build);
+                        counterWebConsole.getStatistic().computeIfAbsent(
+                                new StatKey(serverName, counterName),
+                                statKey -> StatData.builder(serverName, counterName, entry.getKey()).build()
+                        );
                     }
                 }
             }

@@ -25,9 +25,8 @@
             <p:submenu label="Загрузить счетчики" icon="pi pi-fw pi-cloud-upload">
                <c:forEach var="counter" items="#{mctController.counters}">
                   <p:menuitem value="#{counter}" action="#{mctController.loadObjects(counter)}"
-                              icon="pi pi-fw pi-calculator" update="statTable" oncomplete="PF('bui').hide();">
-                     <p:confirm header="Подтверждение" message="Так же будет очищена статистика #{counter}"
-                                icon="pi pi-info-circle"/>
+                              icon="pi pi-fw pi-calculator" update="statTable"
+                              onclick="PF('bui').show();" oncomplete="PF('bui').hide();">
                   </p:menuitem>
                </c:forEach>
             </p:submenu>
@@ -102,14 +101,6 @@
                       styleClass="ui-button-info"/>
          </f:facet>
       </p:menubar>
-
-      <p:confirmDialog global="true" showEffect="fade" hideEffect="fade" responsive="true" width="380"
-                       styleClass="tc-panel">
-         <p:commandButton value="Нет" type="button"
-                          styleClass="ui-confirmdialog-no ui-button-secondary tc-no-loading"/>
-         <p:commandButton value="Да" type="button" onclick="PF('bui').show();"
-                          styleClass="ui-confirmdialog-yes tc-no-loading"/>
-      </p:confirmDialog>
 
       <div style="height: calc(100% - 51px); padding: 0 0 3px 3px;">
          <p:dataTable id="statTable" var="stat" value="#{mctController.statistic}" rowIndexVar="index"

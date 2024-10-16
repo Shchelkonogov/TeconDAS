@@ -23,9 +23,8 @@
       <p:menubar id="menuBar" style="margin: 3px; background: #f8f9fa; padding: 0.1rem;">
          <p:submenu label="Действия">
             <p:menuitem value="Загрузить счетчики" icon="pi pi-fw pi-cloud-upload"
-                        action="#{mfkController.loadObjects()}" update="statTable" oncomplete="PF('bui').hide();">
-               <p:confirm header="Подтверждение" message="Так же будет очищена статистика"
-                          icon="pi pi-info-circle"/>
+                        action="#{mfkController.loadObjects()}" update="statTable"
+                        onclick="PF('bui').show();" oncomplete="PF('bui').hide();">
             </p:menuitem>
             <p:menuitem value="Загрузить конфигурацию" disabled="#{mfkController.selectedStat == null}"
                         icon="pi pi-fw pi-cloud-upload" onstart="PF('statusDialog').show()"
@@ -96,14 +95,6 @@
                       styleClass="ui-button-info"/>
          </f:facet>
       </p:menubar>
-
-      <p:confirmDialog global="true" showEffect="fade" hideEffect="fade" responsive="true" width="380"
-                       styleClass="tc-panel">
-         <p:commandButton value="Нет" type="button"
-                          styleClass="ui-confirmdialog-no ui-button-secondary tc-no-loading"/>
-         <p:commandButton value="Да" type="button" onclick="PF('bui').show();"
-                          styleClass="ui-confirmdialog-yes tc-no-loading"/>
-      </p:confirmDialog>
 
       <div style="height: calc(100% - 51px); padding: 0 0 3px 3px;">
          <p:dataTable id="statTable" var="stat" value="#{mfkController.statistic}" rowIndexVar="index"
