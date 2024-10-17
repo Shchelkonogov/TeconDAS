@@ -1,5 +1,7 @@
 package ru.tecon.queryBasedDAS.counter.mfk.ejb;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -12,6 +14,7 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import ru.tecon.queryBasedDAS.DasException;
+import ru.tecon.queryBasedDAS.counter.mfk.MfkConsoleController;
 import ru.tecon.queryBasedDAS.counter.statistic.StatData;
 import ru.tecon.uploaderService.model.Config;
 import ru.tecon.uploaderService.model.DataModel;
@@ -83,12 +86,14 @@ public class MfkBean {
                                                                     "and mo.name = ?" +
                                                                     "and date = ?";
 
-
     @Inject
     private Logger logger;
 
     @Inject
     private Gson json;
+
+    @Inject
+    private ObjectMapper om;
 
     @Resource(name = "jdbc/mfk")
     private DataSource ds;
@@ -415,5 +420,166 @@ public class MfkBean {
             logger.warn("error load last values from mfk for {}", objectName, e);
         }
         return result;
+    }
+
+    public List<MfkConsoleController.ObjectInfoModel> getSysInfo(String objectName) {
+        List<MfkConsoleController.ObjectInfoModel> result = new ArrayList<>();
+        logger.info("start load sys info from mfk for {}", objectName);
+        try (Connection connect = ds.getConnection();
+             PreparedStatement stm = connect.prepareStatement(SELECT_SERVER)) {
+            stm.setString(1, objectName.split("_")[0]);
+            ResultSet res = stm.executeQuery();
+            if (res.next()) {
+                Matcher m = PATTERN_IPV4.matcher(objectName);
+                if (m.find()) {
+                    String url = m.group("ip");
+
+                    try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
+                        ArrayList<String> path = new ArrayList<>(Arrays.asList(res.getString("path").split("/")));
+                        path.removeIf(String::isEmpty);
+                        path.add("api");
+                        path.add("sysInfo");
+
+                        URI build = new URIBuilder()
+                                .setScheme(res.getString("scheme"))
+                                .setHost(res.getString("host"))
+                                .setPort(res.getInt("port"))
+                                .setPathSegments(path)
+                                .addParameter("url", url)
+                                .build();
+
+                        HttpGet httpGet = new HttpGet(build);
+
+                        try (CloseableHttpResponse response = httpClient.execute(httpGet)) {
+                            if (response.getStatusLine().getStatusCode() == 200) {
+                                Map<String, Map<String, Boolean>> sysInfo = om.readValue(
+                                        EntityUtils.toString(response.getEntity()),
+                                        new TypeReference<Map<String, Map<String, Boolean>>>() {
+                                        }
+                                );
+
+                                sysInfo.forEach((k, v) -> {
+                                    if (v.size() == 1) {
+                                        for (Map.Entry<String, Boolean> entry: v.entrySet()) {
+                                            result.add(new MfkConsoleController.ObjectInfoModel(k, entry.getKey(), entry.getValue()));
+                                        }
+                                    }
+                                });
+
+                                logger.info("sys info {}", result);
+                            } else {
+                                logger.warn("Error request sys info. Error code {}", response.getStatusLine().getStatusCode());
+                            }
+                        }
+                    } catch (IOException | URISyntaxException e) {
+                        logger.warn("Error request sys info", e);
+                    }
+                } else {
+                    logger.warn("Error parse ip address {}", objectName);
+                }
+            }
+        } catch (SQLException e) {
+            logger.warn("Error load sys info for {}", objectName, e);
+        }
+        return result;
+    }
+
+    public void synchronizeDate(String objectName) {
+        logger.info("start synchronize date from mfk for {}", objectName);
+        try (Connection connect = ds.getConnection();
+             PreparedStatement stm = connect.prepareStatement(SELECT_SERVER)) {
+            stm.setString(1, objectName.split("_")[0]);
+            ResultSet res = stm.executeQuery();
+            if (res.next()) {
+                Matcher m = PATTERN_IPV4.matcher(objectName);
+                if (m.find()) {
+                    String url = m.group("ip");
+
+                    try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
+                        ArrayList<String> path = new ArrayList<>(Arrays.asList(res.getString("path").split("/")));
+                        path.removeIf(String::isEmpty);
+                        path.add("api");
+                        path.add("synchronizeDate");
+
+                        URI build = new URIBuilder()
+                                .setScheme(res.getString("scheme"))
+                                .setHost(res.getString("host"))
+                                .setPort(res.getInt("port"))
+                                .setPathSegments(path)
+                                .addParameter("url", url)
+                                .build();
+
+                        HttpPost httpPost = new HttpPost(build);
+
+                        try (CloseableHttpResponse response = httpClient.execute(httpPost)) {
+                            if (response.getStatusLine().getStatusCode() != 200) {
+                                logger.warn("Error synchronize date. Error code {}", response.getStatusLine().getStatusCode());
+                            }
+                        }
+                    } catch (IOException | URISyntaxException e) {
+                        logger.warn("Error synchronize date", e);
+                    }
+                } else {
+                    logger.warn("Error parse ip address {}", objectName);
+                }
+            }
+        } catch (SQLException e) {
+            logger.warn("Error synchronize date for {}", objectName, e);
+        }
+    }
+
+    public void writeSysInfo(String objectName, List<MfkConsoleController.ObjectInfoModel> sysInfo) {
+        logger.info("start write sys info to mfk for {}", objectName);
+        try (Connection connect = ds.getConnection();
+             PreparedStatement stm = connect.prepareStatement(SELECT_SERVER)) {
+            stm.setString(1, objectName.split("_")[0]);
+            ResultSet res = stm.executeQuery();
+            if (res.next()) {
+                Matcher m = PATTERN_IPV4.matcher(objectName);
+                if (m.find()) {
+                    String url = m.group("ip");
+
+                    try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
+                        ArrayList<String> path = new ArrayList<>(Arrays.asList(res.getString("path").split("/")));
+                        path.removeIf(String::isEmpty);
+                        path.add("api");
+                        path.add("sysInfo");
+
+                        URI build = new URIBuilder()
+                                .setScheme(res.getString("scheme"))
+                                .setHost(res.getString("host"))
+                                .setPort(res.getInt("port"))
+                                .setPathSegments(path)
+                                .addParameter("url", url)
+                                .build();
+
+                        HttpPost httpPost = new HttpPost(build);
+
+                        Map<String, String> sysInfoMap = sysInfo.stream()
+                                .filter(MfkConsoleController.ObjectInfoModel::isChange)
+                                .collect(Collectors.toMap(
+                                        MfkConsoleController.ObjectInfoModel::getName,
+                                        MfkConsoleController.ObjectInfoModel::getValue
+                                ));
+                        logger.info("start write sys info {} to mfk for {}", sysInfoMap, objectName);
+
+                        httpPost.setHeader("Content-type", "application/json");
+                        httpPost.setEntity(new StringEntity(json.toJson(sysInfoMap)));
+
+                        try (CloseableHttpResponse response = httpClient.execute(httpPost)) {
+                            if (response.getStatusLine().getStatusCode() != 200) {
+                                logger.warn("Error write sys info. Error code {}", response.getStatusLine().getStatusCode());
+                            }
+                        }
+                    } catch (IOException | URISyntaxException e) {
+                        logger.warn("Error write sys info", e);
+                    }
+                } else {
+                    logger.warn("Error parse ip address {}", objectName);
+                }
+            }
+        } catch (SQLException e) {
+            logger.warn("Error write sys info for {}", objectName, e);
+        }
     }
 }

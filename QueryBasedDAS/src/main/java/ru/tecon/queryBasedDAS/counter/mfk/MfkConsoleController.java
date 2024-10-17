@@ -3,6 +3,7 @@ package ru.tecon.queryBasedDAS.counter.mfk;
 import fish.payara.security.openid.api.OpenIdContext;
 import org.jetbrains.annotations.NotNull;
 import org.primefaces.PrimeFaces;
+import org.primefaces.event.CellEditEvent;
 import org.slf4j.Logger;
 import ru.tecon.queryBasedDAS.AlphaNumComparator;
 import ru.tecon.queryBasedDAS.DasException;
@@ -66,6 +67,7 @@ public class MfkConsoleController implements Serializable {
     private final List<AsyncModel> asyncData = new ArrayList<>();
     private final List<DataModel> requestedDataModel = new ArrayList<>();
     private final List<StatData.LastValue> lastControllerData = new ArrayList<>();
+    private final List<ObjectInfoModel> sysParamData = new ArrayList<>();
 
     private final MfkCounter counter = new MfkCounter();
     private final MfkInfo info = MfkInfo.getInstance();
@@ -112,6 +114,34 @@ public class MfkConsoleController implements Serializable {
 
     public void clearConfig() {
         config.clear();
+    }
+
+    public void requestSysParam() {
+        sysParamData.addAll(mfkBean.getSysInfo(selectedStat.getCounterName()));
+
+        PrimeFaces.current().executeScript("PF('sysParamWidget').show();");
+        PrimeFaces.current().ajax().update("sysParamForm", "sysParamHeader");
+    }
+
+    public void clearSysParamData() {
+        sysParamData.clear();
+    }
+
+    /**
+     * Обработик изменения ячейки таблицы
+     * @param event событие изменения
+     */
+    public void onCellEdit(CellEditEvent<?> event) {
+        String clientID = event.getColumn().getChildren().get(0).getClientId().replaceAll(":", "\\:");
+        PrimeFaces.current().executeScript("document.getElementById('" + clientID + "').parentNode.style.backgroundColor = 'lightgrey'");
+    }
+
+    public void writeValues() {
+        mfkBean.writeSysInfo(selectedStat.getCounterName(), sysParamData);
+    }
+
+    public void synchronizeDate() {
+        mfkBean.synchronizeDate(selectedStat.getCounterName());
     }
 
     public void requestAsync() {
@@ -344,6 +374,10 @@ public class MfkConsoleController implements Serializable {
         return lastControllerData;
     }
 
+    public List<ObjectInfoModel> getSysParamData() {
+        return sysParamData;
+    }
+
     public static class AsyncModel implements Comparable<AsyncModel> {
 
         private final String param;
@@ -386,6 +420,52 @@ public class MfkConsoleController implements Serializable {
                     .add("param='" + param + "'")
                     .add("select=" + select)
                     .add("value='" + value + "'")
+                    .toString();
+        }
+    }
+
+    public static class ObjectInfoModel {
+
+        private final String name;
+        private String value;
+        private final boolean write;
+        private boolean change;
+
+        public ObjectInfoModel(String name, String value, boolean write) {
+            this.name = name;
+            this.value = value;
+            this.write = write;
+        }
+
+        public void setValue(String value) {
+            if (write) {
+                this.value = value;
+                change = true;
+            }
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public String getValue() {
+            return value;
+        }
+
+        public boolean isWrite() {
+            return write;
+        }
+
+        public boolean isChange() {
+            return change;
+        }
+
+        @Override
+        public String toString() {
+            return new StringJoiner(", ", ObjectInfoModel.class.getSimpleName() + "[", "]")
+                    .add("name='" + name + "'")
+                    .add("value='" + value + "'")
+                    .add("write=" + write)
                     .toString();
         }
     }

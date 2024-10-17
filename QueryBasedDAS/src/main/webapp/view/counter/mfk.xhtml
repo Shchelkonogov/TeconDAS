@@ -36,6 +36,12 @@
                         action="#{mfkController.clearStatistic()}" update="statTable"/>
          </p:submenu>
          <p:submenu label="Просмотр">
+            <p:menuitem value="Системные параметры"
+                        disabled="#{mfkController.selectedStat == null}"
+                        onstart="PF('statusDialog').show()"
+                        action="#{mfkController.requestSysParam()}"
+                        oncomplete="PF('statusDialog').hide();"
+                        icon="pi pi-fw pi-cog"/>
             <p:menuitem value="Сбросить трафик"
                         disabled="#{mfkController.selectedStat == null}"
                         onstart="PF('statusDialog').show()"
@@ -142,6 +148,9 @@
                         oncomplete="PF('configDataWidget').show(); PF('statusDialog').hide();"
                         update="configDataTable configDialogHeader"/>
             <p:divider/>
+            <p:menuitem value="Системные параметры" icon="pi pi-fw pi-cog"
+                        onstart="PF('statusDialog').show();" action="#{mfkController.requestSysParam()}"
+                        oncomplete="PF('statusDialog').hide();"/>
             <p:menuitem value="Сбросить трафик" icon="pi pi-fw pi-eraser"
                         onstart="PF('statusDialog').show();" action="#{mfkController.resetTraffic()}"
                         oncomplete="PF('statusDialog').hide();"/>
@@ -307,6 +316,46 @@
             </div>
          </div>
       </div>
+   </p:dialog>
+
+   <p:dialog widgetVar="sysParamWidget" width="500" height="200" modal="true"
+             resizable="false" styleClass="tc-panel" showEffect="fade" hideEffect="fade">
+
+      <p:ajax event="close" update="sysParamForm" listener="#{mfkController.clearSysParamData()}"/>
+
+      <f:facet name="header">
+         <h:outputText id="sysParamHeader"
+                       value="Системные параметры #{mfkController.selectedStat.counterName}"/>
+      </f:facet>
+
+      <h:form id="sysParamForm">
+         <p:dataTable id="sysParamTable" value="#{mfkController.sysParamData}" var="infoData"
+                      editable="true" editMode="cell" style="margin: 3px;" emptyMessage="#{global['table.empty.value']}">
+
+            <p:ajax event="cellEdit" listener="#{mfkController.onCellEdit}" />
+
+            <p:column headerText="Имя">
+               <h:outputText value="#{infoData.name}" />
+            </p:column>
+            <p:column headerText="Значение">
+               <p:cellEditor disabled="#{!infoData.write}">
+                  <f:facet name="output">
+                     <h:outputText value="#{infoData.value}" />
+                  </f:facet>
+                  <f:facet name="input">
+                     <p:inputText value="#{infoData.value}"/>
+                  </f:facet>
+               </p:cellEditor>
+            </p:column>
+         </p:dataTable>
+      </h:form>
+
+      <f:facet name="footer">
+         <p:commandButton widgetVar="writeButton" value="Записать" action="#{mfkController.writeValues}"
+                          oncomplete="PF('sysParamWidget').hide();" styleClass="tc-no-loading" process="@this"/>
+         <p:commandButton value="Синхронизировать время" action="#{mfkController.synchronizeDate}"
+                          oncomplete="PF('sysParamWidget').hide();" styleClass="tc-no-loading" process="@this"/>
+      </f:facet>
    </p:dialog>
 
    <p:dialog widgetVar="threadConfigWidget" width="500" modal="true" rendered="#{mfkController.admin}"

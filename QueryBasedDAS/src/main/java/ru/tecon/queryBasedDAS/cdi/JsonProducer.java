@@ -1,5 +1,6 @@
 package ru.tecon.queryBasedDAS.cdi;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
@@ -14,5 +15,10 @@ public class JsonProducer {
     @Produces
     public Gson getGson() {
         return new GsonBuilder().setPrettyPrinting().create();
+    }
+
+    @Produces
+    public ObjectMapper getJson() {
+        return new ObjectMapper();
     }
 }
