@@ -33,7 +33,7 @@ public class MfkInfo implements CounterInfo, WebConsole {
 
     public MfkInfo() throws NamingException {
         InitialContext ctx = new InitialContext();
-        bean = (MfkBean) ctx.lookup("java:global/queryBasedDASTest/mfk");
+        bean = (MfkBean) ctx.lookup("java:global/queryBasedDAS/mfk");
     }
 
     public static MfkInfo getInstance() {

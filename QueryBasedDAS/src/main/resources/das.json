@@ -7,7 +7,8 @@
     "ru.tecon.queryBasedDAS.counter.ftp.mct20.sa94.SA94Counter",
     "ru.tecon.queryBasedDAS.counter.ftp.mct20.slave.SLAVECounter",
     "ru.tecon.queryBasedDAS.counter.ftp.mct20.plain.PlainCounter",
-    "ru.tecon.queryBasedDAS.counter.ftp.eco.EcoCounter"
+    "ru.tecon.queryBasedDAS.counter.ftp.eco.EcoCounter",
+    "ru.tecon.queryBasedDAS.counter.mfk.MfkCounter"
   ],
   "remotes": {
     "postgres": {
