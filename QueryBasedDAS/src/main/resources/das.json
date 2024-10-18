@@ -17,7 +17,7 @@
       "serviceName": "uploaderService",
       "ejbName": "uploaderServiceBean",
       "listenerEjbName": "listenerServiceBean",
-      "priority": 2
+      "priority": 3
     },
     "oracle": {
       "url": "172.16.4.135",
@@ -25,7 +25,7 @@
       "serviceName": "oracleUploaderService",
       "ejbName": "oracleUploaderServiceBean",
       "listenerEjbName": "oracleListenerServiceBean",
-      "priority": 1
+      "priority": 2
     },
     "oracleFil5": {
       "url": "172.16.4.135",
@@ -33,7 +33,7 @@
       "serviceName": "oracleFil5UploaderService",
       "ejbName": "oracleFil5UploaderServiceBean",
       "listenerEjbName": "oracleFil5ListenerServiceBean",
-      "priority": 3
+      "priority": 1
     }
   }
 }
