@@ -24,7 +24,7 @@ import java.util.Set;
 public class ListenerServiceBean implements ListenerServiceRemote {
 
     private static final String SEL_CHECK_CONTAINS_LISTENER_URL = "select 1 from ADMIN.OPC_BASE where SERVER_NAME = ?";
-    private static final String INS_LISTENER_URL = "insert into ADMIN.OPC_BASE values (' ', ?, ?)";
+    private static final String INS_LISTENER_URL = "insert into ADMIN.OPC_BASE values ('fil2.mipcnet.org', ?, ?)";
     private static final String UPD_LISTENER_URL = "update ADMIN.OPC_BASE set URL = ? where SERVER_NAME = ?";
 
     @Resource(name = "jdbc/DataSource")

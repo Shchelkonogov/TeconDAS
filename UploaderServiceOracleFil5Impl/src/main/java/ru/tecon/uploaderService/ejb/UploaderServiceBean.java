@@ -12,10 +12,7 @@ import javax.inject.Inject;
 import javax.sql.DataSource;
 import java.math.BigDecimal;
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * @author Maksim Shchelkonogov
@@ -295,7 +292,7 @@ public class UploaderServiceBean implements UploaderServiceRemote {
     @Override
     @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
     public void uploadData(List<DataModel> dataModels) {
-        try (OracleConnection connect = (OracleConnection) dsFil.getConnection();
+        try (OracleConnection connect = dsFil.getConnection().unwrap(OracleConnection.class);
              PreparedStatement stmAlter = connect.prepareStatement("alter session set nls_numeric_characters = '.,'");
              CallableStatement stm = connect.prepareCall(FUNCTION_UPLOAD_DATA)) {
             stmAlter.execute();
