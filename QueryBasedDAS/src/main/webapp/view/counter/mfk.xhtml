@@ -106,7 +106,11 @@
          <p:dataTable id="statTable" var="stat" value="#{mfkController.statistic}" rowIndexVar="index"
                       scrollable="true" rowKey="#{stat.counterName}" scrollHeight="100%" size="small"
                       selection="#{mfkController.selectedStat}" selectionMode="single"
-                      emptyMessage="#{global['table.empty.value']}">
+                      emptyMessage="#{global['table.empty.value']}"
+                      paginator="true" rows="50"
+                      paginatorPosition="bottom"
+                      paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+                      currentPageReportTemplate="{startRecord}-{endRecord} из {totalRecords} записей">
 
             <p:ajax event="rowSelect" update="statForm:menuBar"/>
             <p:ajax event="contextMenu" update="statForm:menuBar"/>
@@ -140,6 +144,12 @@
             <p:column headerText="Диапазон запрашиваемых измерений" styleClass="text-center">
                <h:outputText value="#{stat.requestedRange}"/>
             </p:column>
+
+            <f:facet name="paginatorBottomRight">
+               <p:selectBooleanCheckbox value="#{mfkController.onlyBlock}" itemLabel="Только блокированные">
+                  <p:ajax update="statTable"/>
+               </p:selectBooleanCheckbox>
+            </f:facet>
          </p:dataTable>
 
          <p:contextMenu for="statTable">

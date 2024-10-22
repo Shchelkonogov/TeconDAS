@@ -343,7 +343,7 @@ public class MfkBean {
         return result;
     }
 
-    public void resetTraffic(String objectName) {
+    public void resetTraffic(String objectName) throws DasException {
         logger.info("reset traffic for {}", objectName);
         try (Connection connect = ds.getConnection();
              PreparedStatement stm = connect.prepareStatement(SELECT_SERVER)) {
@@ -373,17 +373,21 @@ public class MfkBean {
                         try (CloseableHttpResponse response = httpClient.execute(httpPost)) {
                             if (response.getStatusLine().getStatusCode() != 200) {
                                 logger.warn("Error reset traffic. Error code {}", response.getStatusLine().getStatusCode());
+                                throw new DasException(EntityUtils.toString(response.getEntity()));
                             }
                         }
                     } catch (IOException | URISyntaxException e) {
                         logger.warn("Error reset traffic", e);
+                        throw new DasException("Ошибка обращения к контроллеру мфк " + objectName);
                     }
                 } else {
                     logger.warn("Error reset traffic ip address {}", objectName);
+                    throw new DasException("Не разобран url прибора " + objectName);
                 }
             }
         } catch (SQLException e) {
             logger.warn("Error reset traffic for {}", objectName, e);
+            throw new DasException("База данных недоступна");
         }
     }
 

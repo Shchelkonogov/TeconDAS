@@ -72,6 +72,8 @@ public class MfkConsoleController implements Serializable {
     private final MfkCounter counter = new MfkCounter();
     private final MfkInfo info = MfkInfo.getInstance();
 
+    private boolean onlyBlock;
+
     @PostConstruct
     private void init() {
         remoteSelected = getRemotes().get(0);
@@ -85,6 +87,18 @@ public class MfkConsoleController implements Serializable {
     public List<StatData> getStatistic() {
         return info.getStatistic().entrySet().stream()
                 .filter(entry -> entry.getKey().getServer().equals(remoteSelected))
+                .filter(entry -> {
+                    if (onlyBlock) {
+                        for (String lockName: info.getLocked()) {
+                            if (entry.getValue().getCounterName().startsWith(lockName)) {
+                                return true;
+                            }
+                        }
+                        return false;
+                    } else {
+                        return true;
+                    }
+                })
                 .map(Map.Entry::getValue)
                 .sorted(Comparator.comparing(statData -> statData.getObjectName() == null ? "" : statData.getObjectName(),
                         new AlphaNumComparator()))
@@ -100,8 +114,10 @@ public class MfkConsoleController implements Serializable {
         return "";
     }
 
-    public void resetTraffic() {
+    public void resetTraffic() throws DasException {
         mfkBean.resetTraffic(selectedStat.getCounterName());
+        info.getLocked().removeIf(s -> selectedStat.getCounterName().startsWith(s));
+        PrimeFaces.current().ajax().update("statTable");
     }
 
     /**
@@ -376,6 +392,14 @@ public class MfkConsoleController implements Serializable {
 
     public List<ObjectInfoModel> getSysParamData() {
         return sysParamData;
+    }
+
+    public boolean isOnlyBlock() {
+        return onlyBlock;
+    }
+
+    public void setOnlyBlock(boolean onlyBlock) {
+        this.onlyBlock = onlyBlock;
     }
 
     public static class AsyncModel implements Comparable<AsyncModel> {
