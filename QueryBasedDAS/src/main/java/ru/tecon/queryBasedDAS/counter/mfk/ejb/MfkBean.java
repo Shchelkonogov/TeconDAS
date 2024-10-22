@@ -206,7 +206,9 @@ public class MfkBean {
                 stm.setString(1, controllerName);
                 stm.setString(2, item.getParamName() + "::" + item.getParamSysInfo());
                 stm.setString(3, controllerObjectName);
-                stm.setTimestamp(4, Timestamp.valueOf(item.getStartDateTime()));
+                // В базе мфк данные хранятся с долями секунды, а в item.getStartDateTime() без долей,
+                // что бы не класть одни и те же данные добавил одну секунды
+                stm.setTimestamp(4, Timestamp.valueOf(item.getStartDateTime().plusSeconds(1)));
 
                 ResultSet res = stm.executeQuery();
                 while (res.next()) {
