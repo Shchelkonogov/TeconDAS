@@ -147,6 +147,9 @@
          </p:dataTable>
 
          <p:contextMenu id="contextMenu" for="statTable">
+            <p:menuitem value="#{mctController.asyncIp()}" disabled="true" rendered="#{mctController.asyncRequest}"
+                        icon="pi pi-fw pi-globe"/>
+            <p:divider/>
             <p:menuitem value="Загрузить конфигурацию" icon="pi pi-fw pi-cloud-upload"
                         onstart="PF('statusDialog').show();" action="#{mctController.requestConfig()}"
                         oncomplete="PF('configDataWidget').show(); PF('statusDialog').hide();"

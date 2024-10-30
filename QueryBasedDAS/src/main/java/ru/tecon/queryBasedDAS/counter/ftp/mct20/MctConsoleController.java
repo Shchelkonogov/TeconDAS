@@ -1,6 +1,7 @@
 package ru.tecon.queryBasedDAS.counter.ftp.mct20;
 
 import fish.payara.security.openid.api.OpenIdContext;
+import org.apache.commons.math3.util.Pair;
 import org.primefaces.PrimeFaces;
 import org.slf4j.Logger;
 import ru.tecon.queryBasedDAS.AlphaNumComparator;
@@ -371,6 +372,22 @@ public class MctConsoleController implements Serializable {
 
     public String isRemoteEnable(String remote) {
         return singletonBean.getRemoteProp(remote).isEnable() ? "(вкл)" : "(выкл)";
+    }
+
+    public String asyncIp() {
+        if (selectedStat != null) {
+            MctFtpCounter counter = counters.get(selectedStat.getCounter());
+            if (counter instanceof FtpCounterWithAsyncRequest) {
+                try {
+                    Pair<String, Integer> ipAndSlaveId =
+                            ((FtpCounterWithAsyncRequest) counter).getIpAndSlaveId(selectedStat.getCounterName());
+                    return "ip: " + ipAndSlaveId.getFirst();
+                } catch (DasException e) {
+                    return "не найден ip адрес";
+                }
+            }
+        }
+        return "не найден ip адрес";
     }
 
     public String getRemoteSelected() {

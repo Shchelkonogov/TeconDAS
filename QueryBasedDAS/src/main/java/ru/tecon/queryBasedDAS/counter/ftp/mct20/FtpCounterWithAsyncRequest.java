@@ -7,6 +7,7 @@ import com.intelligt.modbus.jlibmodbus.master.ModbusMaster;
 import com.intelligt.modbus.jlibmodbus.master.ModbusMasterFactory;
 import com.intelligt.modbus.jlibmodbus.serial.*;
 import com.intelligt.modbus.jlibmodbus.tcp.TcpParameters;
+import org.apache.commons.math3.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.tecon.queryBasedDAS.DasException;
@@ -59,7 +60,64 @@ public abstract class FtpCounterWithAsyncRequest extends MctFtpCounter implement
             throw new DasException("Пустая модель данных");
         }
 
-        // Получаю ip прибора
+        // Получаю ip прибора и slaveId
+        Pair<String, Integer> ipAndSlaveId = getIpAndSlaveId(objectName);
+
+        // Читаю данные из modbus
+        try {
+            TcpParameters tcpParameter = new TcpParameters();
+            tcpParameter.setHost(InetAddress.getByName(ipAndSlaveId.getFirst()));
+            tcpParameter.setPort(502);
+            tcpParameter.setKeepAlive(true);
+
+            SerialParameters serialParameter = new SerialParameters();
+            serialParameter.setBaudRate(SerialPort.BaudRate.BAUD_RATE_115200);
+            serialParameter.setDataBits(8);
+            serialParameter.setParity(SerialPort.Parity.NONE);
+            serialParameter.setStopBits(1);
+
+            SerialUtils.setSerialPortFactory(new SerialPortFactoryTcpClient(tcpParameter));
+            ModbusMaster master = ModbusMasterFactory.createModbusMasterRTU(serialParameter);
+            master.setResponseTimeout(60000);
+            master.connect();
+
+            for (DataModel model: params) {
+                String propRegister = getPropRegister(model.getParamName().replace(":Текущие данные", ""));
+                String[] split = propRegister.split("/");
+
+                int offset = Integer.parseInt(split[0]);
+                int quantity = Integer.parseInt(split[1]);
+
+                int[] registerValues = master.readHoldingRegisters(ipAndSlaveId.getSecond(), offset, quantity);
+
+                int index = Integer.parseInt(split[2]);
+
+                if ("float".equals(split[3])) {
+                    ByteBuffer buffer = ByteBuffer.allocate(4)
+                            .putShort((short) registerValues[index + 1])
+                            .putShort((short) registerValues[index]);
+
+                    String value = String.valueOf(buffer.order(ByteOrder.BIG_ENDIAN).getFloat(0));
+
+                    model.addData(value, LocalDateTime.now());
+                }
+            }
+
+            // TODO сделать возможность частичной загрузки
+
+            master.disconnect();
+        } catch (ModbusIOException | SerialPortException | UnknownHostException | ModbusProtocolException |
+                 ModbusNumberException e) {
+            logger.warn("modbus exception", e);
+            throw new DasException(getCounterInfo().getCounterName() + " недоступен");
+        }
+
+        params.removeIf(dataModel -> dataModel.getData().isEmpty());
+
+        logger.info("finish load instant data from ftpCounter for {}", objectName);
+    }
+
+    public Pair<String, Integer> getIpAndSlaveId(String objectName) throws DasException {
         Pattern compile = Pattern.compile(getCounterInfo().getCounterName() + "-(\\d{4})");
         Matcher matcher = compile.matcher(objectName);
         String path;
@@ -119,56 +177,7 @@ public abstract class FtpCounterWithAsyncRequest extends MctFtpCounter implement
             throw new DasException("Ошибка чтения файла ip.txt");
         }
 
-        // Читаю данные из modbus
-        try {
-            TcpParameters tcpParameter = new TcpParameters();
-            tcpParameter.setHost(InetAddress.getByName(ip));
-            tcpParameter.setPort(502);
-            tcpParameter.setKeepAlive(true);
-
-            SerialParameters serialParameter = new SerialParameters();
-            serialParameter.setBaudRate(SerialPort.BaudRate.BAUD_RATE_115200);
-            serialParameter.setDataBits(8);
-            serialParameter.setParity(SerialPort.Parity.NONE);
-            serialParameter.setStopBits(1);
-
-            SerialUtils.setSerialPortFactory(new SerialPortFactoryTcpClient(tcpParameter));
-            ModbusMaster master = ModbusMasterFactory.createModbusMasterRTU(serialParameter);
-            master.setResponseTimeout(60000);
-            master.connect();
-
-            for (DataModel model: params) {
-                String propRegister = getPropRegister(model.getParamName().replace(":Текущие данные", ""));
-                String[] split = propRegister.split("/");
-
-                int offset = Integer.parseInt(split[0]);
-                int quantity = Integer.parseInt(split[1]);
-
-                int[] registerValues = master.readHoldingRegisters(slaveID, offset, quantity);
-
-                int index = Integer.parseInt(split[2]);
-
-                if ("float".equals(split[3])) {
-                    ByteBuffer buffer = ByteBuffer.allocate(4)
-                            .putShort((short) registerValues[index + 1])
-                            .putShort((short) registerValues[index]);
-
-                    String value = String.valueOf(buffer.order(ByteOrder.BIG_ENDIAN).getFloat(0));
-
-                    model.addData(value, LocalDateTime.now());
-                }
-            }
-
-            master.disconnect();
-        } catch (ModbusIOException | SerialPortException | UnknownHostException | ModbusProtocolException |
-                 ModbusNumberException e) {
-            logger.warn("modbus exception", e);
-            throw new DasException(getCounterInfo().getCounterName() + " недоступен");
-        }
-
-        params.removeIf(dataModel -> dataModel.getData().isEmpty());
-
-        logger.info("finish load instant data from ftpCounter for {}", objectName);
+        return Pair.create(ip, slaveID);
     }
 
     protected abstract String getPropRegister(String propName) throws DasException;
