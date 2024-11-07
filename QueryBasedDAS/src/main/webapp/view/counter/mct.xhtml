@@ -35,6 +35,8 @@
                         action="#{mctController.requestConfig()}"
                         oncomplete="PF('configDataWidget').show(); PF('statusDialog').hide();"
                         update="configDataTable configDialogHeader"/>
+            <p:menuitem value="Запросить данные" disabled="#{mctController.selectedStat == null}"
+                        icon="pi pi-fw pi-cloud-upload" action="#{mctController.requestData()}"/>
             <p:divider/>
             <p:menuitem value="Очистить статистику" icon="pi pi-fw pi-trash"
                         action="#{mctController.clearStatistic()}" update="statTable"/>
@@ -154,6 +156,8 @@
                         onstart="PF('statusDialog').show();" action="#{mctController.requestConfig()}"
                         oncomplete="PF('configDataWidget').show(); PF('statusDialog').hide();"
                         update="configDataTable configDialogHeader"/>
+            <p:menuitem value="Запросить данные" icon="pi pi-fw pi-cloud-upload"
+                        action="#{mctController.requestData()}"/>
             <p:divider/>
             <p:menuitem value="Архивные данные" icon="pi pi-fw pi-file-import"
                         oncomplete="PF('archiveDataWidget').show();" update="archiveDialogHeader"/>

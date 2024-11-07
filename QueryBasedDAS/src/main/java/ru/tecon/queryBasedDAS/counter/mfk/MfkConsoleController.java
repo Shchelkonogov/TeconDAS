@@ -128,6 +128,13 @@ public class MfkConsoleController implements Serializable {
         bean.tryUploadConfigByCounterName(info.getCounterName(), selectedStat.getCounterName(), remoteSelected, config);
     }
 
+    /**
+     * Принудительный запрос данных
+     */
+    public void requestData() {
+        bean.tryLoadHistoricalData(selectedStat.getCounterName(), info.getCounterName(), remoteSelected);
+    }
+
     public void clearConfig() {
         config.clear();
     }

@@ -135,6 +135,13 @@ public class MctConsoleController implements Serializable {
                                             remoteSelected, config);
     }
 
+    /**
+     * Принудительный запрос данных
+     */
+    public void requestData() {
+        bean.tryLoadHistoricalData(selectedStat.getCounterName(), selectedStat.getCounter(), remoteSelected);
+    }
+
     public void clearConfig() {
         config.clear();
     }

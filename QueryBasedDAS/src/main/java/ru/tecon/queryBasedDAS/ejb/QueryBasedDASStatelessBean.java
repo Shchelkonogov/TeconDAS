@@ -375,6 +375,33 @@ public class QueryBasedDASStatelessBean {
     }
 
     /**
+     * Загрузка исторических данных по одному объекту.
+     * Данная операция рискованная, т.к. происходит поиск объекта по имени в базе.
+     *
+     * @param objectName имя объекта
+     * @param serverName имя сервера
+     * @param uploadServerName имя сервера загрузки
+     */
+    public void tryLoadHistoricalData(String objectName, String serverName, String uploadServerName) {
+        try {
+            UploaderServiceRemote remote = remoteEJBFactory.getUploadServiceRemote(uploadServerName);
+
+            String counterObjectId = remote.getCounterObjectId(serverName, objectName);
+
+            if ((counterObjectId != null) && !counterObjectId.isEmpty()) {
+                executorService.submit(() -> initReadHistoricalFiles(
+                        Collections.singletonList(new SubscribedObject(counterObjectId, objectName, serverName)),
+                        uploadServerName)
+                );
+            } else {
+                logger.warn("unknown counter object id {}", counterObjectId);
+            }
+        } catch (NamingException | DasException e) {
+            logger.warn("remote service {} unavailable", uploadServerName, e);
+        }
+    }
+
+    /**
      * Асинхронная загрузка исторических данных
      *
      * @param objects список объектов для загрузки данных

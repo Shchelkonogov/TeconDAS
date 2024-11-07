@@ -31,6 +31,14 @@
                         action="#{mfkController.requestConfig()}"
                         oncomplete="PF('configDataWidget').show(); PF('statusDialog').hide();"
                         update="configDataTable configDialogHeader"/>
+            <p:menuitem value="Сбросить трафик"
+                        disabled="#{mfkController.selectedStat == null}"
+                        onstart="PF('statusDialog').show()"
+                        action="#{mfkController.resetTraffic()}"
+                        oncomplete="PF('statusDialog').hide();"
+                        icon="pi pi-fw pi-eraser"/>
+            <p:menuitem value="Запросить данные" disabled="#{mfkController.selectedStat == null}"
+                        icon="pi pi-fw pi-cloud-upload" action="#{mfkController.requestData()}"/>
             <p:divider/>
             <p:menuitem value="Очистить статистику" icon="pi pi-fw pi-trash"
                         action="#{mfkController.clearStatistic()}" update="statTable"/>
@@ -42,12 +50,6 @@
                         action="#{mfkController.requestSysParam()}"
                         oncomplete="PF('statusDialog').hide();"
                         icon="pi pi-fw pi-cog"/>
-            <p:menuitem value="Сбросить трафик"
-                        disabled="#{mfkController.selectedStat == null}"
-                        onstart="PF('statusDialog').show()"
-                        action="#{mfkController.resetTraffic()}"
-                        oncomplete="PF('statusDialog').hide();"
-                        icon="pi pi-fw pi-eraser"/>
             <p:menuitem value="Архивные данные"
                         disabled="#{mfkController.selectedStat == null}"
                         icon="pi pi-fw pi-file-import"
@@ -157,12 +159,14 @@
                         onstart="PF('statusDialog').show();" action="#{mfkController.requestConfig()}"
                         oncomplete="PF('configDataWidget').show(); PF('statusDialog').hide();"
                         update="configDataTable configDialogHeader"/>
+            <p:menuitem value="Сбросить трафик" icon="pi pi-fw pi-eraser"
+                        onstart="PF('statusDialog').show();" action="#{mfkController.resetTraffic()}"
+                        oncomplete="PF('statusDialog').hide();"/>
+            <p:menuitem value="Запросить данные" icon="pi pi-fw pi-cloud-upload"
+                        action="#{mfkController.requestData()}"/>
             <p:divider/>
             <p:menuitem value="Системные параметры" icon="pi pi-fw pi-cog"
                         onstart="PF('statusDialog').show();" action="#{mfkController.requestSysParam()}"
-                        oncomplete="PF('statusDialog').hide();"/>
-            <p:menuitem value="Сбросить трафик" icon="pi pi-fw pi-eraser"
-                        onstart="PF('statusDialog').show();" action="#{mfkController.resetTraffic()}"
                         oncomplete="PF('statusDialog').hide();"/>
             <p:menuitem value="Архивные данные" icon="pi pi-fw pi-file-import"
                         onstart="PF('statusDialog').show()"
