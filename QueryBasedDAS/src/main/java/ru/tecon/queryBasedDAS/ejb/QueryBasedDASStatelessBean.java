@@ -72,6 +72,18 @@ public class QueryBasedDASStatelessBean {
      * @return true, если успешная загрузка данных
      */
     public boolean uploadCounterObjects(String serverName, Map<String, List<String>> counterObjects) {
+        return uploadCounterObjects(serverName, counterObjects, false);
+    }
+
+    /**
+     * Выгрузка объектов счетчиков на сервер загрузки данных
+     *
+     * @param serverName имя сервера загрузки данных
+     * @param counterObjects объекты счетчиков
+     * @param clearStat признак, очищать ли всю статистику перед загрузкой объектов
+     * @return true, если успешная загрузка данных
+     */
+    public boolean uploadCounterObjects(String serverName, Map<String, List<String>> counterObjects, boolean clearStat) {
         try {
             remoteEJBFactory.getUploadServiceRemote(serverName).uploadObjects(counterObjects);
 
@@ -79,6 +91,10 @@ public class QueryBasedDASStatelessBean {
             for (Map.Entry<String, List<String>> entry: counterObjects.entrySet()) {
                 WebConsole counterWebConsole = bean.getCounterWebConsole(entry.getKey());
                 if (counterWebConsole != null) {
+                    if (clearStat) {
+                        counterWebConsole.clearStatistic(statKey -> statKey.getServer().equals(serverName));
+                    }
+
                     for (String counterName: entry.getValue()) {
                         counterWebConsole.getStatistic().computeIfAbsent(
                                 new StatKey(serverName, counterName),
@@ -105,7 +121,7 @@ public class QueryBasedDASStatelessBean {
                 if (!counterObjects.containsKey(counter)) {
                     counterObjects.putAll(getCounterObjects(counter));
                 }
-                uploadCounterObjects(serverName, Map.of(counter, counterObjects.get(counter)));
+                uploadCounterObjects(serverName, Map.of(counter, counterObjects.get(counter)), true);
             }
         }
         logger.info("finish upload counter objects");
