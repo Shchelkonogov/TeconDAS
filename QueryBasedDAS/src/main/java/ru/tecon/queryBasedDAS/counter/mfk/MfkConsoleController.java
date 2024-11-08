@@ -226,6 +226,13 @@ public class MfkConsoleController implements Serializable {
         }
     }
 
+    public String traffic() {
+        if (selectedStat != null) {
+            return mfkBean.getTraffic(selectedStat.getCounterName());
+        }
+        return "Неопределенно";
+    }
+
     public void clearAsyncData() {
         asyncData.clear();
         requestedDataModel.clear();

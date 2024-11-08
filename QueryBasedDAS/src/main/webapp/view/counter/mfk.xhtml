@@ -115,7 +115,7 @@
                       currentPageReportTemplate="{startRecord}-{endRecord} из {totalRecords} записей">
 
             <p:ajax event="rowSelect" update="statForm:menuBar"/>
-            <p:ajax event="contextMenu" update="statForm:menuBar"/>
+            <p:ajax event="contextMenu" update="statForm:menuBar statForm:contextMenu"/>
 
             <p:column headerText="№">
                <h:outputText value="#{index + 1}"/>
@@ -154,7 +154,9 @@
             </f:facet>
          </p:dataTable>
 
-         <p:contextMenu for="statTable">
+         <p:contextMenu id="contextMenu" for="statTable">
+            <p:menuitem value="#{mfkController.traffic()}" disabled="true" icon="pi pi-fw pi-globe"/>
+            <p:divider/>
             <p:menuitem value="Загрузить конфигурацию" icon="pi pi-fw pi-cloud-upload"
                         onstart="PF('statusDialog').show();" action="#{mfkController.requestConfig()}"
                         oncomplete="PF('configDataWidget').show(); PF('statusDialog').hide();"

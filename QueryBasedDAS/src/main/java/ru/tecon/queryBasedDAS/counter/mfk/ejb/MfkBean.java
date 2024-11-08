@@ -391,6 +391,53 @@ public class MfkBean {
         }
     }
 
+    public String getTraffic(String objectName) {
+        logger.info("get traffic for {}", objectName);
+        try (Connection connect = ds.getConnection();
+             PreparedStatement stm = connect.prepareStatement(SELECT_SERVER)) {
+            stm.setString(1, objectName.split("_")[0]);
+            ResultSet res = stm.executeQuery();
+            if (res.next()) {
+                Matcher m = PATTERN_IPV4.matcher(objectName);
+                if (m.find()) {
+                    String url = m.group("ip");
+
+                    try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
+                        ArrayList<String> path = new ArrayList<>(Arrays.asList(res.getString("path").split("/")));
+                        path.removeIf(String::isEmpty);
+                        path.add("api");
+                        path.add("getTraffic");
+
+                        URI build = new URIBuilder()
+                                .setScheme(res.getString("scheme"))
+                                .setHost(res.getString("host"))
+                                .setPort(res.getInt("port"))
+                                .setPathSegments(path)
+                                .addParameter("url", url)
+                                .build();
+
+                        HttpGet httpGet = new HttpGet(build);
+
+                        try (CloseableHttpResponse response = httpClient.execute(httpGet)) {
+                            if (response.getStatusLine().getStatusCode() == 200) {
+                                return EntityUtils.toString(response.getEntity());
+                            } else {
+                                logger.warn("Error get traffic. Error code {}", response.getStatusLine().getStatusCode());
+                            }
+                        }
+                    } catch (IOException | URISyntaxException e) {
+                        logger.warn("Error get traffic", e);
+                    }
+                } else {
+                    logger.warn("Error get traffic ip address {}", objectName);
+                }
+            }
+        } catch (SQLException e) {
+            logger.warn("Error get traffic for {}", objectName, e);
+        }
+        return "Неопределенно";
+    }
+
     public List<StatData.LastValue> getLastValues(String objectName) {
         logger.info("start load last values from mfk for {}", objectName);
         List<StatData.LastValue> result = new ArrayList<>();
