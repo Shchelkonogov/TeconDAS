@@ -12,6 +12,7 @@ import javax.inject.Inject;
 import javax.sql.DataSource;
 import java.math.BigDecimal;
 import java.sql.*;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
@@ -81,7 +82,7 @@ public class UploaderServiceBean implements UploaderServiceRemote {
             "where cast((xpath('/root/Server/text()', xmlelement(name root, opc_path::xml)))[1] as text) = ? " +
                 "and cast((xpath('/root/ItemName/text()', xmlelement(name root, opc_path::xml)))[1] as text) = ?";
 
-    private static final String SELECT_LAST_VALUE = "select par_value from admin.dz_input_start " +
+    private static final String SELECT_LAST_VALUE = "select par_value, time_stamp from admin.dz_input_start " +
             "where obj_id = ? and par_id = ? and stat_aggr = ?";
 
     @Inject
@@ -344,37 +345,15 @@ public class UploaderServiceBean implements UploaderServiceRemote {
     @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
     public void uploadDataWithModifyAsync(List<DataModel> dataModels) {
         for (DataModel dataModel: dataModels) {
-            BigDecimal addValue;
-            BigDecimal newValue;
             switch (dataModel.getParamSysInfo()) {
                 case "5":
-                    addValue = getLastValue(dataModel);
-                    for (DataModel.ValueModel valueModel: dataModel.getData()) {
-                        newValue = new BigDecimal(valueModel.getValue())
-                                .add(addValue);
-                        valueModel.setModifyValue(newValue.toString());
-                        addValue = newValue;
-                    }
+                    addLastValue(dataModel, "1");
                     break;
                 case "6":
-                    addValue = getLastValue(dataModel);
-                    for (DataModel.ValueModel valueModel: dataModel.getData()) {
-                        newValue = new BigDecimal(valueModel.getValue())
-                                .multiply(new BigDecimal("60"))
-                                .add(addValue);
-                        valueModel.setModifyValue(newValue.toString());
-                        addValue = newValue;
-                    }
+                    addLastValue(dataModel, "60");
                     break;
                 case "7":
-                    addValue = getLastValue(dataModel);
-                    for (DataModel.ValueModel valueModel: dataModel.getData()) {
-                        newValue = new BigDecimal(valueModel.getValue())
-                                .multiply(new BigDecimal("3600"))
-                                .add(addValue);
-                        valueModel.setModifyValue(newValue.toString());
-                        addValue = newValue;
-                    }
+                    addLastValue(dataModel, "3600");
                     break;
             }
         }
@@ -383,13 +362,39 @@ public class UploaderServiceBean implements UploaderServiceRemote {
     }
 
     /**
+     * Добавление к всем значением последнего известного (начиная с даты этого последнего известного),
+     * а так же умножается на переданное число
+     *
+     * @param dataModel данные
+     * @param multiplyValue значение на которое умножается
+     */
+    private void addLastValue(DataModel dataModel, String multiplyValue) {
+        BigDecimal addValue;
+        BigDecimal newValue;
+        Optional<Map.Entry<BigDecimal, LocalDateTime>> lastValue;
+        lastValue = getLastValue(dataModel);
+        if (lastValue.isPresent()) {
+            addValue = lastValue.get().getKey();
+            LocalDateTime localDateTime = lastValue.get().getValue();
+            for (DataModel.ValueModel valueModel: dataModel.getData()) {
+                if (valueModel.getDateTime().isAfter(localDateTime)) {
+                    newValue = new BigDecimal(valueModel.getValue())
+                            .multiply(new BigDecimal(multiplyValue))
+                            .add(addValue);
+                    valueModel.setModifyValue(newValue.toString());
+                    addValue = newValue;
+                }
+            }
+        }
+    }
+
+    /**
      * Метод получает последнее известно значения параметра
      *
      * @param model данные по параметру
      * @return последнее известное значение
      */
-    private BigDecimal getLastValue(DataModel model) {
-        BigDecimal result = new BigDecimal("0");
+    private Optional<Map.Entry<BigDecimal, LocalDateTime>> getLastValue(DataModel model) {
         try (Connection connect = ds.getConnection();
              PreparedStatement stm = connect.prepareStatement(SELECT_LAST_VALUE)) {
             stm.setInt(1, model.getObjectId());
@@ -399,13 +404,13 @@ public class UploaderServiceBean implements UploaderServiceRemote {
             ResultSet res = stm.executeQuery();
             if (res.next()) {
                 if (res.getString(1) != null) {
-                    result = new BigDecimal(res.getString(1));
+                    return Optional.of(Map.entry(new BigDecimal(res.getString(1)), res.getTimestamp(2).toLocalDateTime()));
                 }
             }
         } catch (SQLException e) {
             logger.warn("Error when load last value of parameter", e);
         }
-        return result;
+        return Optional.empty();
     }
 
     @Override
