@@ -1184,8 +1184,8 @@ InputSync.prototype ={
 DR_EXPLAIN.namespace( 'DR_EXPLAIN.data_menu' );
 DR_EXPLAIN.data_menu = {
     // menu
-    DREX_NODE_NAMES: ["АССД ТЕКОН","АССД ТЕКОН"],
-    DREX_NODE_LINKS: ["assd_tekon_1.htm","assd_tekon_2.htm"],
+    DREX_NODE_NAMES: ["АССД ТЕКОН, ред.1.1","АССД ТЕКОН"],
+    DREX_NODE_LINKS: ["assd_tekon__red_1_1.htm","assd_tekon.htm"],
     DREX_NODE_CHILD_START: [1,2],
     DREX_NODE_CHILD_END: [2,2],
     DREX_MENU_TYPE: 0,
