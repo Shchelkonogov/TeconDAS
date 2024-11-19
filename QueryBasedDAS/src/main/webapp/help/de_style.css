@@ -1,4 +1,4 @@
-.detbl
+.detbl,.de_caption_tbl
 {
 direction:ltr; border-spacing:0px;
 border-collapse: collapse;
@@ -7,6 +7,14 @@ border: 0px none black;
 .de_list
 {
 margin: 0;padding: 0;
+}
+.de_figure
+{
+margin: 0;padding: 0;width: 100%;text-indent: 0 !important;
+}
+.de_caption_tbl
+{
+margin: 0;padding: 0;width: 100%;
 }
 div.p
 {
@@ -480,12 +488,6 @@ span.de_52F58977C0
 	font-size: 11pt;
 	color:#000000;
 }
-span.de_68756AA8B1
-{
-	font-family: "Calibri";
-	font-size: 18pt;
-	color:#000000;
-}
 span.de_6B7F0857AE
 {
 	font-family: "Calibri";
@@ -516,6 +518,13 @@ span.de_CAB14B116D
 	font-size: 14pt;
 	color:#000000;
 }
+span.de_D82E23649F
+{
+	font-family: "Calibri";
+	font-size: 14pt;
+	color:#0000ff;
+	text-decoration:underline;
+}
 span.de_D8BCB2AC4C
 {
 	font-family: "Calibri";
@@ -528,12 +537,6 @@ span.de_E6605C054B
 	font-size: 14pt;
 	color:#0000ff;
 	text-decoration:underline;
-}
-span.de_FF666D75DC
-{
-	font-family: "Calibri";
-	font-size: 20pt;
-	color:#000000;
 }
 .list-element {
 	list-style-type: none;
