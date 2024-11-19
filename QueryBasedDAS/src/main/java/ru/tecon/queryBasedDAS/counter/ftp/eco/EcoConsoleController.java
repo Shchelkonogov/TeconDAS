@@ -40,6 +40,8 @@ import java.util.stream.Collectors;
 @Named("ecoController")
 public class EcoConsoleController implements Serializable {
 
+    private final static Comparator<String> COMPARATOR = new AlphaNumComparator();
+
     @Inject
     private SecurityContext securityContext;
 
@@ -58,8 +60,8 @@ public class EcoConsoleController implements Serializable {
     private String remoteSelected;
     private StatData selectedStat;
     private LocalDateTime selectedDateTime;
-    private Set<Config> config = new HashSet<>();
-    private final Map<String, String[]> archiveData = new HashMap<>();
+    private List<Config> config = new ArrayList<>();
+    private final Map<String, String[]> archiveData = new TreeMap<>(COMPARATOR);
     private final List<ColumnModel> archiveColumnHeader = new ArrayList<>();
 
     private final EcoCounter counter = new EcoCounter();
@@ -89,8 +91,10 @@ public class EcoConsoleController implements Serializable {
      * Запрос на конфигурацию счетчика
      */
     public void requestConfig() {
-        config = counter.getConfig(selectedStat.getCounterName());
-        bean.tryUploadConfigByCounterName(info.getCounterName(), selectedStat.getCounterName(), remoteSelected, config);
+        Set<Config> config_ = counter.getConfig(selectedStat.getCounterName());
+        config = new ArrayList<>(config_);
+        config.sort((o1, o2) -> COMPARATOR.compare(o1.getName(), o2.getName()));
+        bean.tryUploadConfigByCounterName(info.getCounterName(), selectedStat.getCounterName(), remoteSelected, config_);
     }
 
     public void clearConfig() {
@@ -303,7 +307,7 @@ public class EcoConsoleController implements Serializable {
         return archiveColumnHeader;
     }
 
-    public Set<Config> getConfig() {
+    public List<Config> getConfig() {
         return config;
     }
 

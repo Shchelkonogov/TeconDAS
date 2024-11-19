@@ -35,6 +35,8 @@ import java.util.stream.Collectors;
 @Named("asdtsController")
 public class ASDTSConsoleController implements Serializable {
 
+    private final static Comparator<String> COMPARATOR = new AlphaNumComparator();
+
     @Inject
     private SecurityContext securityContext;
 
@@ -52,7 +54,7 @@ public class ASDTSConsoleController implements Serializable {
 
     private String remoteSelected;
     private StatData selectedStat;
-    private Set<Config> config = new HashSet<>();
+    private List<Config> config = new ArrayList<>();
 
     private final ASDTSCounter counter = new ASDTSCounter();
     private final ASDTSInfo info = ASDTSInfo.getInstance();
@@ -80,8 +82,10 @@ public class ASDTSConsoleController implements Serializable {
      * Запрос на конфигурацию счетчика
      */
     public void requestConfig() {
-        config = counter.getConfig(selectedStat.getCounterName());
-        bean.tryUploadConfigByCounterName(info.getCounterName(), selectedStat.getCounterName(), remoteSelected, config);
+        Set<Config> config_ = counter.getConfig(selectedStat.getCounterName());
+        config = new ArrayList<>(config_);
+        config.sort((o1, o2) -> COMPARATOR.compare(o1.getName(), o2.getName()));
+        bean.tryUploadConfigByCounterName(info.getCounterName(), selectedStat.getCounterName(), remoteSelected, config_);
     }
 
     public void clearConfig() {
@@ -236,7 +240,7 @@ public class ASDTSConsoleController implements Serializable {
         this.selectedStat = selectedStat;
     }
 
-    public Set<Config> getConfig() {
+    public List<Config> getConfig() {
         return config;
     }
 }

@@ -1,11 +1,14 @@
 package ru.tecon.queryBasedDAS.counter.statistic;
 
-import org.jetbrains.annotations.NotNull;
+import ru.tecon.queryBasedDAS.AlphaNumComparator;
 
 import java.io.Serializable;
-import java.time.*;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Класс описывающий значения статистики
@@ -16,6 +19,7 @@ import java.util.*;
 public class StatData implements Serializable {
 
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss");
+    private static final Comparator<String> COMPARATOR = new AlphaNumComparator();
 
     private final String remoteName;
     private final String counterName;
@@ -85,11 +89,15 @@ public class StatData implements Serializable {
 
     public String getRequestedRange() {
         if (!requestedValues.isEmpty()) {
-            Collections.sort(requestedValues);
-
-            return parseDate(requestedValues.get(0).requestedDateTime) +
-                    " - " +
-                    parseDate(requestedValues.get(requestedValues.size() - 1).requestedDateTime);
+            List<RequestedValue> nonJournalRequestedValues = requestedValues.stream()
+                    .filter(requestedValue -> !requestedValue.journal)
+                    .collect(Collectors.toList());
+            if (!nonJournalRequestedValues.isEmpty()) {
+                return parseDate(nonJournalRequestedValues.get(0).requestedDateTime) +
+                        " - " +
+                        parseDate(nonJournalRequestedValues.get(nonJournalRequestedValues.size() - 1).requestedDateTime);
+            }
+            return "Журнал";
         }
         return "";
     }
@@ -163,8 +171,8 @@ public class StatData implements Serializable {
             return this;
         }
 
-        public Builder addRequestedValue(String paramName, LocalDateTime requestedDateTime) {
-            requestedValues.add(new RequestedValue(paramName, requestedDateTime));
+        public Builder addRequestedValue(String paramName, LocalDateTime requestedDateTime, boolean journal) {
+            requestedValues.add(new RequestedValue(paramName, requestedDateTime, journal));
             return this;
         }
 
@@ -196,6 +204,13 @@ public class StatData implements Serializable {
             statData.requestedValues = requestedValues;
             statData.lastValues = lastValues;
             statData.lastValuesUploadTime = lastValuesUploadTime;
+
+            statData.lastValues.sort((o1, o2) -> COMPARATOR.compare(o1.paramName, o2.paramName));
+            statData.requestedValues.sort(
+                    Comparator
+                            .comparing(RequestedValue::getRequestedDateTime, Comparator.nullsFirst(LocalDateTime::compareTo))
+                            .thenComparing(RequestedValue::getParamName, COMPARATOR)
+            );
             return statData;
         }
     }
@@ -244,12 +259,13 @@ public class StatData implements Serializable {
         }
     }
 
-    public static final class RequestedValue implements Comparable<RequestedValue>, Serializable {
+    public static final class RequestedValue implements Serializable {
 
         private final String paramName;
         private final LocalDateTime requestedDateTime;
+        private final boolean journal;
 
-        private RequestedValue(String paramName, LocalDateTime requestedDateTime) {
+        private RequestedValue(String paramName, LocalDateTime requestedDateTime, boolean journal) {
             this.paramName = paramName;
             if (requestedDateTime != null) {
                 this.requestedDateTime = requestedDateTime.atOffset(ZoneOffset.UTC)
@@ -258,6 +274,7 @@ public class StatData implements Serializable {
             } else {
                 this.requestedDateTime = null;
             }
+            this.journal = journal;
         }
 
         public String getParamName() {
@@ -269,21 +286,11 @@ public class StatData implements Serializable {
         }
 
         @Override
-        public int compareTo(@NotNull StatData.RequestedValue o) {
-            if (o.requestedDateTime == null) {
-                return 1;
-            }
-            if (requestedDateTime == null) {
-                return -1;
-            }
-            return requestedDateTime.compareTo(o.requestedDateTime);
-        }
-
-        @Override
         public String toString() {
             return new StringJoiner(", ", RequestedValue.class.getSimpleName() + "[", "]")
                     .add("paramName='" + paramName + "'")
                     .add("requestedDateTime=" + requestedDateTime)
+                    .add("journal=" + journal)
                     .toString();
         }
     }

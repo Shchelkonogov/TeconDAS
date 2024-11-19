@@ -441,7 +441,7 @@ public class QueryBasedDASStatelessBean {
                                 .collect(Collectors.joining(", "));
                         builder.objectName(objectNames);
 
-                        objectModel.forEach(dataModel -> builder.addRequestedValue(dataModel.getParamName(), dataModel.getStartDateTime()));
+                        objectModel.forEach(dataModel -> builder.addRequestedValue(dataModel.getParamName(), dataModel.getStartDateTime(), dataModel.getAggregateId() == 0));
 
                         cl.loadData(objectModel, object.getObjectName());
                     } catch (ReflectiveOperationException e) {

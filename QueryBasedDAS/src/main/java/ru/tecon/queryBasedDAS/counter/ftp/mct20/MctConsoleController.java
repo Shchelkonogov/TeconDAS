@@ -54,6 +54,8 @@ import java.util.stream.Stream;
 @Named("mctController")
 public class MctConsoleController implements Serializable {
 
+    private final static Comparator<String> COMPARATOR = new AlphaNumComparator();
+
     @Inject
     private SecurityContext securityContext;
 
@@ -73,8 +75,8 @@ public class MctConsoleController implements Serializable {
     private String remoteSelected;
     private StatData selectedStat;
     private LocalDateTime selectedDateTime;
-    private Set<Config> config = new HashSet<>();
-    private final Map<String, String[]> archiveData = new HashMap<>();
+    private List<Config> config = new ArrayList<>();
+    private final Map<String, String[]> archiveData = new TreeMap<>(COMPARATOR);
     private final List<MctConsoleController.ColumnModel> archiveColumnHeader = new ArrayList<>();
     private final List<AsyncModel> asyncData = new ArrayList<>();
 
@@ -130,9 +132,11 @@ public class MctConsoleController implements Serializable {
      * Запрос на конфигурацию счетчика
      */
     public void requestConfig() {
-        config = counters.get(selectedStat.getCounter()).getConfig(selectedStat.getCounterName());
+        Set<Config> config_ = counters.get(selectedStat.getCounter()).getConfig(selectedStat.getCounterName());
+        config = new ArrayList<>(config_);
+        config.sort((o1, o2) -> COMPARATOR.compare(o1.getName(), o2.getName()));
         bean.tryUploadConfigByCounterName(selectedStat.getCounter(), selectedStat.getCounterName(),
-                                            remoteSelected, config);
+                                            remoteSelected, config_);
     }
 
     /**
@@ -161,6 +165,8 @@ public class MctConsoleController implements Serializable {
                         asyncData.add(new AsyncModel(dataModel.getParamName(), valueModel.getValue()));
                     }
                 }
+
+                asyncData.sort((o1, o2) -> COMPARATOR.compare(o1.getParam(), o2.getParam()));
 
                 PrimeFaces.current().executeScript("PF('asyncDataWidget').show();");
                 PrimeFaces.current().ajax().update("asyncDataTable", "asyncDialogHeader");
@@ -433,7 +439,7 @@ public class MctConsoleController implements Serializable {
         return archiveColumnHeader;
     }
 
-    public Set<Config> getConfig() {
+    public List<Config> getConfig() {
         return config;
     }
 

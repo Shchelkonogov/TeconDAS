@@ -42,6 +42,8 @@ import java.util.stream.Collectors;
 @Named("mfkController")
 public class MfkConsoleController implements Serializable {
 
+    private final static Comparator<String> COMPARATOR = new AlphaNumComparator();
+
     @Inject
     private SecurityContext securityContext;
 
@@ -62,7 +64,7 @@ public class MfkConsoleController implements Serializable {
 
     private String remoteSelected;
     private StatData selectedStat;
-    private Set<Config> config = new HashSet<>();
+    private List<Config> config = new ArrayList<>();
 
     private final List<AsyncModel> asyncData = new ArrayList<>();
     private final List<DataModel> requestedDataModel = new ArrayList<>();
@@ -124,8 +126,10 @@ public class MfkConsoleController implements Serializable {
      * Запрос на конфигурацию счетчика
      */
     public void requestConfig() {
-        config = counter.getConfig(selectedStat.getCounterName());
-        bean.tryUploadConfigByCounterName(info.getCounterName(), selectedStat.getCounterName(), remoteSelected, config);
+        Set<Config> config_ = counter.getConfig(selectedStat.getCounterName());
+        config = new ArrayList<>(config_);
+        config.sort((o1, o2) -> COMPARATOR.compare(o1.getName(), o2.getName()));
+        bean.tryUploadConfigByCounterName(info.getCounterName(), selectedStat.getCounterName(), remoteSelected, config_);
     }
 
     /**
@@ -141,6 +145,8 @@ public class MfkConsoleController implements Serializable {
 
     public void requestSysParam() {
         sysParamData.addAll(mfkBean.getSysInfo(selectedStat.getCounterName()));
+
+        sysParamData.sort((o1, o2) -> COMPARATOR.compare(o1.name, o2.name));
 
         PrimeFaces.current().executeScript("PF('sysParamWidget').show();");
         PrimeFaces.current().ajax().update("sysParamForm", "sysParamHeader");
@@ -187,6 +193,10 @@ public class MfkConsoleController implements Serializable {
             ));
         }
 
+        asyncData.sort(
+                Comparator.comparing(AsyncModel::isSelect)
+                        .thenComparing(AsyncModel::getParam, COMPARATOR)
+        );
         Collections.sort(asyncData);
 
         PrimeFaces.current().executeScript("PF('asyncDataWidget').show();");
@@ -240,6 +250,7 @@ public class MfkConsoleController implements Serializable {
 
     public void loadLastControllerData() {
         lastControllerData.addAll(mfkBean.getLastValues(selectedStat.getCounterName()));
+        lastControllerData.sort((o1, o2) -> COMPARATOR.compare(o1.getParamName(), o2.getParamName()));
     }
 
     public void clearLastControllerData() {
@@ -392,7 +403,7 @@ public class MfkConsoleController implements Serializable {
         this.selectedStat = selectedStat;
     }
 
-    public Set<Config> getConfig() {
+    public List<Config> getConfig() {
         return config;
     }
 
