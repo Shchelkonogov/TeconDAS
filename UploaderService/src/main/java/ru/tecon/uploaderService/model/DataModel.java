@@ -23,6 +23,7 @@ public final class DataModel implements Comparable<DataModel>, Serializable {
     private String objectName;
     private String incrementValue;
     private LocalDateTime startDateTime;
+    private String lastValue;
 
     private final Set<ValueModel> data = new TreeSet<>();
 
@@ -83,6 +84,10 @@ public final class DataModel implements Comparable<DataModel>, Serializable {
         this.startDateTime = startDateTime;
     }
 
+    public String getLastValue() {
+        return lastValue;
+    }
+
     public Set<ValueModel> getData() {
         return data;
     }
@@ -90,12 +95,14 @@ public final class DataModel implements Comparable<DataModel>, Serializable {
     @Override
     public String toString() {
         return new StringJoiner(", ", DataModel.class.getSimpleName() + "[", "]")
-                .add("param='" + param + "'")
+                .add("param=" + param)
                 .add("objectId=" + objectId)
                 .add("paramId=" + paramId)
                 .add("aggregateId=" + aggregateId)
+                .add("objectName='" + objectName + "'")
                 .add("incrementValue='" + incrementValue + "'")
                 .add("startDateTime=" + startDateTime)
+                .add("lastValue='" + lastValue + "'")
                 .add("data=" + data)
                 .toString();
     }
@@ -192,6 +199,7 @@ public final class DataModel implements Comparable<DataModel>, Serializable {
         private String objectName;
         private String incrementValue;
         private LocalDateTime startDateTime;
+        private String lastValue;
 
         private Builder(Config param, int objectId, int paramId, int aggregateId) {
             this.param = param;
@@ -210,6 +218,11 @@ public final class DataModel implements Comparable<DataModel>, Serializable {
             return this;
         }
 
+        public Builder lastValue(String lastValue) {
+            this.lastValue = lastValue;
+            return this;
+        }
+
         public Builder objectName(String objectName) {
             this.objectName = objectName;
             return this;
@@ -220,6 +233,7 @@ public final class DataModel implements Comparable<DataModel>, Serializable {
             dataModel.incrementValue = incrementValue;
             dataModel.startDateTime = startDateTime;
             dataModel.objectName = objectName;
+            dataModel.lastValue = lastValue;
             return dataModel;
         }
     }

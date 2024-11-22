@@ -10,9 +10,7 @@ import javax.annotation.Resource;
 import javax.ejb.*;
 import javax.inject.Inject;
 import javax.sql.DataSource;
-import java.math.BigDecimal;
 import java.sql.*;
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
@@ -70,7 +68,7 @@ public class UploaderServiceBean implements UploaderServiceRemote {
                                 "where a.par_id = b.aspid_param_id and a.obj_id = b.aspid_object_id) " +
                     "and b.aspid_agr_id is null";
 
-    private static final String SELECT_START_DATE = "select time_stamp from admin.dz_input_start " +
+    private static final String SELECT_START_DATE = "select time_stamp, par_value from admin.dz_input_start " +
             "where obj_id = ? and par_id = ? and stat_aggr = ?";
 
     private static final String FUNCTION_UPLOAD_DATA = "call dz_util.input_data(?)";
@@ -81,9 +79,6 @@ public class UploaderServiceBean implements UploaderServiceRemote {
     private static final String SELECT_COUNTER_OBJECT_ID = "select id from admin.tsa_opc_object " +
             "where cast((xpath('/root/Server/text()', xmlelement(name root, opc_path::xml)))[1] as text) = ? " +
                 "and cast((xpath('/root/ItemName/text()', xmlelement(name root, opc_path::xml)))[1] as text) = ?";
-
-    private static final String SELECT_LAST_VALUE = "select par_value, time_stamp from admin.dz_input_start " +
-            "where obj_id = ? and par_id = ? and stat_aggr = ?";
 
     @Inject
     private Logger logger;
@@ -242,6 +237,7 @@ public class UploaderServiceBean implements UploaderServiceRemote {
                 resStartDate = stmGetStartDate.executeQuery();
                 if (resStartDate.next()) {
                     builder.startDateTime(resStartDate.getTimestamp("time_stamp").toLocalDateTime());
+                    builder.lastValue(resStartDate.getString("par_value"));
                 }
 
                 if ((resLinked.getString("measure_unit_transformer") != null)
@@ -338,79 +334,6 @@ public class UploaderServiceBean implements UploaderServiceRemote {
     @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
     public void uploadDataAsync(List<DataModel> dataModels) {
         uploadData(dataModels);
-    }
-
-    @Override
-    @Asynchronous
-    @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
-    public void uploadDataWithModifyAsync(List<DataModel> dataModels) {
-        for (DataModel dataModel: dataModels) {
-            switch (dataModel.getParamSysInfo()) {
-                case "5":
-                    addLastValue(dataModel, "1");
-                    break;
-                case "6":
-                    addLastValue(dataModel, "60");
-                    break;
-                case "7":
-                    addLastValue(dataModel, "3600");
-                    break;
-            }
-        }
-
-        uploadData(dataModels);
-    }
-
-    /**
-     * Добавление к всем значением последнего известного (начиная с даты этого последнего известного),
-     * а так же умножается на переданное число
-     *
-     * @param dataModel данные
-     * @param multiplyValue значение на которое умножается
-     */
-    private void addLastValue(DataModel dataModel, String multiplyValue) {
-        BigDecimal addValue;
-        BigDecimal newValue;
-        Optional<Map.Entry<BigDecimal, LocalDateTime>> lastValue;
-        lastValue = getLastValue(dataModel);
-        if (lastValue.isPresent()) {
-            addValue = lastValue.get().getKey();
-            LocalDateTime localDateTime = lastValue.get().getValue();
-            for (DataModel.ValueModel valueModel: dataModel.getData()) {
-                if (valueModel.getDateTime().isAfter(localDateTime)) {
-                    newValue = new BigDecimal(valueModel.getValue())
-                            .multiply(new BigDecimal(multiplyValue))
-                            .add(addValue);
-                    valueModel.setModifyValue(newValue.toString());
-                    addValue = newValue;
-                }
-            }
-        }
-    }
-
-    /**
-     * Метод получает последнее известно значения параметра
-     *
-     * @param model данные по параметру
-     * @return последнее известное значение
-     */
-    private Optional<Map.Entry<BigDecimal, LocalDateTime>> getLastValue(DataModel model) {
-        try (Connection connect = ds.getConnection();
-             PreparedStatement stm = connect.prepareStatement(SELECT_LAST_VALUE)) {
-            stm.setInt(1, model.getObjectId());
-            stm.setInt(2, model.getParamId());
-            stm.setInt(3, model.getAggregateId());
-
-            ResultSet res = stm.executeQuery();
-            if (res.next()) {
-                if (res.getString(1) != null) {
-                    return Optional.of(Map.entry(new BigDecimal(res.getString(1)), res.getTimestamp(2).toLocalDateTime()));
-                }
-            }
-        } catch (SQLException e) {
-            logger.warn("Error when load last value of parameter", e);
-        }
-        return Optional.empty();
     }
 
     @Override

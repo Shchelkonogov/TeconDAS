@@ -454,7 +454,7 @@ public class QueryBasedDASStatelessBean {
                                 objectModel.stream().map(DataModel::getParamName).collect(Collectors.toList()),
                                 objectModel.stream().map(dataModel -> dataModel.getData().size()).collect(Collectors.toList()));
 
-                        uploadServiceRemote.uploadDataWithModifyAsync(objectModel);
+                        uploadServiceRemote.uploadDataAsync(objectModel);
 
                         // Добавление статистики
                         builder.lastValuesUploadTime(LocalDateTime.now());

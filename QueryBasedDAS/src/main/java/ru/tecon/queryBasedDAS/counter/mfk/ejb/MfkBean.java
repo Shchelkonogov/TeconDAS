@@ -24,6 +24,7 @@ import javax.ejb.Stateless;
 import javax.inject.Inject;
 import javax.sql.DataSource;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.sql.*;
@@ -221,7 +222,43 @@ public class MfkBean {
 
         params.removeIf(dataModel -> dataModel.getData().isEmpty());
 
+        for (DataModel dataModel: params) {
+            switch (dataModel.getParamSysInfo()) {
+                case "5":
+                    addLastValue(dataModel, "1");
+                    break;
+                case "6":
+                    addLastValue(dataModel, "60");
+                    break;
+                case "7":
+                    addLastValue(dataModel, "3600");
+                    break;
+            }
+        }
+
         logger.info("data from mfk loaded for {}", objectName);
+    }
+
+    /**
+     * Добавление к всем значением последнего известного (начиная с даты этого последнего известного),
+     * а так же умножается на переданное число
+     *
+     * @param dataModel данные
+     * @param multiplyValue значение на которое умножается
+     */
+    private void addLastValue(DataModel dataModel, String multiplyValue) {
+        BigDecimal addValue = new BigDecimal(dataModel.getLastValue() == null ? "0" : dataModel.getLastValue());
+        BigDecimal newValue;
+        LocalDateTime localDateTime = dataModel.getStartDateTime();
+        for (DataModel.ValueModel valueModel: dataModel.getData()) {
+            if (valueModel.getDateTime().isAfter(localDateTime)) {
+                newValue = new BigDecimal(valueModel.getValue())
+                        .multiply(new BigDecimal(multiplyValue))
+                        .add(addValue);
+                valueModel.setModifyValue(newValue.toString());
+                addValue = newValue;
+            }
+        }
     }
 
     public void loadInstantData(List<DataModel> params, String objectName) throws DasException {
