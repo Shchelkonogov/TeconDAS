@@ -102,8 +102,7 @@ public class MfkConsoleController implements Serializable {
                     }
                 })
                 .map(Map.Entry::getValue)
-                .sorted(Comparator.comparing(statData -> statData.getObjectName() == null ? "" : statData.getObjectName(),
-                        new AlphaNumComparator()))
+                .sorted(Comparator.comparing(statData -> statData.getObjectName() == null ? "" : statData.getObjectName(), COMPARATOR))
                 .collect(Collectors.toCollection(ArrayList::new));
     }
 

@@ -73,8 +73,7 @@ public class ASDTSConsoleController implements Serializable {
         return info.getStatistic().entrySet().stream()
                 .filter(entry -> entry.getKey().getServer().equals(remoteSelected))
                 .map(Map.Entry::getValue)
-                .sorted(Comparator.comparing(statData -> statData.getObjectName() == null ? "" : statData.getObjectName(),
-                        new AlphaNumComparator()))
+                .sorted(Comparator.comparing(statData -> statData.getObjectName() == null ? "" : statData.getObjectName(), COMPARATOR))
                 .collect(Collectors.toCollection(ArrayList::new));
     }
 

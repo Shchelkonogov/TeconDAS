@@ -123,8 +123,7 @@ public class MctConsoleController implements Serializable {
                                 .map(Map.Entry::getValue)
                                 .collect(Collectors.toList()))
         );
-        result.sort(Comparator.comparing(statData -> statData.getObjectName() == null ? "" : statData.getObjectName(),
-                                        new AlphaNumComparator()));
+        result.sort(Comparator.comparing(statData -> statData.getObjectName() == null ? "" : statData.getObjectName(), COMPARATOR));
         return result;
     }
 
