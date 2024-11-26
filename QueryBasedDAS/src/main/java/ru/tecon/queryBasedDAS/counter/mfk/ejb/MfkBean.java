@@ -475,6 +475,72 @@ public class MfkBean {
         return "Неопределенно";
     }
 
+    public Map<String, String> getTraffic(Map<String, List<String>> objectNames) {
+        logger.info("get traffic for {}", objectNames);
+        Map<String, String> result = new HashMap<>();
+        try (Connection connect = ds.getConnection();
+             PreparedStatement stm = connect.prepareStatement(SELECT_SERVER)) {
+            for (Map.Entry<String, List<String>> entry: objectNames.entrySet()) {
+                stm.setString(1, entry.getKey());
+                ResultSet res = stm.executeQuery();
+                if (res.next()) {
+                    try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
+                        ArrayList<String> path = new ArrayList<>(Arrays.asList(res.getString("path").split("/")));
+                        path.removeIf(String::isEmpty);
+                        path.add("api");
+                        path.add("getTraffic");
+
+                        URI build = new URIBuilder()
+                                .setScheme(res.getString("scheme"))
+                                .setHost(res.getString("host"))
+                                .setPort(res.getInt("port"))
+                                .setPathSegments(path)
+                                .build();
+
+                        HttpPost httpPost = new HttpPost(build);
+
+
+                        Set<String> ipSet = entry.getValue().stream()
+                                .map(s -> {
+                                    Matcher m = PATTERN_IPV4.matcher(s);
+                                    if (m.find()) {
+                                        return m.group("ip");
+                                    }
+                                    return null;
+                                })
+                                .filter(Objects::nonNull)
+                                .collect(Collectors.toSet());
+
+
+                        logger.info("start read traffic for ip {} mfk {}", ipSet, entry.getKey());
+
+                        httpPost.setHeader("Content-type", "application/json");
+                        httpPost.setEntity(new StringEntity(json.toJson(ipSet)));
+
+                        try (CloseableHttpResponse response = httpClient.execute(httpPost)) {
+                            if (response.getStatusLine().getStatusCode() == 200) {
+                                Map<String, String> traffic = om.readValue(
+                                        EntityUtils.toString(response.getEntity()),
+                                        new TypeReference<Map<String, String>>() {}
+                                );
+                                traffic.forEach((k, v) -> {
+                                    result.put(entry.getKey() + "_" + k + "_", v);
+                                });
+                            } else {
+                                logger.warn("Error get traffic. Error code {}", response.getStatusLine().getStatusCode());
+                            }
+                        }
+                    } catch (IOException | URISyntaxException e) {
+                        logger.warn("Error get traffic", e);
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            logger.warn("Error get traffic for {}", objectNames, e);
+        }
+        return result;
+    }
+
     public List<StatData.LastValue> getLastValues(String objectName) {
         logger.info("start load last values from mfk for {}", objectName);
         List<StatData.LastValue> result = new ArrayList<>();

@@ -72,10 +72,18 @@
                         update="lastDataTable lastDialogHeader"/>
          </p:submenu>
          <p:submenu label="Выгрузка">
-            <p:menuitem value="xlsx" icon="pi pi-fw pi-file-excel" ajax="false"
-                        action="#{mfkController.createExcelReport()}"/>
-            <p:menuitem value="pdf" icon="pi pi-fw pi-file-pdf" ajax="false"
-                        action="#{mfkController.createPdfReport()}"/>
+            <p:submenu label="xlsx" icon="pi pi-fw pi-file-excel">
+               <p:menuitem value="Статистика" icon="pi pi-fw pi-file-excel" ajax="false"
+                           action="#{mfkController.createExcelReport()}"/>
+               <p:menuitem value="Статистика по трафику" icon="pi pi-fw pi-file-excel" ajax="false"
+                           action="#{mfkController.createTrafficExcelReport()}"/>
+            </p:submenu>
+            <p:submenu label="pdf" icon="pi pi-fw pi-file-pdf">
+               <p:menuitem value="Статистика" icon="pi pi-fw pi-file-pdf" ajax="false"
+                           action="#{mfkController.createPdfReport()}"/>
+               <p:menuitem value="Статистика по трафику" icon="pi pi-fw pi-file-pdf" ajax="false"
+                           action="#{mfkController.createTrafficPdfReport()}"/>
+            </p:submenu>
          </p:submenu>
          <p:submenu label="Настройки" rendered="#{mfkController.admin}">
             <p:submenu label="Частота опроса" icon="pi pi-fw pi-cog">

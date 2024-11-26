@@ -351,6 +351,80 @@ public class MfkConsoleController implements Serializable {
     }
 
     /**
+     * Создание xlsx отчета по трафику
+     */
+    public void createTrafficExcelReport() {
+        FacesContext fc = FacesContext.getCurrentInstance();
+        ExternalContext ec = fc.getExternalContext();
+
+        ec.responseReset();
+        ec.setResponseContentType("application/vnd.ms-excel; charset=UTF-8");
+        ec.setResponseHeader("Content-Disposition", "attachment; filename=\"" +
+                URLEncoder.encode("Трафик", StandardCharsets.UTF_8) + " " +
+                URLEncoder.encode("MFK-1500.xlsx", StandardCharsets.UTF_8) + "\"");
+        ec.setResponseCharacterEncoding("UTF-8");
+
+        try (OutputStream outputStream = ec.getResponseOutputStream()) {
+            List<StatData> statistic = getStatistic();
+            Map<String, List<String>> servers = statistic.stream()
+                    .map(StatData::getCounterName)
+                    .collect(Collectors.groupingBy(s -> s.split("_")[0]));
+
+            Map<String, String> traffic = new TreeMap<>(COMPARATOR);
+            mfkBean.getTraffic(servers).forEach((k, v) -> {
+                statistic.stream()
+                        .filter(value -> value.getCounterName().startsWith(k))
+                        .findFirst()
+                        .ifPresent(value -> traffic.put(value.getCounterName(), v));
+            });
+
+            ExcelTrafficReport.generateReport(outputStream, "MFK1500", traffic);
+            outputStream.flush();
+        } catch (IOException e) {
+            logger.warn("error send report", e);
+        }
+
+        fc.responseComplete();
+    }
+
+    /**
+     * Создание pdf отчета по трафику
+     */
+    public void createTrafficPdfReport() {
+        FacesContext fc = FacesContext.getCurrentInstance();
+        ExternalContext ec = fc.getExternalContext();
+
+        ec.responseReset();
+        ec.setResponseContentType("application/vnd.ms-excel; charset=UTF-8");
+        ec.setResponseHeader("Content-Disposition", "attachment; filename=\"" +
+                URLEncoder.encode("Трафик", StandardCharsets.UTF_8) + " " +
+                URLEncoder.encode("MFK1500.pdf", StandardCharsets.UTF_8) + "\"");
+        ec.setResponseCharacterEncoding("UTF-8");
+
+        try (OutputStream outputStream = ec.getResponseOutputStream()) {
+            List<StatData> statistic = getStatistic();
+            Map<String, List<String>> servers = statistic.stream()
+                    .map(StatData::getCounterName)
+                    .collect(Collectors.groupingBy(s -> s.split("_")[0]));
+
+            Map<String, String> traffic = new TreeMap<>(COMPARATOR);
+            mfkBean.getTraffic(servers).forEach((k, v) -> {
+                statistic.stream()
+                        .filter(value -> value.getCounterName().startsWith(k))
+                        .findFirst()
+                        .ifPresent(value -> traffic.put(value.getCounterName(), v));
+            });
+
+            PdfTrafficReport.generateReport(outputStream, "MFK1500", traffic);
+            outputStream.flush();
+        } catch (IOException e) {
+            logger.warn("error send report", e);
+        }
+
+        fc.responseComplete();
+    }
+
+    /**
      * Получение количества используемых потоков для опроса
      *
      * @return количество потоков
