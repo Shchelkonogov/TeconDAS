@@ -369,13 +369,16 @@ public class MfkConsoleController implements Serializable {
                     .map(StatData::getCounterName)
                     .collect(Collectors.groupingBy(s -> s.split("_")[0]));
 
-            Map<String, String> traffic = new TreeMap<>(COMPARATOR);
-            mfkBean.getTraffic(servers).forEach((k, v) -> {
-                statistic.stream()
-                        .filter(value -> value.getCounterName().startsWith(k))
-                        .findFirst()
-                        .ifPresent(value -> traffic.put(value.getCounterName(), v));
-            });
+            List<TrafficReportStatistic> traffic = new ArrayList<>();
+            mfkBean.getTraffic(servers)
+                    .forEach((k, v) -> statistic.stream()
+                            .filter(value -> value.getCounterName().startsWith(k))
+                            .findFirst()
+                            .ifPresent(value -> traffic.add(
+                                    new TrafficReportStatistic(value.getObjectName(), value.getCounterName(), v))
+                            ));
+
+            traffic.sort(Comparator.comparing(statData -> statData.getObjectName() == null ? "" : statData.getObjectName(), COMPARATOR));
 
             ExcelTrafficReport.generateReport(outputStream, "MFK1500", traffic);
             outputStream.flush();
@@ -406,13 +409,16 @@ public class MfkConsoleController implements Serializable {
                     .map(StatData::getCounterName)
                     .collect(Collectors.groupingBy(s -> s.split("_")[0]));
 
-            Map<String, String> traffic = new TreeMap<>(COMPARATOR);
-            mfkBean.getTraffic(servers).forEach((k, v) -> {
-                statistic.stream()
+            List<TrafficReportStatistic> traffic = new ArrayList<>();
+            mfkBean.getTraffic(servers)
+                    .forEach((k, v) -> statistic.stream()
                         .filter(value -> value.getCounterName().startsWith(k))
                         .findFirst()
-                        .ifPresent(value -> traffic.put(value.getCounterName(), v));
-            });
+                        .ifPresent(value -> traffic.add(
+                                new TrafficReportStatistic(value.getObjectName(), value.getCounterName(), v))
+                    ));
+
+            traffic.sort(Comparator.comparing(statData -> statData.getObjectName() == null ? "" : statData.getObjectName(), COMPARATOR));
 
             PdfTrafficReport.generateReport(outputStream, "MFK1500", traffic);
             outputStream.flush();
@@ -589,6 +595,31 @@ public class MfkConsoleController implements Serializable {
                     .add("value='" + value + "'")
                     .add("write=" + write)
                     .toString();
+        }
+    }
+
+    public static class TrafficReportStatistic {
+
+        private final String objectName;
+        private final String counterName;
+        private final String traffic;
+
+        public TrafficReportStatistic(String objectName, String counterName, String traffic) {
+            this.objectName = objectName;
+            this.counterName = counterName;
+            this.traffic = traffic;
+        }
+
+        public String getObjectName() {
+            return objectName;
+        }
+
+        public String getCounterName() {
+            return counterName;
+        }
+
+        public String getTraffic() {
+            return traffic;
         }
     }
 }

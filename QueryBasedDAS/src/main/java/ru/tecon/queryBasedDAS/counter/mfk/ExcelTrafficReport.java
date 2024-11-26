@@ -14,6 +14,7 @@ import java.io.OutputStream;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -24,7 +25,7 @@ public class ExcelTrafficReport {
 
     private static final Logger logger = LoggerFactory.getLogger(ExcelReport.class);
 
-    private static final String[] HEAD = {"№", "Имя прибора", "Суточный трафик"};
+    private static final String[] HEAD = {"№", "Имя объекта", "Имя прибора", "Суточный трафик"};
 
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss");
 
@@ -35,7 +36,7 @@ public class ExcelTrafficReport {
      * @param counterName название контроллера, для отображения в шапки
      * @param statistic данные для отчета
      */
-    public static void generateReport(OutputStream outputStream, String counterName, Map<String, String> statistic) {
+    public static void generateReport(OutputStream outputStream, String counterName, List<MfkConsoleController.TrafficReportStatistic> statistic) {
         try (SXSSFWorkbook wb = new SXSSFWorkbook()) {
             SXSSFSheet sheet = wb.createSheet("Статистика по трафику");
 
@@ -57,11 +58,12 @@ public class ExcelTrafficReport {
             createRow(sheet.createRow(3), styleMap.get("tableHeader"), HEAD);
 
             int index = 4;
-            for (Map.Entry<String, String> entry: statistic.entrySet()) {
+            for (MfkConsoleController.TrafficReportStatistic value: statistic) {
                 createRow(sheet.createRow(index),
                         new StyledValue(String.valueOf(index - 3), styleMap.get("cell")),
-                        new StyledValue(entry.getKey(), styleMap.get("cellLeft")),
-                        new StyledValue(entry.getValue(), styleMap.get("cell")));
+                        new StyledValue(value.getObjectName(), styleMap.get("cellLeft")),
+                        new StyledValue(value.getCounterName(), styleMap.get("cellLeft")),
+                        new StyledValue(value.getTraffic(), styleMap.get("cell")));
 
                 index++;
             }
@@ -70,7 +72,8 @@ public class ExcelTrafficReport {
                 sheet.autoSizeColumn(i + 1);
             }
 
-            sheet.setColumnWidth(2, 60 * 256);
+            sheet.setColumnWidth(2, 25 * 256);
+            sheet.setColumnWidth(3, 40 * 256);
 
             String createText = "Отчет сформирован " +
                     LocalDateTime.now().format(FORMATTER);

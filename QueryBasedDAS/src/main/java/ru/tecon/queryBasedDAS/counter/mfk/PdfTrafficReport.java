@@ -8,7 +8,7 @@ import com.lowagie.text.pdf.PdfWriter;
 import java.io.OutputStream;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Map;
+import java.util.List;
 
 /**
  * @author Maksim Shchelkonogov
@@ -16,7 +16,7 @@ import java.util.Map;
  */
 public class PdfTrafficReport {
 
-    private static final String[] HEAD = {"№", "Имя прибора", "Суточный трафик"};
+    private static final String[] HEAD = {"№", "Имя объекта", "Имя прибора", "Суточный трафик"};
 
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss");
 
@@ -27,7 +27,7 @@ public class PdfTrafficReport {
      * @param counterName название контроллера, для отображения в шапки
      * @param statistic данные для отчета
      */
-    public static void generateReport(OutputStream outputStream, String counterName, Map<String, String> statistic) {
+    public static void generateReport(OutputStream outputStream, String counterName, List<MfkConsoleController.TrafficReportStatistic> statistic) {
         Document document = new Document(PageSize.A4.rotate());
 
         PdfWriter.getInstance(document, outputStream);
@@ -45,7 +45,7 @@ public class PdfTrafficReport {
         Font font12 = FontFactory.getFont("TimeNewRoman", BaseFont.IDENTITY_H, BaseFont.EMBEDDED, 12);
 
         Table dataTable = new Table(HEAD.length);
-        dataTable.setWidths(new int[]{5, 70, 25});
+        dataTable.setWidths(new int[]{5, 35, 35, 25});
         dataTable.setWidth(100);
         dataTable.setPadding(3);
         dataTable.getDefaultCell().setBorderWidth(1);
@@ -57,13 +57,14 @@ public class PdfTrafficReport {
         dataTable.endHeaders();
 
         int i = 1;
-        for (Map.Entry<String, String> entry: statistic.entrySet()) {
+        for (MfkConsoleController.TrafficReportStatistic value: statistic) {
             dataTable.getDefaultCell().setHorizontalAlignment(HorizontalAlignment.CENTER);
             dataTable.addCell(new Phrase(String.valueOf(i), font12));
             dataTable.getDefaultCell().setHorizontalAlignment(HorizontalAlignment.LEFT);
-            dataTable.addCell(new Phrase(entry.getKey(), font12));
+            dataTable.addCell(new Phrase(value.getObjectName(), font12));
+            dataTable.addCell(new Phrase(value.getCounterName(), font12));
             dataTable.getDefaultCell().setHorizontalAlignment(HorizontalAlignment.CENTER);
-            dataTable.addCell(new Phrase(entry.getValue(), font12));
+            dataTable.addCell(new Phrase(value.getTraffic(), font12));
             i++;
         }
         document.add(dataTable);
