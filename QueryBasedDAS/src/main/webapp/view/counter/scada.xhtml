@@ -1,0 +1,286 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="http://xmlns.jcp.org/jsf/html"
+      xmlns:f="http://xmlns.jcp.org/jsf/core"
+      xmlns:p="http://primefaces.org/ui"
+      xmlns:c="http://xmlns.jcp.org/jsp/jstl/core"
+      xmlns:error="http://xmlns.jcp.org/jsf/composite/component/error">
+<h:head>
+   <h:outputStylesheet name="webjars/primeflex/3.3.1/primeflex.min.css"/>
+   <h:outputStylesheet name="system/style.css" library="css"/>
+   <h:outputStylesheet name="console.css" library="css"/>
+   <h:outputScript name="console.js" library="js"/>
+   <link rel="shortcut icon" type="image/x-icon" href="#{resource['images/logo.png']}"/>
+   <title>АССД "Текон"</title>
+</h:head>
+<h:body>
+   <error:other/>
+
+   <h:form id="statForm" style="height: 100%;">
+      <p:menubar id="menuBar" style="margin: 3px; background: #f8f9fa; padding: 0.1rem;">
+         <p:submenu label="Действия">
+            <p:menuitem value="Загрузить счетчики" icon="pi pi-fw pi-cloud-upload"
+                        action="#{scadaController.loadObjects()}" update="statTable"
+                        onclick="PF('bui').show();" oncomplete="PF('bui').hide();">
+            </p:menuitem>
+            <p:menuitem value="Загрузить конфигурацию" disabled="#{scadaController.selectedStat == null}"
+                        icon="pi pi-fw pi-cloud-upload" onstart="PF('statusDialog').show()"
+                        action="#{scadaController.requestConfig()}"
+                        oncomplete="PF('configDataWidget').show(); PF('statusDialog').hide();"
+                        update="configDataTable configDialogHeader"/>
+            <p:divider/>
+            <p:menuitem value="Очистить статистику" icon="pi pi-fw pi-trash"
+                        action="#{scadaController.clearStatistic()}" update="statTable"/>
+         </p:submenu>
+         <p:submenu label="Просмотр">
+            <p:menuitem value="Мгновенные данные"
+                        disabled="#{scadaController.selectedStat == null}"
+                        onstart="PF('statusDialog').show()"
+                        action="#{scadaController.requestAsync()}"
+                        oncomplete="PF('statusDialog').hide();"
+                        icon="pi pi-fw pi-file-import"/>
+            <p:divider/>
+            <p:menuitem value="Запрашиваемые данные" disabled="#{scadaController.selectedStat == null}"
+                        icon="pi pi-fw pi-book" oncomplete="PF('requestDataWidget').show();"
+                        update="requestDataTable requestDialogHeader"/>
+            <p:menuitem value="Переданные данные" disabled="#{scadaController.selectedStat == null}"
+                        icon="pi pi-fw pi-book" oncomplete="PF('lastDataWidget').show();"
+                        update="lastDataTable lastDialogHeader"/>
+         </p:submenu>
+         <p:submenu label="Выгрузка">
+            <p:menuitem value="xlsx" icon="pi pi-fw pi-file-excel" ajax="false"
+                        action="#{scadaController.createExcelReport()}"/>
+            <p:menuitem value="pdf" icon="pi pi-fw pi-file-pdf" ajax="false"
+                        action="#{scadaController.createPdfReport()}"/>
+         </p:submenu>
+         <p:submenu label="Настройки" rendered="#{scadaController.admin}">
+            <p:submenu label="Частота опроса" icon="pi pi-fw pi-cog">
+               <c:forEach var="period" items="#{scadaController.periodicityMenu}">
+                  <p:menuitem value="#{period.desc}" action="#{scadaController.changePeriodicity(period.name())}"
+                              icon="#{scadaController.getPeriodicityMenuIcon(period.name())}" update="menuBar"/>
+               </c:forEach>
+            </p:submenu>
+            <p:menuitem value="Количество потоков (#{scadaController.threadCount})" icon="pi pi-fw pi-cog"
+                        oncomplete="PF('threadConfigWidget').show();"/>
+         </p:submenu>
+
+         <f:facet name="options">
+            <p:link href="#{application.contextPath}/help/scada.htm" value="?" styleClass="mr-3" target="_blank"/>
+            <p:outputLabel value="Удаленный сервер:" styleClass="mr-1 font-bold"/>
+            <p:selectOneMenu value="#{scadaController.remoteSelected}" styleClass="mr-3"
+                             style="vertical-align: top; width: 150px;">
+               <p:ajax listener="#{scadaController.setSelectedStat(null)}" update="statTable menuBar threadConfigForm"/>
+               <f:selectItems value="#{scadaController.remotes}" var="item" itemValue="#{item}"
+                              itemLabel="#{item} #{scadaController.isRemoteEnable(item)}"/>
+            </p:selectOneMenu>
+            <p:outputLabel value="Пользователь:" styleClass="mr-1 font-bold"/>
+            <p:outputLabel value="#{scadaController.principal}" styleClass="mr-2"/>
+            <p:button href="#{request.contextPath}/console/logout" value="Выход" icon="pi pi-fw pi-sign-out"
+                      styleClass="ui-button-info"/>
+         </f:facet>
+      </p:menubar>
+
+      <div style="height: calc(100% - 51px); padding: 0 0 3px 3px;">
+         <p:dataTable id="statTable" var="stat" value="#{scadaController.statistic}" rowIndexVar="index"
+                      scrollable="true" rowKey="#{stat.counterName}" scrollHeight="100%" size="small"
+                      selection="#{scadaController.selectedStat}" selectionMode="single"
+                      emptyMessage="#{global['table.empty.value']}">
+
+            <p:ajax event="rowSelect" update="statForm:menuBar"/>
+            <p:ajax event="contextMenu" update="statForm:menuBar"/>
+
+            <p:column headerText="№">
+               <h:outputText value="#{index + 1}"/>
+            </p:column>
+            <p:column headerText="Имя объекта" filterBy="#{stat.objectName}" filterMatchMode="contains">
+               <h:outputText value="#{stat.objectName}"/>
+            </p:column>
+            <p:column headerText="Имя прибора" filterBy="#{stat.counterName}" filterMatchMode="contains"
+                      styleClass="text-center">
+               <h:outputText value="#{stat.counterName}"/>
+            </p:column>
+            <p:column headerText="Начало опроса" rendered="#{scadaController.admin}" styleClass="text-center">
+               <h:outputText value="#{stat.startRequestTime}">
+                  <f:convertDateTime type="localDateTime" pattern="dd.MM.yyyy HH:mm:ss:SSS"/>
+               </h:outputText>
+            </p:column>
+            <p:column headerText="Время опроса, мс" rendered="#{scadaController.admin}" styleClass="text-center">
+               <h:outputText value="#{stat.requestTime}"/>
+            </p:column>
+            <p:column headerText="Загрузка последних данных" styleClass="text-center">
+               <h:outputText value="#{stat.lastValuesUploadTime}">
+                  <f:convertDateTime type="localDateTime" pattern="dd.MM.yyyy HH:mm:ss"/>
+               </h:outputText>
+            </p:column>
+            <p:column headerText="Дата последних данных" styleClass="text-center">
+               <h:outputText value="#{stat.lastDataTimeString}"/>
+            </p:column>
+            <p:column headerText="Диапазон запрашиваемых измерений" styleClass="text-center">
+               <h:outputText value="#{stat.requestedRange}"/>
+            </p:column>
+         </p:dataTable>
+
+         <p:contextMenu for="statTable">
+            <p:menuitem value="Загрузить конфигурацию" icon="pi pi-fw pi-cloud-upload"
+                        onstart="PF('statusDialog').show();" action="#{scadaController.requestConfig()}"
+                        oncomplete="PF('configDataWidget').show(); PF('statusDialog').hide();"
+                        update="configDataTable configDialogHeader"/>
+            <p:divider/>
+            <p:menuitem value="Мгновенные данные" icon="pi pi-fw pi-file-import"
+                        onstart="PF('statusDialog').show();" action="#{scadaController.requestAsync()}"
+                        oncomplete="PF('statusDialog').hide();"/>
+            <p:divider/>
+            <p:menuitem value="Запрашиваемые данные" oncomplete="PF('requestDataWidget').show();"
+                        icon="pi pi-fw pi-book" update="requestDataTable requestDialogHeader"/>
+            <p:menuitem value="Переданные данные" oncomplete="PF('lastDataWidget').show();"
+                        icon="pi pi-fw pi-book" update="lastDataTable lastDialogHeader"/>
+         </p:contextMenu>
+      </div>
+
+      <p:blockUI widgetVar="bui" block="statTable"/>
+
+      <p:poll interval="30" update="statTable"/>
+   </h:form>
+
+   <p:dialog widgetVar="requestDataWidget" width="824" height="600" modal="true"
+             resizable="false" styleClass="tc-panel" showEffect="fade" hideEffect="fade">
+
+      <f:facet name="header">
+         <h:outputText id="requestDialogHeader"
+                       value="Запрашиваемые данные #{scadaController.selectedStat.counterName}"/>
+      </f:facet>
+
+      <div style="padding: 3px 0 3px 3px; height: calc(100% - 6px);">
+         <p:dataTable id="requestDataTable" value="#{scadaController.selectedStat.requestedValues}" var="requestData"
+                      scrollable="true" scrollHeight="100%" emptyMessage="#{global['table.empty.value']}">
+
+            <p:column headerText="Название" width="600">
+               <h:outputText value="#{requestData.paramName}"/>
+            </p:column>
+            <p:column headerText="Дата" width="200" styleClass="text-center">
+               <h:outputText value="#{requestData.requestedDateTime}">
+                  <f:convertDateTime type="localDateTime" pattern="dd.MM.yyyy HH:mm:ss"/>
+               </h:outputText>
+            </p:column>
+         </p:dataTable>
+      </div>
+   </p:dialog>
+
+   <p:dialog widgetVar="lastDataWidget" width="1024" height="600" modal="true"
+             resizable="false" styleClass="tc-panel" showEffect="fade" hideEffect="fade">
+
+      <f:facet name="header">
+         <h:outputText id="lastDialogHeader"
+                       value="Переданные данные #{scadaController.selectedStat.counterName}"/>
+      </f:facet>
+
+      <div style="padding: 3px 0 3px 3px; height: calc(100% - 6px);">
+         <p:dataTable id="lastDataTable" value="#{scadaController.selectedStat.lastValues}" var="lastData"
+                      scrollable="true" scrollHeight="100%" emptyMessage="#{global['table.empty.value']}">
+
+            <p:column headerText="Название" width="600">
+               <h:outputText value="#{lastData.paramName}"/>
+            </p:column>
+            <p:column headerText="Значение" width="200" styleClass="text-center">
+               <h:outputText value="#{lastData.value}"/>
+            </p:column>
+            <p:column headerText="Дата" width="200" styleClass="text-center">
+               <h:outputText value="#{lastData.dateTime}">
+                  <f:convertDateTime type="localDateTime" pattern="dd.MM.yyyy HH:mm:ss"/>
+               </h:outputText>
+            </p:column>
+         </p:dataTable>
+      </div>
+   </p:dialog>
+
+   <p:dialog widgetVar="configDataWidget" width="600" height="600" modal="true"
+             resizable="false" styleClass="tc-panel" showEffect="fade" hideEffect="fade">
+
+      <p:ajax event="close" update="configDataTable" listener="#{scadaController.clearConfig()}"/>
+
+      <f:facet name="header">
+         <h:outputText id="configDialogHeader"
+                       value="Конфигурация #{scadaController.selectedStat.counterName}"/>
+      </f:facet>
+
+      <div style="padding: 3px 0 3px 3px; height: calc(100% - 6px);">
+         <p:dataTable id="configDataTable" value="#{scadaController.config}" var="configData"
+                      scrollable="true" scrollHeight="100%" emptyMessage="#{global['table.empty.value']}">
+
+            <p:column headerText="Название" width="600">
+               <h:outputText value="#{configData.name}"/>
+            </p:column>
+         </p:dataTable>
+      </div>
+   </p:dialog>
+
+   <p:dialog widgetVar="threadConfigWidget" width="500" modal="true" rendered="#{scadaController.admin}"
+             resizable="false" styleClass="tc-panel" showEffect="fade" hideEffect="fade"
+             header="Настройка количества потоков">
+
+      <p:ajax event="close" update="threadConfigForm" resetValues="true"/>
+
+      <h:form id="threadConfigForm" style="margin: 3px;">
+         <div class="text-center" style="margin-bottom: 3px;">
+            <p:outputLabel for="@next" value="Количество потоков:" styleClass="mr-1 font-bold"/>
+            <p:inputNumber value="#{scadaController.threadCount}" minValue="1" maxValue="20"/>
+         </div>
+         <div class="flex justify-content-end gap-1">
+            <p:commandButton value="Сохранить" styleClass="tc-no-loading"
+                             update="statForm:menuBar" onstart="PF('threadConfigWidget').hide();"/>
+            <p:commandButton value="Отмена" styleClass="ui-button-secondary tc-no-loading"
+                             onstart="PF('threadConfigWidget').hide();" process="@this"/>
+         </div>
+      </h:form>
+   </p:dialog>
+
+   <p:dialog id="statusDialog" modal="true" widgetVar="statusDialog" draggable="false" closable="false"
+             resizable="false" style="box-shadow: none;" position="center center" onShow="PF('statusDialog').initPosition();">
+      <i class="pi pi-spinner pi-spin" style="font-size: 5rem;" />
+   </p:dialog>
+
+   <p:dialog widgetVar="asyncDataWidget" width="824" height="600" modal="true"
+             resizable="false" styleClass="tc-panel" showEffect="fade" hideEffect="fade">
+
+      <p:ajax event="close" update="asyncDataForm" listener="#{scadaController.clearAsyncData()}"/>
+
+      <f:facet name="header">
+         <h:outputText id="asyncDialogHeader"
+                       value="Мгновенные данные #{scadaController.selectedStat.counterName}"/>
+      </f:facet>
+
+      <div class="h-full">
+         <div style="padding-top: 3px;" class="flex">
+            <p:commandButton id="loadAsyncBtn" value="Загрузить" onclick="PF('asyncBui').show();"
+                             action="#{scadaController.loadAsyncData()}" oncomplete="PF('asyncBui').hide();"
+                             styleClass="tc-no-loading m-auto" update="asyncDataForm" process="@this"/>
+         </div>
+         <div style="padding: 3px 0 3px 3px; height: calc(100% - 40px);">
+            <div class="h-full">
+               <h:form id="asyncDataForm" styleClass="h-full">
+                  <p:dataTable id="asyncDataTable" value="#{scadaController.async}" var="asyncData"
+                               scrollable="true" scrollHeight="100%" emptyMessage="#{global['table.empty.value']}">
+
+                     <p:column headerText="" width="30" styleClass="text-center">
+                        <p:selectBooleanCheckbox value="#{asyncData.select}">
+                           <p:ajax/>
+                        </p:selectBooleanCheckbox>
+                     </p:column>
+                     <p:column headerText="Название" width="600">
+                        <h:outputText value="#{asyncData.param}"/>
+                     </p:column>
+                     <p:column headerText="Значение" width="200" styleClass="text-center">
+                        <h:outputText value="#{asyncData.value}"/>
+                     </p:column>
+                  </p:dataTable>
+
+                  <p:blockUI widgetVar="asyncBui" block="asyncDataTable"/>
+               </h:form>
+            </div>
+         </div>
+      </div>
+   </p:dialog>
+</h:body>
+</html>
