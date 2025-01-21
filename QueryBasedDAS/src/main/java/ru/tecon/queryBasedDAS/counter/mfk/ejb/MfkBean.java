@@ -51,7 +51,7 @@ public class MfkBean {
     private static final String SELECT_CONFIG = "select name " +
                                                     "from mfk_config " +
                                                         "where server_id = ?";
-    private static final String SELECT_DATA = "select value, date from mfk_data md " +
+    private static final String SELECT_DATA = "select value, date, mc.name from mfk_data md " +
                                                 "join mfk_config mc " +
                                                     "on mc.id = md.param_id " +
                                                 "join public.mfk_server ms " +
@@ -59,7 +59,7 @@ public class MfkBean {
                                                 "join public.mfk_object mo " +
                                                     "on md.object_id = mo.id " +
                                                         "where ms.name = ? " +
-                                                            "and mc.name = ? " +
+                                                            "and mc.name = any(?) " +
                                                             "and mo.name = ?" +
                                                             "and date > ? " +
                                                         "order by date";
@@ -199,23 +199,40 @@ public class MfkBean {
             String controllerName = split[0];
             String controllerObjectName = split[1] + "_" + split[2];
 
+            LocalDateTime minDate = null;
+            Map<String, DataModel> parNames = new HashMap<>();
+            LocalDateTime minDateJournal = null;
+            Map<String, DataModel> parNamesJournal = new HashMap<>();
             for (DataModel item: params) {
-                if (item.getStartDateTime() == null) {
+                if ((item.getStartDateTime() == null) || item.getStartDateTime().isBefore(LocalDateTime.now().minusDays(40).truncatedTo(ChronoUnit.HOURS))) {
                     item.setStartDateTime(LocalDateTime.now().minusDays(40).truncatedTo(ChronoUnit.HOURS));
                 }
 
-                stm.setString(1, controllerName);
-                stm.setString(2, item.getParamName() + "::" + item.getParamSysInfo());
-                stm.setString(3, controllerObjectName);
-                // В базе мфк данные хранятся с долями секунды, а в item.getStartDateTime() без долей,
-                // что бы не класть одни и те же данные добавил одну секунды
-                stm.setTimestamp(4, Timestamp.valueOf(item.getStartDateTime().plusSeconds(1)));
+                if (item.getAggregateId() == 0) {
+                    if (minDateJournal == null) {
+                        minDateJournal = item.getStartDateTime();
+                    } else {
+                        if (item.getStartDateTime().isBefore(minDateJournal)) {
+                            minDateJournal = item.getStartDateTime();
+                        }
+                    }
 
-                ResultSet res = stm.executeQuery();
-                while (res.next()) {
-                    item.addData(res.getString(1), res.getTimestamp(2).toLocalDateTime());
+                    parNamesJournal.put(item.getParamName() + "::" + item.getParamSysInfo(), item);
+                } else {
+                    if (minDate == null) {
+                        minDate = item.getStartDateTime();
+                    } else {
+                        if (item.getStartDateTime().isBefore(minDate)) {
+                            minDate = item.getStartDateTime();
+                        }
+                    }
+
+                    parNames.put(item.getParamName() + "::" + item.getParamSysInfo(), item);
                 }
             }
+
+            selectData(connect, stm, controllerName, controllerObjectName, minDate, parNames);
+            selectData(connect, stm, controllerName, controllerObjectName, minDateJournal, parNamesJournal);
         } catch (SQLException e) {
             logger.warn("error load data from mfk for {}", objectName, e);
         }
@@ -237,6 +254,24 @@ public class MfkBean {
         }
 
         logger.info("data from mfk loaded for {}", objectName);
+    }
+
+    private void selectData(Connection connect, PreparedStatement stm, String controllerName,
+                            String controllerObjectName, LocalDateTime minDate, Map<String, DataModel> parNames) throws SQLException {
+        if (!parNames.isEmpty() && (minDate != null)) {
+            stm.setString(1, controllerName);
+            stm.setArray(2, connect.createArrayOf("VARCHAR", parNames.keySet().toArray(new String[0])));
+            stm.setString(3, controllerObjectName);
+            stm.setTimestamp(4, Timestamp.valueOf(minDate.plusSeconds(1)));
+
+            ResultSet res = stm.executeQuery();
+            while (res.next()) {
+                DataModel model = parNames.get(res.getString("name"));
+                if (!res.getTimestamp("date").toLocalDateTime().isBefore(model.getStartDateTime())) {
+                    model.addData(res.getString("value"), res.getTimestamp("date").toLocalDateTime());
+                }
+            }
+        }
     }
 
     /**
@@ -556,7 +591,6 @@ public class MfkBean {
 
             ResultSet resMaxDate = stmMaxDate.executeQuery();
             while (resMaxDate.next()) {
-                logger.info(resMaxDate.getString("param_name") + " " + resMaxDate.getTimestamp("date"));
                 stmLastData.setString(1, controllerName);
                 stmLastData.setString(2, resMaxDate.getString("param_name"));
                 stmLastData.setString(3, controllerObjectName);
@@ -564,7 +598,6 @@ public class MfkBean {
 
                 ResultSet resLastData = stmLastData.executeQuery();
                 if (resLastData.next()) {
-                    logger.info(resLastData.getString("value"));
                     result.add(StatData.LastValue.of(
                             resMaxDate.getString("param_name"),
                             resLastData.getString("value"),
@@ -591,20 +624,7 @@ public class MfkBean {
                     String url = m.group("ip");
 
                     try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
-                        ArrayList<String> path = new ArrayList<>(Arrays.asList(res.getString("path").split("/")));
-                        path.removeIf(String::isEmpty);
-                        path.add("api");
-                        path.add("sysInfo");
-
-                        URI build = new URIBuilder()
-                                .setScheme(res.getString("scheme"))
-                                .setHost(res.getString("host"))
-                                .setPort(res.getInt("port"))
-                                .setPathSegments(path)
-                                .addParameter("url", url)
-                                .build();
-
-                        HttpGet httpGet = new HttpGet(build);
+                        HttpGet httpGet = new HttpGet(getSysInfoURI(res, url));
 
                         try (CloseableHttpResponse response = httpClient.execute(httpGet)) {
                             if (response.getStatusLine().getStatusCode() == 200) {
@@ -696,20 +716,7 @@ public class MfkBean {
                     String url = m.group("ip");
 
                     try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
-                        ArrayList<String> path = new ArrayList<>(Arrays.asList(res.getString("path").split("/")));
-                        path.removeIf(String::isEmpty);
-                        path.add("api");
-                        path.add("sysInfo");
-
-                        URI build = new URIBuilder()
-                                .setScheme(res.getString("scheme"))
-                                .setHost(res.getString("host"))
-                                .setPort(res.getInt("port"))
-                                .setPathSegments(path)
-                                .addParameter("url", url)
-                                .build();
-
-                        HttpPost httpPost = new HttpPost(build);
+                        HttpPost httpPost = new HttpPost(getSysInfoURI(res, url));
 
                         Map<String, String> sysInfoMap = sysInfo.stream()
                                 .filter(MfkConsoleController.ObjectInfoModel::isChange)
@@ -737,5 +744,20 @@ public class MfkBean {
         } catch (SQLException e) {
             logger.warn("Error write sys info for {}", objectName, e);
         }
+    }
+
+    private URI getSysInfoURI(ResultSet res, String url) throws SQLException, URISyntaxException {
+        ArrayList<String> path = new ArrayList<>(Arrays.asList(res.getString("path").split("/")));
+        path.removeIf(String::isEmpty);
+        path.add("api");
+        path.add("sysInfo");
+
+        return new URIBuilder()
+                .setScheme(res.getString("scheme"))
+                .setHost(res.getString("host"))
+                .setPort(res.getInt("port"))
+                .setPathSegments(path)
+                .addParameter("url", url)
+                .build();
     }
 }
