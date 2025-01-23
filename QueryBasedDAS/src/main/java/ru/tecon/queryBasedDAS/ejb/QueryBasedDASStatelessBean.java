@@ -3,6 +3,7 @@ package ru.tecon.queryBasedDAS.ejb;
 import org.slf4j.Logger;
 import ru.tecon.queryBasedDAS.DasException;
 import ru.tecon.queryBasedDAS.counter.*;
+import ru.tecon.queryBasedDAS.counter.assd.ASSDCounterInfo;
 import ru.tecon.queryBasedDAS.counter.ftp.FtpCounterAlarm;
 import ru.tecon.queryBasedDAS.counter.ftp.FtpCounterExtension;
 import ru.tecon.queryBasedDAS.counter.statistic.StatData;
@@ -330,6 +331,15 @@ public class QueryBasedDASStatelessBean {
                     counterNameSet = bean.counterNameSet(uploadServerName, periodicity);
                 }
 
+                counterNameSet.removeIf(counter -> {
+                    CounterType counterType = bean.getCounterInfo(counter).getCounterType();
+                    if (counterType == CounterType.QUERY) {
+                        return false;
+                    }
+                    logger.warn("don't request data for {}. Counter type is {}. Required QUERY type.", counter, counterType);
+                    return true;
+                });
+
                 if (counterNameSet.isEmpty()) {
                     logger.warn("no counters for remote {} and periodicity {}", uploadServerName, periodicity);
                     continue;
@@ -483,6 +493,81 @@ public class QueryBasedDASStatelessBean {
                 startDateTime,
                 (System.currentTimeMillis() - startTime),
                 objects.stream().map(SubscribedObject::getObjectName).collect(Collectors.toList()));
+    }
+
+    public void receiveSubData(String counter, String data) {
+        CounterType counterType = bean.getCounterInfo(counter).getCounterType();
+        if ((counterType == CounterType.SUBSCRIPTION)
+                && bean.counterSupportSubscriptionNameSet().contains(counter)) {
+            try {
+                CounterSubscribe cl = (CounterSubscribe) Class.forName(bean.getCounter(counter)).getDeclaredConstructor().newInstance();
+
+                String counterObjectName = cl.parseObjectName(data);
+
+                logger.info("receive sub data for object {}", counterObjectName);
+
+                for (String remoteServer: bean.getObjectRemoteSub(counterObjectName)) {
+                    try {
+                        UploaderServiceRemote remote = remoteEJBFactory.getUploadServiceRemote(remoteServer);
+
+                        String counterObjectId = remote.getCounterObjectId(ASSDCounterInfo.getInstance().getCounterName(), counterObjectName);
+
+                        List<DataModel> dataModels = remote.loadObjectModelWithStartTimes(counterObjectId);
+
+                        logger.info("object model for {} {}", counterObjectId, dataModels);
+
+                        StatData.Builder builder = StatData.builder(remoteServer, counterObjectName, counter)
+                                .startRequestTime(LocalDateTime.now());
+
+                        if ((dataModels != null) && !dataModels.isEmpty()) {
+                            // Добавление статистики
+                            String objectNames = dataModels.stream()
+                                    .map(dataModel -> String.valueOf(dataModel.getObjectName()))
+                                    .distinct()
+                                    .collect(Collectors.joining(", "));
+                            builder.objectName(objectNames);
+
+                            dataModels.forEach(dataModel -> builder.addRequestedValue(dataModel.getParamName(), dataModel.getStartDateTime(), dataModel.getAggregateId() == 0));
+
+                            cl.parseData(data, dataModels);
+
+                            if (!dataModels.isEmpty()) {
+                                logger.info("object model with data for {} model {} data size {}",
+                                        counterObjectName,
+                                        dataModels.stream().map(DataModel::getParamName).collect(Collectors.toList()),
+                                        dataModels.stream().map(dataModel -> dataModel.getData().size()).collect(Collectors.toList()));
+
+                                remote.uploadDataAsync(dataModels);
+
+                                // Добавление статистики
+                                builder.lastValuesUploadTime(LocalDateTime.now());
+                                dataModels.forEach(dataModel -> {
+                                    if (dataModel.getData() instanceof TreeSet) {
+                                        TreeSet<DataModel.ValueModel> dataModelData = (TreeSet<DataModel.ValueModel>) dataModel.getData();
+                                        builder.addLastValue(dataModel.getParamName(), dataModelData.last().getValue(), dataModelData.last().getDateTime());
+                                    }
+                                });
+                            }
+                        } else {
+                            logger.warn("empty model for {}", counterObjectName);
+                        }
+
+                        builder.endRequestTime(LocalDateTime.now());
+
+                        WebConsole counterWebConsole = bean.getCounterWebConsole(counter);
+                        if (counterWebConsole != null) {
+                            counterWebConsole.merge(new StatKey(remoteServer, counterObjectName), builder.build());
+                        }
+                    } catch (NamingException | DasException e) {
+                        logger.warn("remote service {} unavailable", remoteServer, e);
+                    }
+                }
+            } catch (ReflectiveOperationException e) {
+                logger.warn("error load counter = {}", counter, e);
+            } catch (DasException e) {
+                logger.warn("error parse object name", e);
+            }
+        }
     }
 
     private static class Pair<K, V> {

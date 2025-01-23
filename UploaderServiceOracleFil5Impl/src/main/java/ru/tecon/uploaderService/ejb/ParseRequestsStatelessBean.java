@@ -72,6 +72,16 @@ public class ParseRequestsStatelessBean {
                         acceptRequest(bean.getRemoteListeners(ListenerType.CONFIGURATION, res.getString("server_name")),
                                 requestData);
                         break;
+                    case "Subscribe":
+                        requestData.getProp().put("sub", "true");
+                        acceptRequest(bean.getRemoteListeners(ListenerType.SUBSCRIPTION, res.getString("server_name")),
+                                requestData);
+                        break;
+                    case "Unsubscribe":
+                        requestData.getProp().put("sub", "false");
+                        acceptRequest(bean.getRemoteListeners(ListenerType.SUBSCRIPTION, res.getString("server_name")),
+                                requestData);
+                        break;
                     default:
                         logger.warn("Unknown request from db for id = {}", id);
                 }

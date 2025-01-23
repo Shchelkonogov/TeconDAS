@@ -16,6 +16,13 @@ public interface CounterInfo {
     String getCounterName();
 
     /**
+     * Получение типа работы счетчика
+     *
+     * @return тип работы счетчика
+     */
+    CounterType getCounterType();
+
+    /**
      * Получение имени счетчика для отображения
      *
      * @return имя счетчика

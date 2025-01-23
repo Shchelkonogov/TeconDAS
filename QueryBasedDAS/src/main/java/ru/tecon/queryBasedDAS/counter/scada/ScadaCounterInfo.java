@@ -2,6 +2,7 @@ package ru.tecon.queryBasedDAS.counter.scada;
 
 import org.jetbrains.annotations.NotNull;
 import ru.tecon.queryBasedDAS.counter.CounterInfo;
+import ru.tecon.queryBasedDAS.counter.CounterType;
 import ru.tecon.queryBasedDAS.counter.statistic.StatData;
 import ru.tecon.queryBasedDAS.counter.statistic.StatKey;
 import ru.tecon.queryBasedDAS.counter.statistic.WebConsole;
@@ -22,6 +23,7 @@ public class ScadaCounterInfo implements CounterInfo, WebConsole {
     static final String SCHEME = "http";
     static final String HOST = "10.24.18.10";
     static final int PORT = 5000;
+    private static final CounterType COUNTER_TYPE = CounterType.QUERY;
 
     private static volatile ScadaCounterInfo instance;
 
@@ -55,6 +57,11 @@ public class ScadaCounterInfo implements CounterInfo, WebConsole {
     @Override
     public String getCounterName() {
         return COUNTER_NAME;
+    }
+
+    @Override
+    public CounterType getCounterType() {
+        return COUNTER_TYPE;
     }
 
     @Override

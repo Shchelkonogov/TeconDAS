@@ -65,6 +65,8 @@ public class QueryBasedDASService {
             result.put(ListenerType.CONFIGURATION.toString(), listenerServicesBean.registerConfigRequestListener());
 
             result.put(ListenerType.INSTANT_DATA.toString(), listenerServicesBean.registerAsyncRequestListener());
+
+            result.put(ListenerType.SUBSCRIPTION.toString(), listenerServicesBean.registerSubscriptionListener());
         } else {
             try {
                 listenerServicesBean.registerConfigRequestListener(serverName);
@@ -77,7 +79,14 @@ public class QueryBasedDASService {
                 listenerServicesBean.registerAsyncRequestListener(serverName);
                 result.put(ListenerType.INSTANT_DATA.toString(), Collections.singletonList(serverName));
             } catch (DasException e) {
-                logger.warn("Error register config listener", e);
+                logger.warn("Error register instant data listener", e);
+            }
+
+            try {
+                listenerServicesBean.registerSubscriptionListener(serverName);
+                result.put(ListenerType.SUBSCRIPTION.toString(), Collections.singletonList(serverName));
+            } catch (DasException e) {
+                logger.warn("Error register subscription listener", e);
             }
         }
         return Response.ok(json.toJson(result)).build();
@@ -100,6 +109,8 @@ public class QueryBasedDASService {
             result.put(ListenerType.CONFIGURATION.toString(), listenerServicesBean.unregisterConfigRequestListener());
 
             result.put(ListenerType.INSTANT_DATA.toString(), listenerServicesBean.unregisterAsyncRequestListener());
+
+            result.put(ListenerType.SUBSCRIPTION.toString(), listenerServicesBean.unregisterSubscriptionListener());
         } else {
             try {
                 listenerServicesBean.unregisterConfigRequestListener(serverName);
@@ -112,7 +123,14 @@ public class QueryBasedDASService {
                 listenerServicesBean.unregisterAsyncRequestListener(serverName);
                 result.put(ListenerType.INSTANT_DATA.toString(), Collections.singletonList(serverName));
             } catch (DasException e) {
-                logger.warn("Error register config listener", e);
+                logger.warn("Error register instant data listener", e);
+            }
+
+            try {
+                listenerServicesBean.unregisterSubscriptionListener(serverName);
+                result.put(ListenerType.SUBSCRIPTION.toString(), Collections.singletonList(serverName));
+            } catch (DasException e) {
+                logger.warn("Error register subscription listener", e);
             }
         }
         return Response.ok(json.toJson(result)).build();
@@ -144,5 +162,17 @@ public class QueryBasedDASService {
             result.put(remote, dasSingletonBean.counterNameSet(remote));
         }
         return Response.ok(json.toJson(result)).build();
+    }
+
+    /**
+     * Получение списка подписанных объектов по режиму подписки
+     *
+     * @return список объектов
+     */
+    @GET
+    @Path("/subObjects")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getSubObjects() {
+        return Response.ok(dasSingletonBean.showSubObject()).build();
     }
 }

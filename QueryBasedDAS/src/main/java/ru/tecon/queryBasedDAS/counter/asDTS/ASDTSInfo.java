@@ -2,6 +2,7 @@ package ru.tecon.queryBasedDAS.counter.asDTS;
 
 import org.jetbrains.annotations.NotNull;
 import ru.tecon.queryBasedDAS.counter.CounterInfo;
+import ru.tecon.queryBasedDAS.counter.CounterType;
 import ru.tecon.queryBasedDAS.counter.statistic.StatData;
 import ru.tecon.queryBasedDAS.counter.statistic.StatKey;
 import ru.tecon.queryBasedDAS.counter.statistic.WebConsole;
@@ -24,6 +25,7 @@ public class ASDTSInfo implements CounterInfo, WebConsole {
 
     private static final String COUNTER_NAME = "IASDTU";
     private static final String COUNTER_USER_NAME = "АС \"ДТС\"";
+    private static final CounterType COUNTER_TYPE = CounterType.QUERY;
 
     private final Map<StatKey, StatData> statistic = new ConcurrentHashMap<>();
 
@@ -52,6 +54,11 @@ public class ASDTSInfo implements CounterInfo, WebConsole {
     @Override
     public String getCounterName() {
         return COUNTER_NAME;
+    }
+
+    @Override
+    public CounterType getCounterType() {
+        return COUNTER_TYPE;
     }
 
     @Override

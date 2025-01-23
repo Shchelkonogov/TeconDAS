@@ -119,6 +119,7 @@ public class ConsoleController implements Serializable {
             try {
                 listenerBean.unregisterConfigRequestListener(remoteSelected);
                 listenerBean.unregisterAsyncRequestListener(remoteSelected);
+                listenerBean.unregisterSubscriptionListener(remoteSelected);
             } catch (DasException e) {
                 logger.warn("error register listeners", e);
             }
@@ -130,6 +131,7 @@ public class ConsoleController implements Serializable {
             try {
                 listenerBean.registerConfigRequestListener(remoteSelected);
                 listenerBean.registerAsyncRequestListener(remoteSelected);
+                listenerBean.registerSubscriptionListener(remoteSelected);
             } catch (DasException e) {
                 logger.warn("error register listeners", e);
             }

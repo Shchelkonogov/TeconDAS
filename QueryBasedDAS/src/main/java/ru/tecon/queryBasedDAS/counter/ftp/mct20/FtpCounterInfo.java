@@ -5,6 +5,7 @@ import org.apache.commons.net.ftp.FTPFile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.tecon.queryBasedDAS.counter.CounterInfo;
+import ru.tecon.queryBasedDAS.counter.CounterType;
 import ru.tecon.queryBasedDAS.counter.ftp.FtpClient;
 import ru.tecon.queryBasedDAS.counter.statistic.WebConsole;
 
@@ -23,6 +24,8 @@ import java.util.stream.Collectors;
 public abstract class FtpCounterInfo implements CounterInfo, WebConsole {
 
     private static final Logger logger = LoggerFactory.getLogger(FtpCounterInfo.class);
+
+    private static final CounterType COUNTER_TYPE = CounterType.QUERY;
 
     private final List<String> patterns;
     private List<String> dayFilePatterns = new ArrayList<>();
@@ -119,6 +122,11 @@ public abstract class FtpCounterInfo implements CounterInfo, WebConsole {
 
     private interface FilesFilter<T> {
         T load(FTPClient ftpClient, String pathName) throws IOException;
+    }
+
+    @Override
+    public CounterType getCounterType() {
+        return COUNTER_TYPE;
     }
 
     @Override

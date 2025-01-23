@@ -4,11 +4,9 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import org.slf4j.Logger;
 import ru.tecon.queryBasedDAS.DasException;
-import ru.tecon.queryBasedDAS.counter.Counter;
-import ru.tecon.queryBasedDAS.counter.CounterInfo;
-import ru.tecon.queryBasedDAS.counter.Periodicity;
+import ru.tecon.queryBasedDAS.SerializeUtil;
+import ru.tecon.queryBasedDAS.counter.*;
 import ru.tecon.queryBasedDAS.counter.ftp.FtpCounterAlarm;
-import ru.tecon.queryBasedDAS.counter.CounterAsyncRequest;
 import ru.tecon.queryBasedDAS.counter.ftp.FtpCounterExtension;
 import ru.tecon.queryBasedDAS.counter.statistic.StatData;
 import ru.tecon.queryBasedDAS.counter.statistic.StatKey;
@@ -31,6 +29,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author Maksim Shchelkonogov
@@ -45,6 +44,7 @@ public class QueryBasedDASSingletonBean {
 
     private static final Map<String, CounterProp> COUNTER_PROP_MAP = new HashMap<>();
     private static final Map<String, RemoteProp> REMOTE_PROP_MAP = new HashMap<>();
+    private static final ConcurrentHashMap<String, Set<String>> SUB_OBJECTS = new ConcurrentHashMap<>();
 
     @Inject
     private Logger logger;
@@ -121,6 +121,16 @@ public class QueryBasedDASSingletonBean {
                     }
                 }
             });
+
+            // Де сериализация подписанных объектов
+            Path serPath = Paths.get(root + "/" + getDasName() + "/sub.ser");
+            if (Files.exists(serPath)) {
+                try {
+                    SUB_OBJECTS.putAll(SerializeUtil.deserializeSub(serPath));
+                } catch (DasException e) {
+                    logger.warn("deserialize error", e);
+                }
+            }
         } else {
             throw new RuntimeException("error init project");
         }
@@ -151,6 +161,35 @@ public class QueryBasedDASSingletonBean {
                 }
             }
         });
+
+        // Сериализация подписанных объектов
+        try {
+            SerializeUtil.serializeSub(SUB_OBJECTS, Paths.get(root + "/" + getDasName() + "/sub.ser"));
+        } catch (DasException e) {
+            logger.warn("serialize error", e);
+        }
+    }
+
+    public Set<String> getObjectRemoteSub(String objectName) {
+        Set<String> result = new HashSet<>();
+        SUB_OBJECTS.forEach((k, v) -> {
+           if (v.contains(objectName)) {
+               result.add(k);
+           }
+        });
+        return result;
+    }
+
+    public void putSubObject(String remote, String objectName) {
+        SUB_OBJECTS.computeIfAbsent(remote, k -> new HashSet<>()).add(objectName);
+    }
+
+    public void removeSubObject(String remote, String objectName) {
+        SUB_OBJECTS.get(remote).remove(objectName);
+    }
+
+    public String showSubObject() {
+        return json.toJson(SUB_OBJECTS);
     }
 
     /**
@@ -229,6 +268,15 @@ public class QueryBasedDASSingletonBean {
     }
 
     /**
+     * Получение коллекции имен доступных счетчиков системы с поддержкой функции подписки
+     *
+     * @return имена доступных счетчиков системы
+     */
+    public Set<String> counterSupportSubscriptionNameSet() {
+        return counterIsSupportClass(CounterSubscribe.class);
+    }
+
+    /**
      * Получение коллекции имен доступных счетчиков системы с поддержкой определенной функции
      *
      * @param clazz интерфейс описывающий функцию
@@ -272,6 +320,10 @@ public class QueryBasedDASSingletonBean {
 
     public RemoteProp.CounterProp getCounterProp(String remote, String counterName) {
         return REMOTE_PROP_MAP.get(remote).getCounterProp(counterName);
+    }
+
+    public CounterInfo getCounterInfo(String counterName) {
+        return COUNTER_PROP_MAP.get(counterName).info;
     }
 
     public String getDasName() {

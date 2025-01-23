@@ -12,4 +12,8 @@ data class RequestData(val serverName: String,
                        val requestId: String,
                        val objectId: String,
                        val counter: String,
-                       val objectName: String) : Serializable
+                       val objectName: String,
+                       var prop: Map<String, String>) : Serializable {
+   constructor(serverName: String, requestId: String, objectId: String, counter: String, objectName: String) :
+           this(serverName, requestId, objectId, counter, objectName, hashMapOf());
+}

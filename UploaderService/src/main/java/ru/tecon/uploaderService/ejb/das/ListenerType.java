@@ -9,5 +9,6 @@ package ru.tecon.uploaderService.ejb.das;
 public enum ListenerType {
 
     CONFIGURATION,
-    INSTANT_DATA
+    INSTANT_DATA,
+    SUBSCRIPTION
 }

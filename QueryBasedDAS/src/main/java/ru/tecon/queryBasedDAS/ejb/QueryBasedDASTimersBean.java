@@ -41,6 +41,8 @@ public class QueryBasedDASTimersBean {
         listenerBean.registerConfigRequestListener();
 
         listenerBean.registerAsyncRequestListener();
+
+        listenerBean.registerSubscriptionListener();
     }
 
     /**

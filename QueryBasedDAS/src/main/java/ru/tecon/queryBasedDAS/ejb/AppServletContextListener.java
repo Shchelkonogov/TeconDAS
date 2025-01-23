@@ -29,6 +29,8 @@ public class AppServletContextListener implements ServletContextListener {
 
         listenerBean.registerAsyncRequestListener();
 
+        listenerBean.registerSubscriptionListener();
+
         ServletContextListener.super.contextInitialized(sce);
     }
 
@@ -39,6 +41,8 @@ public class AppServletContextListener implements ServletContextListener {
         listenerBean.unregisterConfigRequestListener();
 
         listenerBean.unregisterAsyncRequestListener();
+
+        listenerBean.unregisterSubscriptionListener();
 
         ServletContextListener.super.contextDestroyed(sce);
     }

@@ -2,6 +2,7 @@ package ru.tecon.queryBasedDAS.ejb;
 
 import org.slf4j.Logger;
 import ru.tecon.queryBasedDAS.DasException;
+import ru.tecon.queryBasedDAS.counter.CounterType;
 import ru.tecon.uploaderService.ejb.das.ListenerServiceRemote;
 import ru.tecon.uploaderService.ejb.das.ListenerType;
 import ru.tecon.uploaderService.ejb.das.RemoteRequest;
@@ -209,6 +210,97 @@ public class ListenerServicesStatelessBean {
             ListenerServiceRemote postgres = remoteEJBFactory.getListenerServiceRemote(uploaderServerName);
 
             postgres.removeListener(dasSingletonBean.getDasName(), ListenerType.INSTANT_DATA);
+        } catch (NamingException e) {
+            throw new DasException("remote unregister service " + uploaderServerName + " unavailable", e);
+        }
+    }
+
+    /**
+     * Регистрация слушателя запросов на подписку на серверах загрузки данных
+     *
+     * @return список серверов, где успешно удалось зарегистрировать слушателя
+     */
+    public List<String> registerSubscriptionListener() {
+        List<String> result = new ArrayList<>();
+
+        for (String serverName: dasSingletonBean.getRemotes().keySet()) {
+            try {
+                registerSubscriptionListener(serverName);
+                result.add(serverName);
+            } catch (DasException e) {
+                logger.warn("Error register listener for remote server {} {}", serverName, e.getMessage());
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * Регистрация слушателя запросов на подписку на сервере загрузки данных
+     *
+     * @param uploaderServerName имя сервера загрузки данных
+     * @throws DasException в случае ошибки регистрации слушателя
+     */
+    public void registerSubscriptionListener(String uploaderServerName) throws DasException {
+        String dasName = dasSingletonBean.getDasName();
+
+        Set<String> counters = dasSingletonBean.counterNameSet(uploaderServerName);
+        counters.removeIf(counterName -> dasSingletonBean.getCounterInfo(counterName).getCounterType() != CounterType.SUBSCRIPTION);
+
+        if (!counters.isEmpty()) {
+            try {
+                Properties properties = new Properties();
+                properties.put("jndiProperties", remoteEJBFactory.getRemoteServiceProperties(InetAddress.getLocalHost().getHostName(), 3700));
+                properties.put("lookupName", "java:global/queryBasedDAS/subscriptionRequestBean!" + RemoteRequest.class.getName());
+
+                Listener listener = new Listener(dasName,
+                        ListenerType.SUBSCRIPTION,
+                        properties,
+                        AccessType.REMOTE_EJB,
+                        counters);
+
+                ListenerServiceRemote listenerServiceRemote = remoteEJBFactory.getListenerServiceRemote(uploaderServerName);
+
+                if (!listenerServiceRemote.containsListener(dasName, ListenerType.SUBSCRIPTION)) {
+                    listenerServiceRemote.addListener(listener);
+                }
+            } catch (IOException | NamingException e) {
+                throw new DasException("remote register service " + uploaderServerName + " unavailable", e);
+            }
+        }
+    }
+
+    /**
+     * Отмена регистрации слушателя на подписку на серверах загрузки данных
+     *
+     * @return список серверов, где регистрация успешно отменена
+     */
+    public List<String> unregisterSubscriptionListener() {
+        List<String> result = new ArrayList<>();
+
+        for (String serverName: dasSingletonBean.getRemotes().keySet()) {
+            try {
+                unregisterSubscriptionListener(serverName);
+                result.add(serverName);
+            } catch (DasException e) {
+                logger.warn("Error unregister listener for remote server {} {}", serverName, e.getMessage());
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * Отмена регистрации слушателя на подписку на сервере загрузки данных
+     *
+     * @param uploaderServerName имя сервера загрузки данных
+     * @throws DasException в случае ошибки отмены регистрации
+     */
+    public void unregisterSubscriptionListener(String uploaderServerName) throws DasException {
+        try {
+            ListenerServiceRemote postgres = remoteEJBFactory.getListenerServiceRemote(uploaderServerName);
+
+            postgres.removeListener(dasSingletonBean.getDasName(), ListenerType.SUBSCRIPTION);
         } catch (NamingException e) {
             throw new DasException("remote unregister service " + uploaderServerName + " unavailable", e);
         }

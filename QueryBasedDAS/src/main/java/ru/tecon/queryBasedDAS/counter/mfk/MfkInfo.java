@@ -2,6 +2,7 @@ package ru.tecon.queryBasedDAS.counter.mfk;
 
 import org.jetbrains.annotations.NotNull;
 import ru.tecon.queryBasedDAS.counter.CounterInfo;
+import ru.tecon.queryBasedDAS.counter.CounterType;
 import ru.tecon.queryBasedDAS.counter.mfk.ejb.MfkBean;
 import ru.tecon.queryBasedDAS.counter.statistic.StatData;
 import ru.tecon.queryBasedDAS.counter.statistic.StatKey;
@@ -25,6 +26,7 @@ public class MfkInfo implements CounterInfo, WebConsole {
 
     private static final String COUNTER_NAME = "MFK";
     private static final String COUNTER_USER_NAME = "MFK-1500";
+    private static final CounterType COUNTER_TYPE = CounterType.QUERY;
 
     private final Map<StatKey, StatData> statistic = new ConcurrentHashMap<>();
     private List<String> locked = new ArrayList<>();
@@ -54,6 +56,11 @@ public class MfkInfo implements CounterInfo, WebConsole {
     @Override
     public String getCounterName() {
         return COUNTER_NAME;
+    }
+
+    @Override
+    public CounterType getCounterType() {
+        return COUNTER_TYPE;
     }
 
     @Override
