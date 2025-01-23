@@ -1,5 +1,8 @@
 package ru.tecon.queryBasedDAS.ejb.prop;
 
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 import ru.tecon.queryBasedDAS.counter.Periodicity;
 
 import java.util.*;
@@ -11,25 +14,13 @@ import java.util.stream.Collectors;
  */
 public class RemoteProp {
 
+    @Setter
+    @Getter
     private boolean enable;
+    @Setter
+    @Getter
     private boolean enableAlarm;
     private final Map<String, CounterProp> counters = new HashMap<>();
-
-    public boolean isEnable() {
-        return enable;
-    }
-
-    public void setEnable(boolean enable) {
-        this.enable = enable;
-    }
-
-    public boolean isEnableAlarm() {
-        return enableAlarm;
-    }
-
-    public void setEnableAlarm(boolean enableAlarm) {
-        this.enableAlarm = enableAlarm;
-    }
 
     public void addCounter(String key) {
         counters.put(key, new CounterProp());
@@ -58,6 +49,9 @@ public class RemoteProp {
                 .toString();
     }
 
+    @Setter
+    @Getter
+    @ToString
     public static class CounterProp {
 
         private Periodicity periodicity = Periodicity.DISABLED;
@@ -65,39 +59,6 @@ public class RemoteProp {
         private int concurrencyAlarmDepth = 1;
 
         private CounterProp() {
-        }
-
-        public Periodicity getPeriodicity() {
-            return periodicity;
-        }
-
-        public void setPeriodicity(Periodicity periodicity) {
-            this.periodicity = periodicity;
-        }
-
-        public int getConcurrencyDepth() {
-            return concurrencyDepth;
-        }
-
-        public void setConcurrencyDepth(int concurrencyDepth) {
-            this.concurrencyDepth = concurrencyDepth;
-        }
-
-        public int getConcurrencyAlarmDepth() {
-            return concurrencyAlarmDepth;
-        }
-
-        public void setConcurrencyAlarmDepth(int concurrencyAlarmDepth) {
-            this.concurrencyAlarmDepth = concurrencyAlarmDepth;
-        }
-
-        @Override
-        public String toString() {
-            return new StringJoiner(", ", CounterProp.class.getSimpleName() + "[", "]")
-                    .add("periodicity=" + periodicity)
-                    .add("concurrencyDepth=" + concurrencyDepth)
-                    .add("concurrencyAlarmDepth=" + concurrencyAlarmDepth)
-                    .toString();
         }
     }
 }
