@@ -32,6 +32,23 @@ public class PdfReport {
      * @param statisticList данные для отчета
      */
     public static void generateReport(OutputStream outputStream, String counterName, List<StatData> statisticList) {
+        generateReport(outputStream, counterName, statisticList, null);
+    }
+
+    /**
+     * Метод формирует отчет по статистике
+     *
+     * @param outputStream поток в который записывается отчет
+     * @param counterName название контроллера, для отображения в шапки
+     * @param statisticList данные для отчета
+     * @param customHeader свои имена для шапки
+     */
+    public static void generateReport(OutputStream outputStream, String counterName, List<StatData> statisticList, String[] customHeader) {
+        String[] header = HEAD;
+        if ((customHeader != null) && (customHeader.length == 6)) {
+            header = customHeader;
+        }
+
         Document document = new Document(PageSize.A4.rotate());
 
         PdfWriter.getInstance(document, outputStream);
@@ -48,14 +65,14 @@ public class PdfReport {
         Font font14 = FontFactory.getFont("TimeNewRoman", BaseFont.IDENTITY_H, BaseFont.EMBEDDED, 14, Font.BOLD);
         Font font12 = FontFactory.getFont("TimeNewRoman", BaseFont.IDENTITY_H, BaseFont.EMBEDDED, 12);
 
-        Table dataTable = new Table(HEAD.length);
+        Table dataTable = new Table(header.length);
         dataTable.setWidths(new int[]{5, 15, 15, 20, 20, 25});
         dataTable.setWidth(100);
         dataTable.setPadding(3);
         dataTable.getDefaultCell().setBorderWidth(1);
         dataTable.getDefaultCell().setHorizontalAlignment(HorizontalAlignment.CENTER);
 
-        for (String head: HEAD) {
+        for (String head: header) {
             dataTable.addCell(new Phrase(head, font14));
         }
         dataTable.endHeaders();

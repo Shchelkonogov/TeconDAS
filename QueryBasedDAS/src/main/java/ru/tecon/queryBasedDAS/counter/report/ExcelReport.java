@@ -39,6 +39,22 @@ public class ExcelReport {
      * @param statisticList данные для отчета
      */
     public static void generateReport(OutputStream outputStream, String counterName, List<StatData> statisticList) {
+        generateReport(outputStream, counterName, statisticList, null);
+    }
+
+    /**
+     * Метод формирует отчет по статистике
+     *
+     * @param outputStream поток в который записывается отчет
+     * @param counterName название контроллера, для отображения в шапки
+     * @param statisticList данные для отчета
+     * @param customHeader свои имена для шапки
+     */
+    public static void generateReport(OutputStream outputStream, String counterName, List<StatData> statisticList, String[] customHeader) {
+        String[] head = HEAD;
+        if ((customHeader != null) && (customHeader.length == 6)) {
+            head = customHeader;
+        }
         try (SXSSFWorkbook wb = new SXSSFWorkbook()) {
             SXSSFSheet sheet = wb.createSheet("Статистика");
 
@@ -46,7 +62,7 @@ public class ExcelReport {
 
             sheet.setColumnWidth(0, 2 * 256);
 
-            for (int i = 0; i < HEAD.length; i++) {
+            for (int i = 0; i < head.length; i++) {
                 sheet.trackColumnForAutoSizing(i + 1);
             }
 
@@ -54,10 +70,10 @@ public class ExcelReport {
             Cell cell = row.createCell(1);
             cell.setCellValue("Статистика работы контроллеров " + counterName);
             cell.setCellStyle(styleMap.get("header"));
-            CellRangeAddress cellAddresses = new CellRangeAddress(1, 1, 1, HEAD.length);
+            CellRangeAddress cellAddresses = new CellRangeAddress(1, 1, 1, head.length);
             sheet.addMergedRegion(cellAddresses);
 
-            createRow(sheet.createRow(3), styleMap.get("tableHeader"), HEAD);
+            createRow(sheet.createRow(3), styleMap.get("tableHeader"), head);
 
             int index = 4;
             for (StatData statistic: statisticList) {
@@ -77,7 +93,7 @@ public class ExcelReport {
                 index++;
             }
 
-            for (int i = 0; i < HEAD.length; i++) {
+            for (int i = 0; i < head.length; i++) {
                 sheet.autoSizeColumn(i + 1);
             }
 
@@ -85,7 +101,7 @@ public class ExcelReport {
                     LocalDateTime.now().format(FORMATTER);
 
             createRow(sheet.createRow(index + 1), styleMap.get("text"), createText);
-            cellAddresses = new CellRangeAddress(index + 1, index + 1, 1, HEAD.length);
+            cellAddresses = new CellRangeAddress(index + 1, index + 1, 1, head.length);
             sheet.addMergedRegion(cellAddresses);
 
             wb.write(outputStream);
