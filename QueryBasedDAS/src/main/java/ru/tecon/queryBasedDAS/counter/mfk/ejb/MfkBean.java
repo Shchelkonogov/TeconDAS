@@ -4,12 +4,14 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
@@ -140,7 +142,13 @@ public class MfkBean {
                 if (m.find()) {
                     String url = m.group("ip");
 
-                    try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
+                    int timeout = 5;
+                    RequestConfig requestConfig = RequestConfig.custom()
+                            .setConnectTimeout(timeout * 60 * 1000)
+                            .setConnectionRequestTimeout(timeout * 60 * 1000)
+                            .setSocketTimeout(timeout * 60 * 1000).build();
+
+                    try (CloseableHttpClient httpClient = HttpClientBuilder.create().setDefaultRequestConfig(requestConfig).build()) {
                         ArrayList<String> path = new ArrayList<>(Arrays.asList(resServer.getString("path").split("/")));
                         path.removeIf(String::isEmpty);
                         path.add("api");
