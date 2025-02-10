@@ -128,9 +128,9 @@ public class VISTCounter extends MctFtpCounter {
 
             double g1i = new BigDecimal(String.valueOf(byteBuffer.getInt(54))).movePointLeft(accuracyChanel1).doubleValue();
             counterData.put(VISTConfig.G1I.getProperty(), new CounterData(g1i));
-            double g2i = new BigDecimal(String.valueOf(byteBuffer.getInt(58))).movePointLeft(accuracyChanel1).doubleValue();
+            double g2i = new BigDecimal(String.valueOf(byteBuffer.getInt(58))).movePointLeft(accuracyChanel2).doubleValue();
             counterData.put(VISTConfig.G2I.getProperty(), new CounterData(g2i));
-            double gpi = new BigDecimal(String.valueOf(byteBuffer.getInt(62))).movePointLeft(accuracyChanel1).doubleValue();
+            double gpi = new BigDecimal(String.valueOf(byteBuffer.getInt(62))).movePointLeft(accuracyChanel3).doubleValue();
             counterData.put(VISTConfig.GPI.getProperty(), new CounterData(gpi));
 
             double time0 = new BigDecimal(String.valueOf(Integer.toUnsignedLong(byteBuffer.getInt(66)))).movePointLeft(2).doubleValue();
