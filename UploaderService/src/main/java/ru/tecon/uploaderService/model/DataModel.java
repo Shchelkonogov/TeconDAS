@@ -35,17 +35,21 @@ public final class DataModel implements Comparable<DataModel>, Serializable {
     }
 
     public void addData(String value, LocalDateTime time) {
-        if ((incrementValue != null) && !incrementValue.isEmpty()) {
-            value = new BigDecimal(value).multiply(new BigDecimal(incrementValue)).toString();
+        if ((value != null) && !value.isEmpty()) {
+            if ((incrementValue != null) && !incrementValue.isEmpty()) {
+                value = new BigDecimal(value).multiply(new BigDecimal(incrementValue)).toString();
+            }
+            data.add(new ValueModel(value, time));
         }
-        data.add(new ValueModel(value, time));
     }
 
     public void addData(String value, LocalDateTime time, int quality) {
-        if ((incrementValue != null) && !incrementValue.isEmpty()) {
-            value = new BigDecimal(value).multiply(new BigDecimal(incrementValue)).toString();
+        if ((value != null) && !value.isEmpty()) {
+            if ((incrementValue != null) && !incrementValue.isEmpty()) {
+                value = new BigDecimal(value).multiply(new BigDecimal(incrementValue)).toString();
+            }
+            data.add(new ValueModel(value, time, quality));
         }
-        data.add(new ValueModel(value, time, quality));
     }
 
     public static Builder builder(Config param, int objectId, int paramId, int aggregateId) {
