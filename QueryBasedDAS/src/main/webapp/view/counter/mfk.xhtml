@@ -63,6 +63,13 @@
                         action="#{mfkController.requestAsync()}"
                         oncomplete="PF('statusDialog').hide();"
                         icon="pi pi-fw pi-file-import"/>
+            <p:menuitem value="Месячная статистика по группам"
+                        disabled="#{mfkController.selectedStat == null}"
+                        icon="pi pi-fw pi-file-import"
+                        onstart="PF('statusDialog').show()"
+                        action="#{mfkController.loadMonthGroupData()}"
+                        oncomplete="PF('controllerMonthGroupDataWidget').show(); PF('statusDialog').hide();"
+                        update="controllerMonthGroupDialogHeader controllerMonthGroupTable"/>
             <p:divider/>
             <p:menuitem value="Запрашиваемые данные" disabled="#{mfkController.selectedStat == null}"
                         icon="pi pi-fw pi-book" oncomplete="PF('requestDataWidget').show();"
@@ -186,6 +193,13 @@
             <p:menuitem value="Мгновенные данные" icon="pi pi-fw pi-file-import"
                         onstart="PF('statusDialog').show();" action="#{mfkController.requestAsync()}"
                         oncomplete="PF('statusDialog').hide();"/>
+            <p:menuitem value="Месячная статистика по группам"
+                        disabled="#{mfkController.selectedStat == null}"
+                        icon="pi pi-fw pi-file-import"
+                        onstart="PF('statusDialog').show()"
+                        action="#{mfkController.loadMonthGroupData()}"
+                        oncomplete="PF('controllerMonthGroupDataWidget').show(); PF('statusDialog').hide();"
+                        update="controllerMonthGroupDialogHeader controllerMonthGroupTable"/>
             <p:divider/>
             <p:menuitem value="Запрашиваемые данные" oncomplete="PF('requestDataWidget').show();"
                         icon="pi pi-fw pi-book" update="requestDataTable requestDialogHeader"/>
@@ -276,6 +290,46 @@
                </h:outputText>
             </p:column>
          </p:dataTable>
+      </div>
+   </p:dialog>
+
+   <p:dialog widgetVar="controllerMonthGroupDataWidget" width="700" height="400" modal="true"
+             resizable="false" styleClass="tc-panel" showEffect="fade" hideEffect="fade"
+             focus="groupDataForm:loadGroupBtn">
+
+      <p:ajax event="close" update="controllerMonthGroupTable groupDataForm" listener="#{mfkController.clearMonthGroupData()}"/>
+
+      <f:facet name="header">
+         <h:outputText id="controllerMonthGroupDialogHeader"
+                       value="Месячная статистика по группам #{mfkController.selectedStat.counterName}"/>
+      </f:facet>
+
+      <h:form id="groupDataForm" style="padding: 3px;">
+         <div class="formgroup-inline justify-content-center">
+            <div class="field" style="margin-bottom: 0;">
+               <p:outputLabel value="Дата запрашиваемых данных:" for="@next" styleClass="mr-1 font-bold"/>
+               <p:datePicker id="dateSelecter" value="#{mfkController.selectedDate}" showTime="false"
+                             maxdate="#{mfkController.maxDate}" readonlyInput="true"
+                             mindate="#{mfkController.minDate}" styleClass="mr-1"/>
+            </div>
+            <p:commandButton id="loadGroupBtn" value="Загрузить" onclick="PF('groupBui').show();"
+                             action="#{mfkController.loadMonthGroupData()}" oncomplete="PF('groupBui').hide();"
+                             styleClass="tc-no-loading" update="controllerMonthGroupTable"/>
+         </div>
+      </h:form>
+      <div style="padding: 0 0 3px 3px; height: calc(100% - 43px);">
+         <p:dataTable id="controllerMonthGroupTable" value="#{mfkController.groupData}" var="groupData"
+                      scrollable="true" scrollHeight="100%" emptyMessage="#{global['table.empty.value']}">
+
+            <p:column headerText="Название" width="600">
+               <h:outputText value="#{groupData.key}"/>
+            </p:column>
+            <p:column headerText="Количество" width="200" styleClass="text-center">
+               <h:outputText value="#{groupData.value}"/>
+            </p:column>
+         </p:dataTable>
+
+         <p:blockUI widgetVar="groupBui" block="controllerMonthGroupTable"/>
       </div>
    </p:dialog>
 

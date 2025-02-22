@@ -30,6 +30,8 @@ import java.math.BigDecimal;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.sql.*;
+import java.sql.Date;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
@@ -88,6 +90,14 @@ public class MfkBean {
                                                                     "and mc.name = ? " +
                                                                     "and mo.name = ?" +
                                                                     "and date = ?";
+    private static final String SELECT_GROUP_DATA = "select mop.name, mop.count from mfk_object_package mop " +
+                                                        "join mfk_object mo " +
+                                                            "on mop.object_id = mo.id " +
+                                                        "join mfk_server ms " +
+                                                            "on mo.server_id = ms.id " +
+                                                                "where ms.name = ? " +
+                                                                    "and mo.name = ? " +
+                                                                    "and mop.date = ?";
 
     @Inject
     private Logger logger;
@@ -615,6 +625,36 @@ public class MfkBean {
             }
         } catch (SQLException e) {
             logger.warn("error load last values from mfk for {}", objectName, e);
+        }
+        return result;
+    }
+
+    /**
+     * Получение статистики по переданным группам
+     *
+     * @param objectName имя объекта
+     * @param localDate дата, за которую смотреть статистику
+     * @return статистика по переданным группам (имя группы -> количество полученных групп)
+     */
+    public Map<String, String> getGroupData(String objectName, LocalDate localDate) {
+        logger.info("start load group data from mfk for {} and date {}", objectName, localDate);
+        Map<String, String> result = new HashMap<>();
+        try (Connection connect = ds.getConnection();
+             PreparedStatement stmGroupData = connect.prepareStatement(SELECT_GROUP_DATA)) {
+            String[] split = objectName.split("_");
+            String controllerName = split[0];
+            String controllerObjectName = split[1] + "_" + split[2];
+
+            stmGroupData.setString(1, controllerName);
+            stmGroupData.setString(2, controllerObjectName);
+            stmGroupData.setDate(3, Date.valueOf(localDate));
+
+            ResultSet res = stmGroupData.executeQuery();
+            while (res.next()) {
+                result.put(res.getString("name"), res.getString("count"));
+            }
+        } catch (SQLException e) {
+            logger.warn("error load group data from mfk for {}", objectName, e);
         }
         return result;
     }

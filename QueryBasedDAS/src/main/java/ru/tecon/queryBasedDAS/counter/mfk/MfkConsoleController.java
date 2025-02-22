@@ -31,6 +31,7 @@ import java.io.OutputStream;
 import java.io.Serializable;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -70,6 +71,9 @@ public class MfkConsoleController implements Serializable {
     private final List<DataModel> requestedDataModel = new ArrayList<>();
     private final List<StatData.LastValue> lastControllerData = new ArrayList<>();
     private final List<ObjectInfoModel> sysParamData = new ArrayList<>();
+
+    private final Map<String, String> groupData = new HashMap<>();
+    private LocalDate selectedDate = LocalDate.now();
 
     private final MfkCounter counter = new MfkCounter();
     private final MfkInfo info = MfkInfo.getInstance();
@@ -254,6 +258,22 @@ public class MfkConsoleController implements Serializable {
 
     public void clearLastControllerData() {
         lastControllerData.clear();
+    }
+
+    /**
+     * Загрузка месячной статистики по переданным группам
+     */
+    public void loadMonthGroupData() {
+        groupData.clear();
+        groupData.putAll(mfkBean.getGroupData(selectedStat.getCounterName(), selectedDate));
+    }
+
+    /**
+     * Очистка месячной статистики по переданным группам
+     */
+    public void clearMonthGroupData() {
+        selectedDate = LocalDate.now();
+        groupData.clear();
     }
 
     public void clearStatistic() {
@@ -464,6 +484,26 @@ public class MfkConsoleController implements Serializable {
 
     public String isRemoteEnable(String remote) {
         return singletonBean.getRemoteProp(remote).isEnable() ? "(вкл)" : "(выкл)";
+    }
+
+    public Set<Map.Entry<String, String>> getGroupData() {
+        return groupData.entrySet();
+    }
+
+    public LocalDate getSelectedDate() {
+        return selectedDate;
+    }
+
+    public void setSelectedDate(LocalDate selectedDate) {
+        this.selectedDate = selectedDate;
+    }
+
+    public LocalDate getMaxDate() {
+        return LocalDate.now();
+    }
+
+    public LocalDate getMinDate() {
+        return LocalDate.now().minusDays(30);
     }
 
     public String getRemoteSelected() {
