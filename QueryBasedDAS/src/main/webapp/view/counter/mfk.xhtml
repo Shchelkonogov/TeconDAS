@@ -63,7 +63,7 @@
                         action="#{mfkController.requestAsync()}"
                         oncomplete="PF('statusDialog').hide();"
                         icon="pi pi-fw pi-file-import"/>
-            <p:menuitem value="Месячная статистика по группам"
+            <p:menuitem value="Суточная статистика по группам"
                         disabled="#{mfkController.selectedStat == null}"
                         icon="pi pi-fw pi-file-import"
                         onstart="PF('statusDialog').show()"
@@ -193,7 +193,7 @@
             <p:menuitem value="Мгновенные данные" icon="pi pi-fw pi-file-import"
                         onstart="PF('statusDialog').show();" action="#{mfkController.requestAsync()}"
                         oncomplete="PF('statusDialog').hide();"/>
-            <p:menuitem value="Месячная статистика по группам"
+            <p:menuitem value="Суточная статистика по группам"
                         disabled="#{mfkController.selectedStat == null}"
                         icon="pi pi-fw pi-file-import"
                         onstart="PF('statusDialog').show()"
@@ -301,7 +301,7 @@
 
       <f:facet name="header">
          <h:outputText id="controllerMonthGroupDialogHeader"
-                       value="Месячная статистика по группам #{mfkController.selectedStat.counterName}"/>
+                       value="Суточная статистика по группам #{mfkController.selectedStat.counterName}"/>
       </f:facet>
 
       <h:form id="groupDataForm" style="padding: 3px;">
