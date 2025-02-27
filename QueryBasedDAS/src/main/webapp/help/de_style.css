@@ -27,7 +27,7 @@ direction: ltr;
 text-align: left;
 text-indent: 0px;
 margin-left: 0px;
-line-height: 1.380;
+line-height: 1.800;
 margin-top: 8pt;
 margin-bottom: 8pt;
 }
@@ -42,8 +42,8 @@ div.description_on_page div.p,
  .m-pageContent__side__left div.p,
  .m-pageContent__side__left div.p a
 {
-font-family:"Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", Helvetica, Arial, sans-serif;
-font-size: 12pt;color:#000000;
+font-family:"Calibri";
+font-size: 14pt;color:#000000;
 font-style:normal;
 text-decoration:none;
 font-weight:normal;
@@ -418,6 +418,12 @@ text-align:left;text-indent:0px;line-height:1.200;margin-top:0pt;margin-bottom:0
 div.de_6AF6DD6F29
 {
 text-align:justify;}
+div.de_74F15C27B3
+{
+line-height:1.800;margin-top:0pt;margin-bottom:0pt;}
+div.de_9105F95288
+{
+text-align:left;line-height:1.800;margin-top:0pt;margin-bottom:0pt;}
 div.de_95E07EBAD9
 {
 line-height:1.200;}
@@ -482,6 +488,12 @@ span.de_35C70021D9
 	font-size: 20pt;
 	color:#1b5081;
 }
+span.de_4CADA2DE6C
+{
+	font-family: "Calibri Light";
+	font-size: 20pt;
+	color:#1b5081;
+}
 span.de_52F58977C0
 {
 	font-family: "Calibri Light";
@@ -493,6 +505,11 @@ span.de_6B7F0857AE
 	font-family: "Calibri";
 	font-size: 14pt;
 	color:#000000;
+}
+span.de_7DFF549334
+{
+	font-family: "Calibri Light";
+	font-size: 14pt;
 }
 span.de_87C8AF169F
 {

@@ -636,14 +636,12 @@ html[dir="rtl"] .b-breadCrumbs {
 }
 
 .b-breadCrumbs__item {
-    display: -moz-inline-stack;
-    display: inline-block;
+    display: inline;
     vertical-align: top;
 
     margin: 0;
 
     font-size: 0.8em;
-    white-space: pre;
 }
 
 .b-breadCrumbs__item:before {
