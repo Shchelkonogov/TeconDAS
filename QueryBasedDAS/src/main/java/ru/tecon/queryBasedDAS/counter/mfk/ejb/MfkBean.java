@@ -47,6 +47,7 @@ import java.util.stream.Collectors;
 @Stateless(name = "mfk", mappedName = "ejb/mfk")
 public class MfkBean {
 
+    private static final int httpTimeout = 5;
     private static final Pattern PATTERN_IPV4 = Pattern.compile("_(?<ip>((0|1\\d?\\d?|2[0-4]?\\d?|25[0-5]?|[3-9]\\d?)\\.){3}(0|1\\d?\\d?|2[0-4]?\\d?|25[0-5]?|[3-9]\\d?))_", Pattern.CASE_INSENSITIVE);
 
     private static final String SELECT_OBJECTS = "select concat(b.name, '_', a.name) " +
@@ -152,11 +153,10 @@ public class MfkBean {
                 if (m.find()) {
                     String url = m.group("ip");
 
-                    int timeout = 5;
                     RequestConfig requestConfig = RequestConfig.custom()
-                            .setConnectTimeout(timeout * 60 * 1000)
-                            .setConnectionRequestTimeout(timeout * 60 * 1000)
-                            .setSocketTimeout(timeout * 60 * 1000).build();
+                            .setConnectTimeout(httpTimeout * 60 * 1000)
+                            .setConnectionRequestTimeout(httpTimeout * 60 * 1000)
+                            .setSocketTimeout(httpTimeout * 60 * 1000).build();
 
                     try (CloseableHttpClient httpClient = HttpClientBuilder.create().setDefaultRequestConfig(requestConfig).build()) {
                         ArrayList<String> path = new ArrayList<>(Arrays.asList(resServer.getString("path").split("/")));
@@ -671,7 +671,12 @@ public class MfkBean {
                 if (m.find()) {
                     String url = m.group("ip");
 
-                    try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
+                    RequestConfig requestConfig = RequestConfig.custom()
+                            .setConnectTimeout(httpTimeout * 60 * 1000)
+                            .setConnectionRequestTimeout(httpTimeout * 60 * 1000)
+                            .setSocketTimeout(httpTimeout * 60 * 1000).build();
+
+                    try (CloseableHttpClient httpClient = HttpClientBuilder.create().setDefaultRequestConfig(requestConfig).build()) {
                         HttpGet httpGet = new HttpGet(getSysInfoURI(res, url));
 
                         try (CloseableHttpResponse response = httpClient.execute(httpGet)) {
