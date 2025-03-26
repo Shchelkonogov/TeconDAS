@@ -64,7 +64,8 @@ public class UploaderServiceBean implements UploaderServiceRemote {
                     "extractValue(XMLType('<Group>' || opc_path || '</Group>'), '/Group/SysInfo') as sys_info, " +
                     "b.ASPID_OBJECT_ID, " +
                     "b.ASPID_PARAM_ID, " +
-                    "4 as aspid_agr_id " +
+                    "4 as aspid_agr_id, " +
+                    "b.MEASURE_UNIT_TRANSFORMER " +
             "from ADMIN.TSA_LINKED_ELEMENT b, ADMIN.TSA_OPC_ELEMENT c " +
             "where b.OPC_ELEMENT_ID in (select id from ADMIN.TSA_OPC_ELEMENT where OPC_OBJECT_ID = ?) " +
                     "and b.OPC_ELEMENT_ID = c.ID " +
@@ -276,11 +277,15 @@ public class UploaderServiceBean implements UploaderServiceRemote {
                     config = new Config(resLinked.getString("display_name"));
                 }
 
-                result.add(
-                        DataModel.builder(config, resLinked.getInt("aspid_object_id"),
-                                        resLinked.getInt("aspid_param_id"), resLinked.getInt("aspid_agr_id"))
-                                .build()
-                );
+                DataModel.Builder builder = DataModel.builder(config, resLinked.getInt("aspid_object_id"),
+                        resLinked.getInt("aspid_param_id"), resLinked.getInt("aspid_agr_id"));
+
+                if ((resLinked.getString("measure_unit_transformer") != null)
+                        && !resLinked.getString("measure_unit_transformer").isEmpty()) {
+                    builder.incrementValue(resLinked.getString("measure_unit_transformer").substring(2));
+                }
+
+                result.add(builder.build());
             }
         } catch (SQLException ex) {
             logger.warn("error load instant object model for {}", id, ex);

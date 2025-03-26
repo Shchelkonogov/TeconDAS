@@ -60,7 +60,8 @@ public class UploaderServiceBean implements UploaderServiceRemote {
                     "cast((xpath('/root/SysInfo/text()', xmlelement(name root, opc_path::xml)))[1] as text) as sys_info, " +
                     "b.aspid_object_id, " +
                     "b.aspid_param_id, " +
-                    "4 as aspid_agr_id " +
+                    "4 as aspid_agr_id, " +
+                    "b.measure_unit_transformer " +
             "from admin.tsa_linked_element b, admin.tsa_opc_element c " +
             "where b.opc_element_id in (select id from admin.tsa_opc_element where opc_object_id = ?) " +
                     "and b.opc_element_id = c.id " +
@@ -272,11 +273,15 @@ public class UploaderServiceBean implements UploaderServiceRemote {
                     config = new Config(resLinked.getString("display_name"));
                 }
 
-                result.add(
-                        DataModel.builder(config, resLinked.getInt("aspid_object_id"),
-                                            resLinked.getInt("aspid_param_id"), resLinked.getInt("aspid_agr_id"))
-                                .build()
-                );
+                DataModel.Builder builder = DataModel.builder(config, resLinked.getInt("aspid_object_id"),
+                        resLinked.getInt("aspid_param_id"), resLinked.getInt("aspid_agr_id"));
+
+                if ((resLinked.getString("measure_unit_transformer") != null)
+                        && !resLinked.getString("measure_unit_transformer").isEmpty()) {
+                    builder.incrementValue(resLinked.getString("measure_unit_transformer").substring(2));
+                }
+
+                result.add(builder.build());
             }
         } catch (SQLException ex) {
             logger.warn("error load instant object model for {}", id, ex);
