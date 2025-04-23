@@ -37,7 +37,7 @@ public class ParseRequestsStatelessBean {
     @EJB
     private UploaderSingletonBean bean;
 
-    @Resource(name = "jdbc/DataSourceR")
+    @Resource(name = "jdbc/DataSource")
     private DataSource ds;
 
     /**
