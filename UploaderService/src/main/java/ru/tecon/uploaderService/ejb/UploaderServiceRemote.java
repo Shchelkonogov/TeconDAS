@@ -25,6 +25,15 @@ public interface UploaderServiceRemote {
     List<SubscribedObject> getSubscribedObjects(Set<String> serverNames);
 
     /**
+     * Получение подписанных объектов
+     *
+     * @param serverNames имена типов серверов (счетчиков)
+     * @param lock загружать блокированные для загрузки объекты
+     * @return список подписанных объектов
+     */
+    List<SubscribedObject> getSubscribedObjects(Set<String> serverNames, boolean lock);
+
+    /**
      * Загрузка в базу данных новых объектов
      *
      * @param objects новые объекты
@@ -77,6 +86,21 @@ public interface UploaderServiceRemote {
     void uploadDataAsync(List<DataModel> dataModels);
 
     /**
+     * Асинхронная загрузка измерений в базу
+     *
+     * @param dataModels модель с измерениями
+     * @param subscribedObject объект по которому загружаются данные
+     */
+    void uploadDataAsync(List<DataModel> dataModels, SubscribedObject subscribedObject);
+
+    /**
+     * Снятие блокировки загрузки с объекта
+     *
+     * @param subscribedObject объект для блокировки
+     */
+    void removeLoadObjectLock(SubscribedObject subscribedObject);
+
+    /**
      * Загрузка мгновенных измерений в базу
      *
      * @param requestId id запроса
@@ -92,4 +116,11 @@ public interface UploaderServiceRemote {
      * @return идентификатор объекта счетчика
      */
     String getCounterObjectId(String counter, String object);
+
+    /**
+     * Установить блокировку загрузки на объект
+     *
+     * @param subscribedObject объект для блокировки
+     */
+    void setLoadObjectLock(SubscribedObject subscribedObject);
 }

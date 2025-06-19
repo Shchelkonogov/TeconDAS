@@ -345,7 +345,7 @@ public class QueryBasedDASStatelessBean {
                     continue;
                 }
 
-                List<SubscribedObject> objects = uploadServiceRemote.getSubscribedObjects(counterNameSet);
+                List<SubscribedObject> objects = uploadServiceRemote.getSubscribedObjects(counterNameSet, false);
 
                 if ((objects != null) && !objects.isEmpty()) {
                     Map<String, Pair<String, Integer>> concurrencyDepthMap = objects.stream()
@@ -427,6 +427,8 @@ public class QueryBasedDASStatelessBean {
             Map<String, Counter> loadedCounters = new HashMap<>();
 
             for (SubscribedObject object: objects) {
+                uploadServiceRemote.setLoadObjectLock(object);
+
                 StatData.Builder builder = StatData.builder(uploadServerName, object.getObjectName(), object.getServerName())
                         .startRequestTime(LocalDateTime.now());
 
@@ -464,7 +466,7 @@ public class QueryBasedDASStatelessBean {
                                 objectModel.stream().map(DataModel::getParamName).collect(Collectors.toList()),
                                 objectModel.stream().map(dataModel -> dataModel.getData().size()).collect(Collectors.toList()));
 
-                        uploadServiceRemote.uploadDataAsync(objectModel);
+                        uploadServiceRemote.uploadDataAsync(objectModel, object);
 
                         // Добавление статистики
                         builder.lastValuesUploadTime(LocalDateTime.now());
@@ -474,8 +476,11 @@ public class QueryBasedDASStatelessBean {
                                 builder.addLastValue(dataModel.getParamName(), data.last().getValue(), data.last().getDateTime());
                             }
                         });
+                    } else {
+                        uploadServiceRemote.removeLoadObjectLock(object);
                     }
                 } else {
+                    uploadServiceRemote.removeLoadObjectLock(object);
                     logger.warn("empty model for {}", object);
                 }
 

@@ -11,6 +11,7 @@ import javax.ejb.*;
 import javax.inject.Inject;
 import javax.sql.DataSource;
 import java.sql.*;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -85,6 +86,10 @@ public class UploaderServiceBean implements UploaderServiceRemote {
             "where extractValue(XMLType('<Group>' || OPC_PATH || '</Group>'), '/Group/Server') = ? " +
                 "and extractValue(XMLType('<Group>' || OPC_PATH || '</Group>'), '/Group/ItemName')= ?";
 
+    private static final String INSERT_LOAD_LOCK = "insert into m_adm.td_das_lock values (?, ?, ?, ?)";
+    private static final String DELETE_LOAD_LOCK = "delete from m_adm.td_das_lock where object_id = ? and object_name = ? and server_name = ?";
+    private static final String CHECK_LOAD_LOCK = "select 1 from m_adm.td_das_lock where object_id = ? and object_name = ? and server_name = ?";
+
     @Inject
     private Logger logger;
 
@@ -97,19 +102,35 @@ public class UploaderServiceBean implements UploaderServiceRemote {
     @Resource(name = "jdbc/DataSourceFil")
     private DataSource dsFil;
 
+    @EJB(beanName = "oracleUploaderServiceBean")
+    private UploaderServiceRemote self;
+
     @Override
     public List<SubscribedObject> getSubscribedObjects(Set<String> serverNames) {
+        return getSubscribedObjects(serverNames, true);
+    }
+
+    @Override
+    public List<SubscribedObject> getSubscribedObjects(Set<String> serverNames, boolean lock) {
         logger.info("load subscribed objects for servers {}", serverNames);
         List<SubscribedObject> objects = new ArrayList<>();
         for (String serverName: serverNames) {
             try (Connection connect = ds.getConnection();
-                 PreparedStatement stm = connect.prepareStatement(SEL_SUBSCRIBED_OBJECTS)) {
+                 PreparedStatement stm = connect.prepareStatement(SEL_SUBSCRIBED_OBJECTS);
+                 PreparedStatement stmCheck = connect.prepareStatement(CHECK_LOAD_LOCK)) {
 
                 stm.setString(1, serverName);
 
                 ResultSet res = stm.executeQuery();
                 while (res.next()) {
-                    objects.add(new SubscribedObject(res.getString("id"), res.getString("display_name"), serverName));
+                    stmCheck.setString(1, res.getString("id"));
+                    stmCheck.setString(2, res.getString("display_name"));
+                    stmCheck.setString(3, serverName);
+
+                    ResultSet resCheck = stmCheck.executeQuery();
+                    if (!resCheck.next()) {
+                        objects.add(new SubscribedObject(res.getString("id"), res.getString("display_name"), serverName));
+                    }
                 }
             } catch (SQLException ex) {
                 logger.warn("error load subscribed objects for servers {}", serverName, ex);
@@ -333,7 +354,32 @@ public class UploaderServiceBean implements UploaderServiceRemote {
     @Asynchronous
     @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
     public void uploadDataAsync(List<DataModel> dataModels) {
-        uploadData(dataModels);
+        self.uploadData(dataModels);
+    }
+
+    @Override
+    @Asynchronous
+    @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
+    public void uploadDataAsync(List<DataModel> dataModels, SubscribedObject subscribedObject) {
+        self.uploadData(dataModels);
+        self.removeLoadObjectLock(subscribedObject);
+    }
+
+    @Override
+    @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
+    public void removeLoadObjectLock(SubscribedObject subscribedObject) {
+        logger.info("remove load lock for: {}", subscribedObject);
+        try (Connection connect = ds.getConnection();
+             PreparedStatement stm = connect.prepareStatement(DELETE_LOAD_LOCK)) {
+
+            stm.setString(1, subscribedObject.getId());
+            stm.setString(2, subscribedObject.getObjectName());
+            stm.setString(3, subscribedObject.getServerName());
+
+            stm.executeUpdate();
+        } catch (SQLException ex) {
+            logger.warn("error remove load lock", ex);
+        }
     }
 
     @Override
@@ -380,5 +426,23 @@ public class UploaderServiceBean implements UploaderServiceRemote {
             logger.warn("error load counter object id", ex);
         }
         return null;
+    }
+
+    @Override
+    @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
+    public void setLoadObjectLock(SubscribedObject subscribedObject) {
+        logger.info("set load lock for: {}", subscribedObject);
+        try (Connection connect = ds.getConnection();
+             PreparedStatement stm = connect.prepareStatement(INSERT_LOAD_LOCK)) {
+
+            stm.setString(1, subscribedObject.getId());
+            stm.setString(2, subscribedObject.getObjectName());
+            stm.setString(3, subscribedObject.getServerName());
+            stm.setTimestamp(4, Timestamp.valueOf(LocalDateTime.now()));
+
+            stm.executeUpdate();
+        } catch (SQLException ex) {
+            logger.warn("error set load lock", ex);
+        }
     }
 }
