@@ -1,14 +1,22 @@
 package ru.tecon.uploaderService.ejb;
 
+import org.slf4j.Logger;
 import ru.tecon.uploaderService.PropertiesLoader;
 import ru.tecon.uploaderService.ejb.das.ListenerType;
 import ru.tecon.uploaderService.model.Listener;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.Resource;
 import javax.ejb.LocalBean;
+import javax.ejb.Schedule;
 import javax.ejb.Singleton;
 import javax.ejb.Startup;
+import javax.inject.Inject;
+import javax.sql.DataSource;
 import java.io.IOException;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -25,6 +33,14 @@ public class UploaderSingletonBean {
 
     private Properties properties;
 
+    private static final String TRUNCATE_LOCK = "truncate table M_ADM.TD_DAS_LOCK";
+
+    @Inject
+    private Logger logger;
+
+    @Resource(name = "jdbc/DataSource")
+    private DataSource ds;
+
     @PostConstruct
     private void init() {
         // Загрузка свойств системы
@@ -32,6 +48,16 @@ public class UploaderSingletonBean {
             properties = PropertiesLoader.loadProperties("app.properties");
         } catch (IOException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    @Schedule(info = "every day at 00:00", persistent = false)
+    private void truncateLock() {
+        try (Connection connect = ds.getConnection();
+             PreparedStatement stm = connect.prepareStatement(TRUNCATE_LOCK)) {
+            stm.executeUpdate();
+        } catch (SQLException e) {
+            logger.warn("Error truncate locks", e);
         }
     }
 
