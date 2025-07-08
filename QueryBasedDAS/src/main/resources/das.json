@@ -13,7 +13,7 @@
   ],
   "remotes": {
     "postgres": {
-      "url": "172.16.4.135",
+      "url": "172.16.4.139",
       "port": 3700,
       "serviceName": "uploaderService",
       "ejbName": "uploaderServiceBean",
