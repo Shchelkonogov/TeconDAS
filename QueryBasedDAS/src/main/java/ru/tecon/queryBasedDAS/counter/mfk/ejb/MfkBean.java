@@ -147,61 +147,55 @@ public class MfkBean {
                         result.add(new Config(value));
                     }
                 }
-
-                // Загрузка мгновенной конфигурации
-                Matcher m = PATTERN_IPV4.matcher(object);
-                if (m.find()) {
-                    String url = m.group("ip");
-
-                    RequestConfig requestConfig = RequestConfig.custom()
-                            .setConnectTimeout(httpTimeout * 60 * 1000)
-                            .setConnectionRequestTimeout(httpTimeout * 60 * 1000)
-                            .setSocketTimeout(httpTimeout * 60 * 1000).build();
-
-                    try (CloseableHttpClient httpClient = HttpClientBuilder.create().setDefaultRequestConfig(requestConfig).build()) {
-                        ArrayList<String> path = new ArrayList<>(Arrays.asList(resServer.getString("path").split("/")));
-                        path.removeIf(String::isEmpty);
-                        path.add("api");
-                        path.add("instantConfig");
-
-                        URI build = new URIBuilder()
-                                .setScheme(resServer.getString("scheme"))
-                                .setHost(resServer.getString("host"))
-                                .setPort(resServer.getInt("port"))
-                                .setPathSegments(path)
-                                .addParameter("url", url)
-                                .build();
-
-                        HttpGet httpGet = new HttpGet(build);
-
-                        try (CloseableHttpResponse response = httpClient.execute(httpGet)) {
-                            if (response.getStatusLine().getStatusCode() == 200) {
-                                List<String> config = json.fromJson(
-                                        EntityUtils.toString(response.getEntity()),
-                                        new TypeToken<ArrayList<String>>() {}.getType()
-                                );
-
-                                for (String value: config) {
-                                    if (value.contains("::")) {
-                                        String[] split = value.split("::");
-                                        result.add(new Config(split[0], split[1]));
-                                    } else {
-                                        result.add(new Config(value));
-                                    }
-                                }
-                            } else {
-                                logger.warn("Error request instance config. Error code {}", response.getStatusLine().getStatusCode());
-                            }
-                        }
-                    } catch (IOException | URISyntaxException e) {
-                        logger.warn("Error request instance config", e);
-                    }
-                } else {
-                    logger.warn("Error parse ip address {}", object);
-                }
             }
         } catch (SQLException e) {
             logger.warn("Error load config for {}", object, e);
+        }
+
+        // Загрузка мгновенной конфигурации
+        Map<String, String> parameters = new HashMap<>();
+        Matcher m = PATTERN_IPV4.matcher(object);
+        if (m.find()) {
+            parameters.put("url", m.group("ip"));
+
+            object = object.split("_")[0];
+
+            Map<String, URI> uri = getURI(Set.of(object), List.of("api", "instantConfig"), parameters);
+
+            if (!uri.isEmpty()) {
+                RequestConfig requestConfig = RequestConfig.custom()
+                        .setConnectTimeout(httpTimeout * 60 * 1000)
+                        .setConnectionRequestTimeout(httpTimeout * 60 * 1000)
+                        .setSocketTimeout(httpTimeout * 60 * 1000).build();
+
+                try (CloseableHttpClient httpClient = HttpClientBuilder.create().setDefaultRequestConfig(requestConfig).build()) {
+                    HttpGet httpGet = new HttpGet(uri.get(object));
+
+                    try (CloseableHttpResponse response = httpClient.execute(httpGet)) {
+                        if (response.getStatusLine().getStatusCode() == 200) {
+                            List<String> config = json.fromJson(
+                                    EntityUtils.toString(response.getEntity()),
+                                    new TypeToken<ArrayList<String>>() {}.getType()
+                            );
+
+                            for (String value: config) {
+                                if (value.contains("::")) {
+                                    String[] split = value.split("::");
+                                    result.add(new Config(split[0], split[1]));
+                                } else {
+                                    result.add(new Config(value));
+                                }
+                            }
+                        } else {
+                            logger.warn("Error request instance config. Error code {}", response.getStatusLine().getStatusCode());
+                        }
+                    }
+                } catch (IOException e) {
+                    logger.warn("Error request instance config", e);
+                }
+            }
+        } else {
+            logger.warn("Error parse ip address {}", object);
         }
 
         return result;
@@ -316,281 +310,234 @@ public class MfkBean {
 
     public void loadInstantData(List<DataModel> params, String objectName) throws DasException {
         logger.info("start load instant data from mfk for {}", objectName);
-        try (Connection connect = ds.getConnection();
-             PreparedStatement stm = connect.prepareStatement(SELECT_SERVER)) {
-            stm.setString(1, objectName.split("_")[0]);
-            ResultSet res = stm.executeQuery();
-            if (res.next()) {
-                Matcher m = PATTERN_IPV4.matcher(objectName);
-                if (m.find()) {
-                    String url = m.group("ip");
 
-                    try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
-                        ArrayList<String> path = new ArrayList<>(Arrays.asList(res.getString("path").split("/")));
-                        path.removeIf(String::isEmpty);
-                        path.add("api");
-                        path.add("instantData");
+        Map<String, String> parameters = new HashMap<>();
+        Matcher m = PATTERN_IPV4.matcher(objectName);
+        if (m.find()) {
+            parameters.put("url", m.group("ip"));
 
-                        URI build = new URIBuilder()
-                                .setScheme(res.getString("scheme"))
-                                .setHost(res.getString("host"))
-                                .setPort(res.getInt("port"))
-                                .setPathSegments(path)
-                                .addParameter("url", url)
-                                .build();
+            objectName = objectName.split("_")[0];
 
-                        HttpPost httpPost = new HttpPost(build);
+            Map<String, URI> uri = getURI(Set.of(objectName), List.of("api", "instantData"), parameters);
 
-                        List<String> paramsList = params.stream()
-                                .map(dataModel -> dataModel.getParamName() + "::" + dataModel.getParamSysInfo())
-                                .collect(Collectors.toList());
+            if (!uri.isEmpty()) {
+                try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
+                    HttpPost httpPost = new HttpPost(uri.get(objectName));
 
-                        logger.info("request instant data for {}", paramsList);
+                    List<String> paramsList = params.stream()
+                            .map(dataModel -> dataModel.getParamName() + "::" + dataModel.getParamSysInfo())
+                            .collect(Collectors.toList());
 
-                        httpPost.setHeader("Content-type", "application/json");
-                        httpPost.setEntity(new StringEntity(json.toJson(paramsList)));
+                    logger.info("request instant data for {}", paramsList);
 
-                        try (CloseableHttpResponse response = httpClient.execute(httpPost)) {
-                            if (response.getStatusLine().getStatusCode() == 200) {
-                                Map<String, String> instantData = json.fromJson(
-                                        EntityUtils.toString(response.getEntity()),
-                                        new TypeToken<HashMap<String, String>>() {}.getType()
-                                );
+                    httpPost.setHeader("Content-type", "application/json");
+                    httpPost.setEntity(new StringEntity(json.toJson(paramsList)));
 
-                                logger.info("Received instant data {}", instantData);
-                                for (Map.Entry<String, String> entry: instantData.entrySet()) {
-                                    for (DataModel model: params) {
-                                        if (model.getParamName().startsWith(entry.getKey() + ":Текущие данные")) {
-                                            model.addData(entry.getValue(), LocalDateTime.now(ZoneOffset.UTC));
-                                            break;
-                                        }
+                    try (CloseableHttpResponse response = httpClient.execute(httpPost)) {
+                        if (response.getStatusLine().getStatusCode() == 200) {
+                            Map<String, String> instantData = json.fromJson(
+                                    EntityUtils.toString(response.getEntity()),
+                                    new TypeToken<HashMap<String, String>>() {}.getType()
+                            );
+
+                            logger.info("Received instant data {}", instantData);
+                            for (Map.Entry<String, String> entry: instantData.entrySet()) {
+                                for (DataModel model: params) {
+                                    if (model.getParamName().startsWith(entry.getKey() + ":Текущие данные")) {
+                                        model.addData(entry.getValue(), LocalDateTime.now(ZoneOffset.UTC));
+                                        break;
                                     }
                                 }
-
-                                params.removeIf(dataModel -> dataModel.getData().isEmpty());
-                            } else {
-                                logger.warn("Error request instance data. Error code {}", response.getStatusLine().getStatusCode());
-                                throw new DasException(EntityUtils.toString(response.getEntity()));
                             }
+
+                            params.removeIf(dataModel -> dataModel.getData().isEmpty());
+                        } else {
+                            logger.warn("Error request instance data. Error code {}", response.getStatusLine().getStatusCode());
+                            throw new DasException(EntityUtils.toString(response.getEntity()));
                         }
-                    } catch (IOException | URISyntaxException e) {
-                        logger.warn("Error request instance data", e);
-                        throw new DasException("Ошибка обращения к контроллеру мфк " + objectName);
                     }
-                } else {
-                    logger.warn("Error parse ip address {}", objectName);
-                    throw new DasException("Не разобран url прибора " + objectName);
+                } catch (IOException e) {
+                    logger.warn("Error request instance data", e);
+                    throw new DasException("Ошибка обращения к контроллеру мфк " + objectName);
                 }
             }
-        } catch (SQLException e) {
-            logger.warn("Error load instant data for {}", objectName, e);
-            throw new DasException("База данных недоступна");
+        } else {
+            logger.warn("Error parse ip address {}", objectName);
         }
+
         logger.info("instant data from mfk loaded for {}", objectName);
     }
 
     public List<String> getLocked() {
         List<String> result = new ArrayList<>();
+        List<MfkServer> servers = new ArrayList<>();
+
         try (Connection connect = ds.getConnection();
              PreparedStatement stm = connect.prepareStatement(SELECT_ALL_SERVER)) {
             ResultSet res = stm.executeQuery();
             while (res.next()) {
-                String controller = res.getString("name");
-                try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
-                    ArrayList<String> path = new ArrayList<>(Arrays.asList(res.getString("path").split("/")));
-                    path.removeIf(String::isEmpty);
-                    path.add("api");
-                    path.add("locked");
-
-                    URI build = new URIBuilder()
-                            .setScheme(res.getString("scheme"))
-                            .setHost(res.getString("host"))
-                            .setPort(res.getInt("port"))
-                            .setPathSegments(path)
-                            .build();
-
-                    HttpGet httpGet = new HttpGet(build);
-
-                    try (CloseableHttpResponse response = httpClient.execute(httpGet)) {
-                        if (response.getStatusLine().getStatusCode() == 200) {
-                            List<String> locked = json.fromJson(
-                                    EntityUtils.toString(response.getEntity()),
-                                    new TypeToken<List<String>>() {}.getType()
-                            );
-
-                            locked.forEach(s -> result.add(controller + "_" + s + "_"));
-                        } else {
-                            logger.warn("Error request locked. Error code {}", response.getStatusLine().getStatusCode());
-                        }
-                    }
-                } catch (IOException | URISyntaxException e) {
-                    logger.warn("Error request locked", e);
-                }
+                servers.add(new MfkServer(
+                        res.getString("name"),
+                        res.getString("path"),
+                        res.getString("scheme"),
+                        res.getString("host"),
+                        res.getInt("port")
+                ));
             }
         } catch (SQLException e) {
             logger.warn("Error request locked", e);
         }
+
+        for (MfkServer server: servers) {
+            try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
+                ArrayList<String> path = new ArrayList<>(Arrays.asList(server.path.split("/")));
+                path.removeIf(String::isEmpty);
+                path.add("api");
+                path.add("locked");
+
+                URI build = new URIBuilder()
+                        .setScheme(server.scheme)
+                        .setHost(server.host)
+                        .setPort(server.port)
+                        .setPathSegments(path)
+                        .build();
+
+                HttpGet httpGet = new HttpGet(build);
+
+                try (CloseableHttpResponse response = httpClient.execute(httpGet)) {
+                    if (response.getStatusLine().getStatusCode() == 200) {
+                        List<String> locked = json.fromJson(
+                                EntityUtils.toString(response.getEntity()),
+                                new TypeToken<List<String>>() {}.getType()
+                        );
+
+                        locked.forEach(s -> result.add(server.name + "_" + s + "_"));
+                    } else {
+                        logger.warn("Error request locked. Error code {}", response.getStatusLine().getStatusCode());
+                    }
+                }
+            } catch (IOException | URISyntaxException e) {
+                logger.warn("Error request locked", e);
+            }
+        }
+
         return result;
     }
 
     public void resetTraffic(String objectName) throws DasException {
         logger.info("reset traffic for {}", objectName);
-        try (Connection connect = ds.getConnection();
-             PreparedStatement stm = connect.prepareStatement(SELECT_SERVER)) {
-            stm.setString(1, objectName.split("_")[0]);
-            ResultSet res = stm.executeQuery();
-            if (res.next()) {
-                Matcher m = PATTERN_IPV4.matcher(objectName);
-                if (m.find()) {
-                    String url = m.group("ip");
 
-                    try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
-                        ArrayList<String> path = new ArrayList<>(Arrays.asList(res.getString("path").split("/")));
-                        path.removeIf(String::isEmpty);
-                        path.add("api");
-                        path.add("reset");
+        Map<String, String> parameters = new HashMap<>();
+        Matcher m = PATTERN_IPV4.matcher(objectName);
+        if (m.find()) {
+            parameters.put("url", m.group("ip"));
 
-                        URI build = new URIBuilder()
-                                .setScheme(res.getString("scheme"))
-                                .setHost(res.getString("host"))
-                                .setPort(res.getInt("port"))
-                                .setPathSegments(path)
-                                .addParameter("url", url)
-                                .build();
+            objectName = objectName.split("_")[0];
 
-                        HttpPost httpPost = new HttpPost(build);
+            Map<String, URI> uri = getURI(Set.of(objectName), List.of("api", "reset"), parameters);
 
-                        try (CloseableHttpResponse response = httpClient.execute(httpPost)) {
-                            if (response.getStatusLine().getStatusCode() != 200) {
-                                logger.warn("Error reset traffic. Error code {}", response.getStatusLine().getStatusCode());
-                                throw new DasException(EntityUtils.toString(response.getEntity()));
-                            }
+            if (!uri.isEmpty()) {
+                try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
+                    HttpPost httpPost = new HttpPost(uri.get(objectName));
+
+                    try (CloseableHttpResponse response = httpClient.execute(httpPost)) {
+                        if (response.getStatusLine().getStatusCode() != 200) {
+                            logger.warn("Error reset traffic. Error code {}", response.getStatusLine().getStatusCode());
+                            throw new DasException(EntityUtils.toString(response.getEntity()));
                         }
-                    } catch (IOException | URISyntaxException e) {
-                        logger.warn("Error reset traffic", e);
-                        throw new DasException("Ошибка обращения к контроллеру мфк " + objectName);
                     }
-                } else {
-                    logger.warn("Error reset traffic ip address {}", objectName);
-                    throw new DasException("Не разобран url прибора " + objectName);
+                } catch (IOException e) {
+                    logger.warn("Error reset traffic", e);
+                    throw new DasException("Ошибка обращения к контроллеру мфк " + objectName);
                 }
             }
-        } catch (SQLException e) {
-            logger.warn("Error reset traffic for {}", objectName, e);
-            throw new DasException("База данных недоступна");
+        } else {
+            logger.warn("Error parse ip address {}", objectName);
         }
     }
 
     public String getTraffic(String objectName) {
         logger.info("get traffic for {}", objectName);
-        try (Connection connect = ds.getConnection();
-             PreparedStatement stm = connect.prepareStatement(SELECT_SERVER)) {
-            stm.setString(1, objectName.split("_")[0]);
-            ResultSet res = stm.executeQuery();
-            if (res.next()) {
-                Matcher m = PATTERN_IPV4.matcher(objectName);
-                if (m.find()) {
-                    String url = m.group("ip");
 
-                    try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
-                        ArrayList<String> path = new ArrayList<>(Arrays.asList(res.getString("path").split("/")));
-                        path.removeIf(String::isEmpty);
-                        path.add("api");
-                        path.add("getTraffic");
+        Map<String, String> parameters = new HashMap<>();
+        Matcher m = PATTERN_IPV4.matcher(objectName);
+        if (m.find()) {
+            parameters.put("url", m.group("ip"));
 
-                        URI build = new URIBuilder()
-                                .setScheme(res.getString("scheme"))
-                                .setHost(res.getString("host"))
-                                .setPort(res.getInt("port"))
-                                .setPathSegments(path)
-                                .addParameter("url", url)
-                                .build();
+            objectName = objectName.split("_")[0];
 
-                        HttpGet httpGet = new HttpGet(build);
+            Map<String, URI> uri = getURI(Set.of(objectName), List.of("api", "getTraffic"), parameters);
 
-                        try (CloseableHttpResponse response = httpClient.execute(httpGet)) {
-                            if (response.getStatusLine().getStatusCode() == 200) {
-                                return EntityUtils.toString(response.getEntity());
-                            } else {
-                                logger.warn("Error get traffic. Error code {}", response.getStatusLine().getStatusCode());
-                            }
+            if (!uri.isEmpty()) {
+                try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
+                    HttpGet httpGet = new HttpGet(uri.get(objectName));
+
+                    try (CloseableHttpResponse response = httpClient.execute(httpGet)) {
+                        if (response.getStatusLine().getStatusCode() == 200) {
+                            return EntityUtils.toString(response.getEntity());
+                        } else {
+                            logger.warn("Error get traffic. Error code {}", response.getStatusLine().getStatusCode());
                         }
-                    } catch (IOException | URISyntaxException e) {
-                        logger.warn("Error get traffic", e);
                     }
-                } else {
-                    logger.warn("Error get traffic ip address {}", objectName);
+                } catch (IOException e) {
+                    logger.warn("Error get traffic", e);
                 }
             }
-        } catch (SQLException e) {
-            logger.warn("Error get traffic for {}", objectName, e);
+        } else {
+            logger.warn("Error parse ip address {}", objectName);
         }
+
         return "Неопределенно";
     }
 
     public Map<String, String> getTraffic(Map<String, List<String>> objectNames) {
         logger.info("get traffic for {}", objectNames);
         Map<String, String> result = new HashMap<>();
-        try (Connection connect = ds.getConnection();
-             PreparedStatement stm = connect.prepareStatement(SELECT_SERVER)) {
+
+        Map<String, URI> uri = getURI(objectNames.keySet(), List.of("api", "getTraffic"), Map.of());
+
+        try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
             for (Map.Entry<String, List<String>> entry: objectNames.entrySet()) {
-                stm.setString(1, entry.getKey());
-                ResultSet res = stm.executeQuery();
-                if (res.next()) {
-                    try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
-                        ArrayList<String> path = new ArrayList<>(Arrays.asList(res.getString("path").split("/")));
-                        path.removeIf(String::isEmpty);
-                        path.add("api");
-                        path.add("getTraffic");
-
-                        URI build = new URIBuilder()
-                                .setScheme(res.getString("scheme"))
-                                .setHost(res.getString("host"))
-                                .setPort(res.getInt("port"))
-                                .setPathSegments(path)
-                                .build();
-
-                        HttpPost httpPost = new HttpPost(build);
+                if (uri.containsKey(entry.getKey())) {
+                    HttpPost httpPost = new HttpPost(uri.get(entry.getKey()));
 
 
-                        Set<String> ipSet = entry.getValue().stream()
-                                .map(s -> {
-                                    Matcher m = PATTERN_IPV4.matcher(s);
-                                    if (m.find()) {
-                                        return m.group("ip");
-                                    }
-                                    return null;
-                                })
-                                .filter(Objects::nonNull)
-                                .collect(Collectors.toSet());
+                    Set<String> ipSet = entry.getValue().stream()
+                            .map(s -> {
+                                Matcher m = PATTERN_IPV4.matcher(s);
+                                if (m.find()) {
+                                    return m.group("ip");
+                                }
+                                return null;
+                            })
+                            .filter(Objects::nonNull)
+                            .collect(Collectors.toSet());
 
 
-                        logger.info("start read traffic for ip {} mfk {}", ipSet, entry.getKey());
+                    logger.info("start read traffic for ip {} mfk {}", ipSet, entry.getKey());
 
-                        httpPost.setHeader("Content-type", "application/json");
-                        httpPost.setEntity(new StringEntity(json.toJson(ipSet)));
+                    httpPost.setHeader("Content-type", "application/json");
+                    httpPost.setEntity(new StringEntity(json.toJson(ipSet)));
 
-                        try (CloseableHttpResponse response = httpClient.execute(httpPost)) {
-                            if (response.getStatusLine().getStatusCode() == 200) {
-                                Map<String, String> traffic = om.readValue(
-                                        EntityUtils.toString(response.getEntity()),
-                                        new TypeReference<Map<String, String>>() {}
-                                );
-                                traffic.forEach((k, v) -> {
-                                    result.put(entry.getKey() + "_" + k + "_", v);
-                                });
-                            } else {
-                                logger.warn("Error get traffic. Error code {}", response.getStatusLine().getStatusCode());
-                            }
+                    try (CloseableHttpResponse response = httpClient.execute(httpPost)) {
+                        if (response.getStatusLine().getStatusCode() == 200) {
+                            Map<String, String> traffic = om.readValue(
+                                    EntityUtils.toString(response.getEntity()),
+                                    new TypeReference<Map<String, String>>() {}
+                            );
+                            traffic.forEach((k, v) -> {
+                                result.put(entry.getKey() + "_" + k + "_", v);
+                            });
+                        } else {
+                            logger.warn("Error get traffic. Error code {}", response.getStatusLine().getStatusCode());
                         }
-                    } catch (IOException | URISyntaxException e) {
-                        logger.warn("Error get traffic", e);
                     }
                 }
             }
-        } catch (SQLException e) {
-            logger.warn("Error get traffic for {}", objectNames, e);
+        } catch (IOException e) {
+            logger.warn("Error get traffic", e);
         }
+
         return result;
     }
 
@@ -662,155 +609,175 @@ public class MfkBean {
     public List<MfkConsoleController.ObjectInfoModel> getSysInfo(String objectName) {
         List<MfkConsoleController.ObjectInfoModel> result = new ArrayList<>();
         logger.info("start load sys info from mfk for {}", objectName);
-        try (Connection connect = ds.getConnection();
-             PreparedStatement stm = connect.prepareStatement(SELECT_SERVER)) {
-            stm.setString(1, objectName.split("_")[0]);
-            ResultSet res = stm.executeQuery();
-            if (res.next()) {
-                Matcher m = PATTERN_IPV4.matcher(objectName);
-                if (m.find()) {
-                    String url = m.group("ip");
 
-                    RequestConfig requestConfig = RequestConfig.custom()
-                            .setConnectTimeout(httpTimeout * 60 * 1000)
-                            .setConnectionRequestTimeout(httpTimeout * 60 * 1000)
-                            .setSocketTimeout(httpTimeout * 60 * 1000).build();
+        Map<String, String> parameters = new HashMap<>();
+        Matcher m = PATTERN_IPV4.matcher(objectName);
+        if (m.find()) {
+            parameters.put("url", m.group("ip"));
 
-                    try (CloseableHttpClient httpClient = HttpClientBuilder.create().setDefaultRequestConfig(requestConfig).build()) {
-                        HttpGet httpGet = new HttpGet(getSysInfoURI(res, url));
+            objectName = objectName.split("_")[0];
 
-                        try (CloseableHttpResponse response = httpClient.execute(httpGet)) {
-                            if (response.getStatusLine().getStatusCode() == 200) {
-                                Map<String, Map<String, Boolean>> sysInfo = om.readValue(
-                                        EntityUtils.toString(response.getEntity()),
-                                        new TypeReference<Map<String, Map<String, Boolean>>>() {
-                                        }
-                                );
+            Map<String, URI> uri = getURI(Set.of(objectName), List.of("api", "sysInfo"), parameters);
 
-                                sysInfo.forEach((k, v) -> {
-                                    if (v.size() == 1) {
-                                        for (Map.Entry<String, Boolean> entry: v.entrySet()) {
-                                            result.add(new MfkConsoleController.ObjectInfoModel(k, entry.getKey(), entry.getValue()));
-                                        }
+            if (!uri.isEmpty()) {
+                RequestConfig requestConfig = RequestConfig.custom()
+                        .setConnectTimeout(httpTimeout * 60 * 1000)
+                        .setConnectionRequestTimeout(httpTimeout * 60 * 1000)
+                        .setSocketTimeout(httpTimeout * 60 * 1000).build();
+
+                try (CloseableHttpClient httpClient = HttpClientBuilder.create().setDefaultRequestConfig(requestConfig).build()) {
+                    HttpGet httpGet = new HttpGet(uri.get(objectName));
+
+                    try (CloseableHttpResponse response = httpClient.execute(httpGet)) {
+                        if (response.getStatusLine().getStatusCode() == 200) {
+                            Map<String, Map<String, Boolean>> sysInfo = om.readValue(
+                                    EntityUtils.toString(response.getEntity()),
+                                    new TypeReference<Map<String, Map<String, Boolean>>>() {
                                     }
-                                });
+                            );
 
-                                logger.info("sys info {}", result);
-                            } else {
-                                logger.warn("Error request sys info. Error code {}", response.getStatusLine().getStatusCode());
-                            }
+                            sysInfo.forEach((k, v) -> {
+                                if (v.size() == 1) {
+                                    for (Map.Entry<String, Boolean> entry: v.entrySet()) {
+                                        result.add(new MfkConsoleController.ObjectInfoModel(k, entry.getKey(), entry.getValue()));
+                                    }
+                                }
+                            });
+
+                            logger.info("sys info {}", result);
+                        } else {
+                            logger.warn("Error request sys info. Error code {}", response.getStatusLine().getStatusCode());
                         }
-                    } catch (IOException | URISyntaxException e) {
-                        logger.warn("Error request sys info", e);
                     }
-                } else {
-                    logger.warn("Error parse ip address {}", objectName);
+                } catch (IOException e) {
+                    logger.warn("Error request sys info", e);
                 }
             }
-        } catch (SQLException e) {
-            logger.warn("Error load sys info for {}", objectName, e);
+        } else {
+            logger.warn("Error parse ip address {}", objectName);
         }
+
         return result;
     }
 
     public void synchronizeDate(String objectName) {
         logger.info("start synchronize date from mfk for {}", objectName);
-        try (Connection connect = ds.getConnection();
-             PreparedStatement stm = connect.prepareStatement(SELECT_SERVER)) {
-            stm.setString(1, objectName.split("_")[0]);
-            ResultSet res = stm.executeQuery();
-            if (res.next()) {
-                Matcher m = PATTERN_IPV4.matcher(objectName);
-                if (m.find()) {
-                    String url = m.group("ip");
 
-                    try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
-                        ArrayList<String> path = new ArrayList<>(Arrays.asList(res.getString("path").split("/")));
-                        path.removeIf(String::isEmpty);
-                        path.add("api");
-                        path.add("synchronizeDate");
+        Map<String, String> parameters = new HashMap<>();
+        Matcher m = PATTERN_IPV4.matcher(objectName);
+        if (m.find()) {
+            parameters.put("url", m.group("ip"));
 
-                        URI build = new URIBuilder()
-                                .setScheme(res.getString("scheme"))
-                                .setHost(res.getString("host"))
-                                .setPort(res.getInt("port"))
-                                .setPathSegments(path)
-                                .addParameter("url", url)
-                                .build();
+            objectName = objectName.split("_")[0];
 
-                        HttpPost httpPost = new HttpPost(build);
+            Map<String, URI> uri = getURI(Set.of(objectName), List.of("api", "synchronizeDate"), parameters);
 
-                        try (CloseableHttpResponse response = httpClient.execute(httpPost)) {
-                            if (response.getStatusLine().getStatusCode() != 200) {
-                                logger.warn("Error synchronize date. Error code {}", response.getStatusLine().getStatusCode());
-                            }
+            if (!uri.isEmpty()) {
+                try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
+                    HttpPost httpPost = new HttpPost(uri.get(objectName));
+
+                    try (CloseableHttpResponse response = httpClient.execute(httpPost)) {
+                        if (response.getStatusLine().getStatusCode() != 200) {
+                            logger.warn("Error synchronize date. Error code {}", response.getStatusLine().getStatusCode());
                         }
-                    } catch (IOException | URISyntaxException e) {
-                        logger.warn("Error synchronize date", e);
                     }
-                } else {
-                    logger.warn("Error parse ip address {}", objectName);
+                } catch (IOException e) {
+                    logger.warn("Error synchronize date", e);
                 }
             }
-        } catch (SQLException e) {
-            logger.warn("Error synchronize date for {}", objectName, e);
+        } else {
+            logger.warn("Error parse ip address {}", objectName);
         }
     }
 
     public void writeSysInfo(String objectName, List<MfkConsoleController.ObjectInfoModel> sysInfo) {
         logger.info("start write sys info to mfk for {}", objectName);
-        try (Connection connect = ds.getConnection();
-             PreparedStatement stm = connect.prepareStatement(SELECT_SERVER)) {
-            stm.setString(1, objectName.split("_")[0]);
-            ResultSet res = stm.executeQuery();
-            if (res.next()) {
-                Matcher m = PATTERN_IPV4.matcher(objectName);
-                if (m.find()) {
-                    String url = m.group("ip");
 
-                    try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
-                        HttpPost httpPost = new HttpPost(getSysInfoURI(res, url));
+        Map<String, String> parameters = new HashMap<>();
+        Matcher m = PATTERN_IPV4.matcher(objectName);
+        if (m.find()) {
+            parameters.put("url", m.group("ip"));
 
-                        Map<String, String> sysInfoMap = sysInfo.stream()
-                                .filter(MfkConsoleController.ObjectInfoModel::isChange)
-                                .collect(Collectors.toMap(
-                                        MfkConsoleController.ObjectInfoModel::getName,
-                                        MfkConsoleController.ObjectInfoModel::getValue
-                                ));
-                        logger.info("start write sys info {} to mfk for {}", sysInfoMap, objectName);
+            objectName = objectName.split("_")[0];
 
-                        httpPost.setHeader("Content-type", "application/json");
-                        httpPost.setEntity(new StringEntity(json.toJson(sysInfoMap)));
+            Map<String, URI> uri = getURI(Set.of(objectName), List.of("api", "sysInfo"), parameters);
 
-                        try (CloseableHttpResponse response = httpClient.execute(httpPost)) {
-                            if (response.getStatusLine().getStatusCode() != 200) {
-                                logger.warn("Error write sys info. Error code {}", response.getStatusLine().getStatusCode());
-                            }
+            if (!uri.isEmpty()) {
+                try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
+                    HttpPost httpPost = new HttpPost(uri.get(objectName));
+
+                    Map<String, String> sysInfoMap = sysInfo.stream()
+                            .filter(MfkConsoleController.ObjectInfoModel::isChange)
+                            .collect(Collectors.toMap(
+                                    MfkConsoleController.ObjectInfoModel::getName,
+                                    MfkConsoleController.ObjectInfoModel::getValue
+                            ));
+                    logger.info("start write sys info {} to mfk for {}", sysInfoMap, objectName);
+
+                    httpPost.setHeader("Content-type", "application/json");
+                    httpPost.setEntity(new StringEntity(json.toJson(sysInfoMap)));
+
+                    try (CloseableHttpResponse response = httpClient.execute(httpPost)) {
+                        if (response.getStatusLine().getStatusCode() != 200) {
+                            logger.warn("Error write sys info. Error code {}", response.getStatusLine().getStatusCode());
                         }
-                    } catch (IOException | URISyntaxException e) {
-                        logger.warn("Error write sys info", e);
                     }
-                } else {
-                    logger.warn("Error parse ip address {}", objectName);
+                } catch (IOException e) {
+                    logger.warn("Error write sys info", e);
                 }
             }
-        } catch (SQLException e) {
-            logger.warn("Error write sys info for {}", objectName, e);
+        } else {
+            logger.warn("Error parse ip address {}", objectName);
         }
     }
 
-    private URI getSysInfoURI(ResultSet res, String url) throws SQLException, URISyntaxException {
-        ArrayList<String> path = new ArrayList<>(Arrays.asList(res.getString("path").split("/")));
-        path.removeIf(String::isEmpty);
-        path.add("api");
-        path.add("sysInfo");
+    private Map<String, URI> getURI(Set<String> objectNameList,
+                                    List<String> paths,
+                                    Map<String, String> parameters) {
+        Map<String, URI> result = new HashMap<>();
 
-        return new URIBuilder()
-                .setScheme(res.getString("scheme"))
-                .setHost(res.getString("host"))
-                .setPort(res.getInt("port"))
-                .setPathSegments(path)
-                .addParameter("url", url)
-                .build();
+        try (Connection connect = ds.getConnection();
+             PreparedStatement stm = connect.prepareStatement(SELECT_SERVER)) {
+            for (String objectName: objectNameList) {
+                stm.setString(1, objectName);
+                ResultSet res = stm.executeQuery();
+                if (res.next()) {
+                    ArrayList<String> path = new ArrayList<>(Arrays.asList(res.getString("path").split("/")));
+                    path.removeIf(String::isEmpty);
+                    path.addAll(paths);
+
+                    URIBuilder uriBuilder = new URIBuilder()
+                            .setScheme(res.getString("scheme"))
+                            .setHost(res.getString("host"))
+                            .setPort(res.getInt("port"))
+                            .setPathSegments(path);
+
+                    parameters.forEach(uriBuilder::addParameter);
+
+                    result.put(objectName, uriBuilder.build());
+                }
+            }
+        } catch (SQLException | URISyntaxException e) {
+            logger.warn("Error load URI {}", objectNameList, e);
+        }
+
+        return result;
+    }
+
+    private static class MfkServer {
+
+        private final String name;
+        private final String path;
+        private final String scheme;
+        private final String host;
+        private final int port;
+
+        public MfkServer(String name, String path, String scheme, String host, int port) {
+            this.name = name;
+            this.path = path;
+            this.scheme = scheme;
+            this.host = host;
+            this.port = port;
+        }
     }
 }
