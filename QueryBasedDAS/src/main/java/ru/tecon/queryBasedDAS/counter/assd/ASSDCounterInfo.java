@@ -22,7 +22,7 @@ import java.util.function.BiFunction;
 public class ASSDCounterInfo implements CounterInfo, WebConsole {
 
     static final String SCHEME = "http";
-    static final String HOST = "172.20.248.118";
+    static final String HOST = "172.20.248.20";
     static final int PORT = 8001;
     static final String API_KEY = "GdrTM7Egn8lVcsDszZKSXdopp9Kk7JRbymNBPWWDLkM";
     static final String CLIENT_ID = "37bca726-5cdd-4d7b-b88a-a8347f26327c";
